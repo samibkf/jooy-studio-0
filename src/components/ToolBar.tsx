@@ -3,7 +3,7 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Toggle } from '@/components/ui/toggle';
-import { TextCursor, Image, MousePointer } from 'lucide-react';
+import { TextSelect, Image, MousePointer } from 'lucide-react';
 
 interface ToolbarProps {
   isSelectionMode: boolean;
@@ -26,7 +26,7 @@ const Toolbar: React.FC<ToolbarProps> = ({
             aria-label="Toggle text selection tool"
             className={`w-full ${currentSelectionType === 'text' ? 'ring-2 ring-primary' : ''}`}
           >
-            <TextCursor className="h-4 w-4 mr-2" />
+            <TextSelect className="h-4 w-4 mr-2" />
             Text Selection
           </Toggle>
         </TooltipTrigger>

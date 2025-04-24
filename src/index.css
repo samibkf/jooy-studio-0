@@ -199,7 +199,7 @@
   overflow: hidden;
   opacity: 0.2;
   line-height: 1.0;
-  pointer-events: auto;
+  pointer-events: all;
   user-select: text;
   -webkit-user-select: text;
   -moz-user-select: text;
@@ -212,24 +212,24 @@
   white-space: pre;
   cursor: text;
   transform-origin: 0% 0%;
-  border: 1px solid transparent; /* Add border for debugging */
+  border: 1px solid transparent;
   padding: 0;
   margin: 0;
 }
 
-/* Show span borders for debugging 
-.text-layer > span:hover {
+/* Show text layer for debugging */
+.text-layer.debug > span {
   border: 1px solid rgba(255, 0, 0, 0.3);
 }
-*/
 
+/* Selection styles */
 .text-layer > span::-moz-selection {
-  background: rgba(0, 0, 255, 0.3);
+  background: rgba(0, 0, 255, 0.3) !important;
   color: transparent;
 }
 
 .text-layer > span::selection {
-  background: rgba(0, 0, 255, 0.3);
+  background: rgba(0, 0, 255, 0.3) !important;
   color: transparent;
 }
 
@@ -271,3 +271,16 @@
 .text-selection-active {
   background: rgba(0, 100, 255, 0.2);
 }
+
+/* Additional styles for improved text selection */
+.text-layer.text-selection-enabled {
+  z-index: 2;
+  pointer-events: all !important;
+  opacity: 0.25;
+}
+
+.text-layer.text-selection-disabled {
+  pointer-events: none !important;
+  opacity: 0.1;
+}
+
