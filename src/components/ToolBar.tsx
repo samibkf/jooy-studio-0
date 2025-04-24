@@ -3,7 +3,7 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Toggle } from '@/components/ui/toggle';
-import { Text, Image, MousePointer } from 'lucide-react';
+import { TextCursor, Image, MousePointer } from 'lucide-react';
 
 interface ToolbarProps {
   isSelectionMode: boolean;
@@ -26,12 +26,12 @@ const Toolbar: React.FC<ToolbarProps> = ({
             aria-label="Toggle text selection tool"
             className="w-full"
           >
-            <Text className="h-4 w-4 mr-2" />
+            <TextCursor className="h-4 w-4 mr-2" />
             Text Selection
           </Toggle>
         </TooltipTrigger>
         <TooltipContent>
-          <p>Select text regions in the PDF</p>
+          <p>Select text line by line in the PDF document</p>
         </TooltipContent>
       </Tooltip>
 

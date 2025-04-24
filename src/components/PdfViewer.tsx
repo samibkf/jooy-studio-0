@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import * as pdfjsLib from 'pdfjs-dist';
 import { PDFDocumentProxy, PDFPageProxy } from 'pdfjs-dist';
@@ -73,7 +72,6 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
         const page = await pdf.getPage(currentPage + 1);
         const viewport = page.getViewport({ scale });
         
-        // Render the canvas layer
         const canvas = canvasRef.current!;
         const canvasContext = canvas.getContext('2d');
         
@@ -87,24 +85,23 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
           viewport
         }).promise;
 
-        // Render the text layer for text selection
         const textLayer = textLayerRef.current!;
         textLayer.innerHTML = '';
         textLayer.style.width = `${viewport.width}px`;
         textLayer.style.height = `${viewport.height}px`;
 
         const textContent = await page.getTextContent();
+        
         pdfjsLib.renderTextLayer({
           textContent,
           container: textLayer,
           viewport: viewport,
-          textDivs: []
+          textDivs: [],
+          enhanceTextSelection: true
         });
         
-        // Find images in the page
         const operatorList = await page.getOperatorList();
         const imageItems = operatorList.fnArray.reduce((acc, fn, i) => {
-          // 93 is the code for the "paintImageXObject" function in PDF.js
           if (fn === 93) {
             const imgName = operatorList.argsArray[i][0];
             acc.push(imgName);
@@ -175,46 +172,61 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
   };
 
   const handleTextSelection = () => {
-    if (currentSelectionType !== 'text' || !containerRef.current) return;
+    if (currentSelectionType !== 'text' || !containerRef.current || !textLayerRef.current) return;
 
     const selection = window.getSelection();
     if (!selection || selection.rangeCount === 0) return;
 
-    // Check if there's actual text selected
-    const selectedText = selection.toString().trim();
-    if (!selectedText) return;
-
-    const range = selection.getRangeAt(0);
-    const rect = range.getBoundingClientRect();
-    const containerRect = containerRef.current.getBoundingClientRect();
-
-    // Create a text region with the selection
-    const newRegion: Omit<Region, 'id'> = {
-      page: currentPage,
-      x: rect.x - containerRect.x,
-      y: rect.y - containerRect.y,
-      width: rect.width,
-      height: rect.height,
-      type: 'text',
-      name: `Text Region ${regions.length + 1}`,
-      audioPath: '',
-      description: selectedText
-    };
-
-    onRegionCreate(newRegion);
-    selection.removeAllRanges();
+    try {
+      const range = selection.getRangeAt(0);
+      const rects = range.getClientRects();
+      if (rects.length === 0) return;
+      
+      const containerRect = containerRef.current.getBoundingClientRect();
+      
+      let minX = Infinity, minY = Infinity, maxX = 0, maxY = 0;
+      
+      Array.from(rects).forEach(rect => {
+        minX = Math.min(minX, rect.left);
+        minY = Math.min(minY, rect.top);
+        maxX = Math.max(maxX, rect.right);
+        maxY = Math.max(maxY, rect.bottom);
+      });
+      
+      const x = minX - containerRect.left;
+      const y = minY - containerRect.top;
+      const width = maxX - minX;
+      const height = maxY - minY;
+      
+      if (width > 5 && height > 5) {
+        const newRegion: Omit<Region, 'id'> = {
+          page: currentPage,
+          x,
+          y,
+          width,
+          height,
+          type: 'text' as const,
+          name: `Text Region ${regions.length + 1}`,
+          audioPath: '',
+          description: selection.toString().trim()
+        };
+        
+        onRegionCreate(newRegion);
+        selection.removeAllRanges();
+      }
+    } catch (error) {
+      console.error('Error processing text selection:', error);
+      toast.error('Failed to process text selection');
+    }
   };
 
   const handleImageSelection = (e: React.MouseEvent) => {
     if (currentSelectionType !== 'image' || !containerRef.current) return;
 
-    // Since we can't directly access PDF image objects through the DOM,
-    // we'll provide a way for users to select image areas manually
     const rect = containerRef.current.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
     
-    // Start with a default size for image selection
     const DEFAULT_IMAGE_SIZE = 100;
     
     const newRegion: Omit<Region, 'id'> = {
@@ -235,8 +247,14 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
 
   useEffect(() => {
     if (currentSelectionType === 'text') {
-      document.addEventListener('mouseup', handleTextSelection);
-      return () => document.removeEventListener('mouseup', handleTextSelection);
+      const handleTextSelectionEnd = () => {
+        setTimeout(() => {
+          handleTextSelection();
+        }, 50);
+      };
+      
+      document.addEventListener('mouseup', handleTextSelectionEnd);
+      return () => document.removeEventListener('mouseup', handleTextSelectionEnd);
     }
   }, [currentSelectionType, currentPage]);
 
