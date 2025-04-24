@@ -6,7 +6,6 @@ import RegionOverlay from './RegionOverlay';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 
-// Set the PDF.js worker source
 pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
 
 interface PdfViewerProps {
@@ -17,6 +16,7 @@ interface PdfViewerProps {
   selectedRegionId: string | null;
   onRegionSelect: (regionId: string | null) => void;
   isSelectionMode: boolean;
+  currentSelectionType: 'text' | 'image' | 'area' | null;
 }
 
 const PdfViewer: React.FC<PdfViewerProps> = ({
@@ -27,6 +27,7 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
   selectedRegionId,
   onRegionSelect,
   isSelectionMode,
+  currentSelectionType,
 }) => {
   const [pdf, setPdf] = useState<PDFDocumentProxy | null>(null);
   const [currentPage, setCurrentPage] = useState(0);
@@ -92,7 +93,7 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
   }, [pdf, currentPage, scale]);
   
   const handleMouseDown = (e: React.MouseEvent) => {
-    if (!isSelectionMode || !containerRef.current) return;
+    if (!isSelectionMode || !containerRef.current || currentSelectionType !== 'area') return;
 
     setIsSelecting(true);
     
@@ -131,7 +132,7 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
         y: selectionRect.y,
         width: selectionRect.width,
         height: selectionRect.height,
-        type: 'area' as 'text' | 'image' | 'area',
+        type: currentSelectionType || 'area',
         name: `Region ${regions.length + 1}`,
         audioPath: '',
         description: ''
@@ -141,7 +142,40 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
       setSelectionRect({ x: 0, y: 0, width: 0, height: 0 });
     }
   };
-  
+
+  const handleTextSelection = () => {
+    if (currentSelectionType !== 'text' || !containerRef.current) return;
+
+    const selection = window.getSelection();
+    if (!selection || selection.rangeCount === 0) return;
+
+    const range = selection.getRangeAt(0);
+    const rect = range.getBoundingClientRect();
+    const containerRect = containerRef.current.getBoundingClientRect();
+
+    const newRegion: Omit<Region, 'id'> = {
+      page: currentPage,
+      x: rect.x - containerRect.x,
+      y: rect.y - containerRect.y,
+      width: rect.width,
+      height: rect.height,
+      type: 'text',
+      name: `Text Region ${regions.length + 1}`,
+      audioPath: '',
+      description: selection.toString()
+    };
+
+    onRegionCreate(newRegion);
+    selection.removeAllRanges();
+  };
+
+  useEffect(() => {
+    if (currentSelectionType === 'text') {
+      document.addEventListener('mouseup', handleTextSelection);
+      return () => document.removeEventListener('mouseup', handleTextSelection);
+    }
+  }, [currentSelectionType, currentPage]);
+
   const handleNextPage = useCallback(() => {
     if (currentPage < totalPages - 1) {
       setCurrentPage(prev => prev + 1);

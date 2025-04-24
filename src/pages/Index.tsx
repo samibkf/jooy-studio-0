@@ -1,4 +1,3 @@
-
 import React, { useState, useRef } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import Header from '@/components/Header';
@@ -13,7 +12,7 @@ const Index = () => {
   const [pdfFile, setPdfFile] = useState<File | null>(null);
   const [regions, setRegions] = useState<Region[]>([]);
   const [selectedRegionId, setSelectedRegionId] = useState<string | null>(null);
-  const [isSelectionMode, setIsSelectionMode] = useState(false);
+  const [currentSelectionType, setCurrentSelectionType] = useState<'text' | 'image' | 'area' | null>(null);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   
@@ -66,6 +65,10 @@ const Index = () => {
     setSelectedRegionId(regionId);
   };
   
+  const handleToggleSelectionMode = (mode: 'text' | 'image' | 'area' | null) => {
+    setCurrentSelectionType(mode);
+  };
+  
   const handleExport = () => {
     if (!pdfFile) {
       toast.error('No PDF document loaded');
@@ -108,8 +111,9 @@ const Index = () => {
       <div className="flex flex-1 overflow-hidden">
         <div className="w-16 border-r border-gray-200">
           <Toolbar
-            isSelectionMode={isSelectionMode}
-            onToggleSelectionMode={() => setIsSelectionMode(!isSelectionMode)}
+            isSelectionMode={!!currentSelectionType}
+            onToggleSelectionMode={handleToggleSelectionMode}
+            currentSelectionType={currentSelectionType}
           />
         </div>
         
@@ -121,7 +125,8 @@ const Index = () => {
             onRegionUpdate={handleRegionUpdate}
             selectedRegionId={selectedRegionId}
             onRegionSelect={handleRegionSelect}
-            isSelectionMode={isSelectionMode}
+            isSelectionMode={!!currentSelectionType}
+            currentSelectionType={currentSelectionType}
           />
         </div>
         
