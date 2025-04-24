@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -199,6 +200,10 @@
   opacity: 0.2;
   line-height: 1.0;
   pointer-events: auto;
+  user-select: text;
+  -webkit-user-select: text;
+  -moz-user-select: text;
+  -ms-user-select: text;
 }
 
 .text-layer > span {
@@ -207,10 +212,16 @@
   white-space: pre;
   cursor: text;
   transform-origin: 0% 0%;
-  border: none;
+  border: 1px solid transparent; /* Add border for debugging */
   padding: 0;
   margin: 0;
 }
+
+/* Show span borders for debugging 
+.text-layer > span:hover {
+  border: 1px solid rgba(255, 0, 0, 0.3);
+}
+*/
 
 .text-layer > span::-moz-selection {
   background: rgba(0, 0, 255, 0.3);
@@ -254,4 +265,9 @@
 ::-moz-selection {
   background: rgba(0, 0, 255, 0.3) !important;
   color: transparent;
+}
+
+/* Custom text selections */
+.text-selection-active {
+  background: rgba(0, 100, 255, 0.2);
 }

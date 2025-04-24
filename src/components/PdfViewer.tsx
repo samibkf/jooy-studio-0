@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import * as pdfjsLib from 'pdfjs-dist';
 import { PDFDocumentProxy, PDFPageProxy } from 'pdfjs-dist';
@@ -36,10 +37,12 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
   const [isSelecting, setIsSelecting] = useState(false);
   const [selectionStart, setSelectionStart] = useState({ x: 0, y: 0 });
   const [selectionRect, setSelectionRect] = useState({ x: 0, y: 0, width: 0, height: 0 });
+  const [textSelectionEnabled, setTextSelectionEnabled] = useState(false);
   
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const textLayerRef = useRef<HTMLDivElement>(null);
+  const textSelectionTimeoutRef = useRef<number | null>(null);
   
   useEffect(() => {
     if (!file) return;
@@ -85,6 +88,7 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
           viewport
         }).promise;
 
+        // Clear the text layer before rendering new content
         const textLayer = textLayerRef.current!;
         textLayer.innerHTML = '';
         textLayer.style.width = `${viewport.width}px`;
@@ -92,12 +96,26 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
 
         const textContent = await page.getTextContent();
         
-        pdfjsLib.renderTextLayer({
-          textContent,
-          container: textLayer,
-          viewport: viewport,
-          textDivs: [],
-          enhanceTextSelection: true
+        // Create a separate div for each text item to improve selection
+        textContent.items.forEach((item: any) => {
+          const tx = pdfjsLib.Util.transform(
+            viewport.transform,
+            item.transform
+          );
+          
+          const style = textContent.styles[item.fontName];
+          const fontSize = Math.sqrt((tx[2] * tx[2]) + (tx[3] * tx[3]));
+          
+          const textSpan = document.createElement('span');
+          textSpan.textContent = item.str;
+          textSpan.style.left = `${tx[4]}px`;
+          textSpan.style.top = `${tx[5]}px`;
+          textSpan.style.fontSize = `${fontSize}px`;
+          textSpan.style.fontFamily = style.fontFamily;
+          textSpan.style.transform = `scaleX(${item.width / item.str.length / fontSize})`;
+          textSpan.dataset.line = item.dir;
+          
+          textLayer.appendChild(textSpan);
         });
         
         const operatorList = await page.getOperatorList();
@@ -119,6 +137,17 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
     
     renderPage();
   }, [pdf, currentPage, scale]);
+  
+  useEffect(() => {
+    // Enable or disable text selection based on the current selection type
+    setTextSelectionEnabled(currentSelectionType === 'text');
+    
+    // Clean up any ongoing text selection when changing tools
+    if (textSelectionTimeoutRef.current) {
+      window.clearTimeout(textSelectionTimeoutRef.current);
+      textSelectionTimeoutRef.current = null;
+    }
+  }, [currentSelectionType]);
   
   const handleMouseDown = (e: React.MouseEvent) => {
     if (!isSelectionMode || !containerRef.current || currentSelectionType !== 'area') return;
@@ -171,7 +200,7 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
     }
   };
 
-  const handleTextSelection = () => {
+  const handleTextSelection = useCallback(() => {
     if (currentSelectionType !== 'text' || !containerRef.current || !textLayerRef.current) return;
 
     const selection = window.getSelection();
@@ -179,6 +208,12 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
 
     try {
       const range = selection.getRangeAt(0);
+      
+      // Check if selection is within the text layer
+      if (!textLayerRef.current.contains(range.commonAncestorContainer)) {
+        return;
+      }
+      
       const rects = range.getClientRects();
       if (rects.length === 0) return;
       
@@ -199,28 +234,35 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
       const height = maxY - minY;
       
       if (width > 5 && height > 5) {
-        const newRegion: Omit<Region, 'id'> = {
-          page: currentPage,
-          x,
-          y,
-          width,
-          height,
-          type: 'text' as const,
-          name: `Text Region ${regions.length + 1}`,
-          audioPath: '',
-          description: selection.toString().trim()
-        };
+        const selectionText = selection.toString().trim();
         
-        onRegionCreate(newRegion);
-        selection.removeAllRanges();
+        // Only create regions for non-empty text selections
+        if (selectionText) {
+          const newRegion: Omit<Region, 'id'> = {
+            page: currentPage,
+            x,
+            y,
+            width,
+            height,
+            type: 'text' as const,
+            name: `Text Region ${regions.length + 1}`,
+            audioPath: '',
+            description: selectionText
+          };
+          
+          onRegionCreate(newRegion);
+        }
       }
     } catch (error) {
       console.error('Error processing text selection:', error);
       toast.error('Failed to process text selection');
     }
-  };
+    
+    // Clear the selection
+    selection?.removeAllRanges();
+  }, [currentSelectionType, currentPage, regions.length, onRegionCreate]);
 
-  const handleImageSelection = (e: React.MouseEvent) => {
+  const handleImageSelection = useCallback((e: React.MouseEvent) => {
     if (currentSelectionType !== 'image' || !containerRef.current) return;
 
     const rect = containerRef.current.getBoundingClientRect();
@@ -243,48 +285,61 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
     
     onRegionCreate(newRegion);
     toast.info('Image region created. Resize it to fit the image precisely.');
-  };
+  }, [currentSelectionType, currentPage, regions.length, onRegionCreate]);
 
   useEffect(() => {
-    if (currentSelectionType === 'text') {
-      const handleTextSelectionEnd = () => {
-        setTimeout(() => {
+    if (currentSelectionType === 'text' && textLayerRef.current) {
+      // Use mouseup for text selection to wait for the selection to be complete
+      const handleMouseUp = () => {
+        // Add a slight delay to ensure the selection is complete
+        if (textSelectionTimeoutRef.current) {
+          window.clearTimeout(textSelectionTimeoutRef.current);
+        }
+        
+        // Delay to allow the browser to complete the selection process
+        textSelectionTimeoutRef.current = window.setTimeout(() => {
           handleTextSelection();
-        }, 50);
+        }, 100) as unknown as number;
       };
       
-      document.addEventListener('mouseup', handleTextSelectionEnd);
-      return () => document.removeEventListener('mouseup', handleTextSelectionEnd);
-    }
-  }, [currentSelectionType, currentPage]);
-
-  useEffect(() => {
-    if (currentSelectionType === 'image') {
-      const handleImageClick = (e: MouseEvent) => {
-        handleImageSelection(e as unknown as React.MouseEvent);
-      };
-      
-      if (containerRef.current) {
-        containerRef.current.addEventListener('click', handleImageClick);
-      }
-      
+      textLayerRef.current.addEventListener('mouseup', handleMouseUp);
       return () => {
-        if (containerRef.current) {
-          containerRef.current.removeEventListener('click', handleImageClick);
+        if (textLayerRef.current) {
+          textLayerRef.current.removeEventListener('mouseup', handleMouseUp);
+        }
+        
+        if (textSelectionTimeoutRef.current) {
+          window.clearTimeout(textSelectionTimeoutRef.current);
         }
       };
     }
-  }, [currentSelectionType, currentPage]);
+  }, [currentSelectionType, handleTextSelection]);
+
+  useEffect(() => {
+    if (currentSelectionType === 'image' && containerRef.current) {
+      containerRef.current.addEventListener('click', handleImageSelection as unknown as EventListener);
+      
+      return () => {
+        if (containerRef.current) {
+          containerRef.current.removeEventListener('click', handleImageSelection as unknown as EventListener);
+        }
+      };
+    }
+  }, [currentSelectionType, handleImageSelection]);
 
   const handleNextPage = useCallback(() => {
     if (currentPage < totalPages - 1) {
       setCurrentPage(prev => prev + 1);
+      // Clear any existing selections when changing pages
+      window.getSelection()?.removeAllRanges();
     }
   }, [currentPage, totalPages]);
 
   const handlePrevPage = useCallback(() => {
     if (currentPage > 0) {
       setCurrentPage(prev => prev - 1);
+      // Clear any existing selections when changing pages
+      window.getSelection()?.removeAllRanges();
     }
   }, [currentPage]);
 
@@ -370,7 +425,11 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
           onMouseLeave={handleMouseUp}
         >
           <canvas ref={canvasRef} className="absolute top-0 left-0" />
-          <div ref={textLayerRef} className="absolute top-0 left-0 text-layer"></div>
+          
+          <div 
+            ref={textLayerRef} 
+            className={`absolute top-0 left-0 text-layer ${textSelectionEnabled ? 'pointer-events-auto' : 'pointer-events-none'}`}
+          ></div>
           
           {pageRegions.map((region) => (
             <RegionOverlay
