@@ -25,7 +25,7 @@ const Toolbar: React.FC<ToolbarProps> = ({
               pressed={currentSelectionType === 'text'}
               onPressedChange={() => onToggleSelectionMode(currentSelectionType === 'text' ? null : 'text')}
               aria-label="Toggle text selection tool"
-              className={`w-full ${currentSelectionType === 'text' ? 'ring-2 ring-primary' : ''}`}
+              className={`w-full ${currentSelectionType === 'text' ? 'bg-blue-100 ring-2 ring-primary' : ''}`}
             >
               <TextSelect className="h-4 w-4 mr-2" />
               Text Selection
@@ -42,7 +42,7 @@ const Toolbar: React.FC<ToolbarProps> = ({
               pressed={currentSelectionType === 'image'}
               onPressedChange={() => onToggleSelectionMode(currentSelectionType === 'image' ? null : 'image')}
               aria-label="Toggle image selection tool"
-              className={`w-full ${currentSelectionType === 'image' ? 'ring-2 ring-primary' : ''}`}
+              className={`w-full ${currentSelectionType === 'image' ? 'bg-blue-100 ring-2 ring-primary' : ''}`}
             >
               <Image className="h-4 w-4 mr-2" />
               Image Selection
@@ -59,7 +59,7 @@ const Toolbar: React.FC<ToolbarProps> = ({
               pressed={currentSelectionType === 'area'}
               onPressedChange={() => onToggleSelectionMode(currentSelectionType === 'area' ? null : 'area')}
               aria-label="Toggle area selection tool"
-              className={`w-full ${currentSelectionType === 'area' ? 'ring-2 ring-primary' : ''}`}
+              className={`w-full ${currentSelectionType === 'area' ? 'bg-blue-100 ring-2 ring-primary' : ''}`}
             >
               <MousePointer className="h-4 w-4 mr-2" />
               Area Selection

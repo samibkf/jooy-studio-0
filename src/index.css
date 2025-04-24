@@ -188,7 +188,7 @@
   cursor: cell;
 }
 
-/* Text layer styles - Enhanced for better selection */
+/* Text layer styles - Improved for better selection */
 .text-layer {
   position: absolute;
   left: 0;
@@ -202,6 +202,7 @@
   -webkit-user-select: text;
   -moz-user-select: text;
   -ms-user-select: text;
+  pointer-events: auto;
 }
 
 .text-layer > span {
@@ -212,6 +213,7 @@
   transform-origin: 0% 0%;
   padding: 0;
   margin: 0;
+  pointer-events: all !important;
 }
 
 /* Show text layer for debugging */
@@ -220,16 +222,25 @@
 }
 
 /* Selection styles */
+::selection {
+  background: rgba(0, 100, 255, 0.3) !important;
+}
+
+::-moz-selection {
+  background: rgba(0, 100, 255, 0.3) !important;
+}
+
 .text-layer > span::selection {
-  background: rgba(0, 0, 255, 0.3) !important;
+  background: rgba(0, 100, 255, 0.3) !important;
   color: transparent;
 }
 
 .text-layer > span::-moz-selection {
-  background: rgba(0, 0, 255, 0.3) !important;
+  background: rgba(0, 100, 255, 0.3) !important;
   color: transparent;
 }
 
+/* Highlight styles */
 .text-layer > span.highlight {
   margin: -1px;
   padding: 1px;
@@ -253,30 +264,22 @@
   background-color: rgba(0, 100, 0, 0.2);
 }
 
-/* Improve visibility of text selection */
-::selection {
-  background: rgba(0, 0, 255, 0.3) !important;
-}
-
-::-moz-selection {
-  background: rgba(0, 0, 255, 0.3) !important;
-}
-
 /* Custom text selections */
 .text-selection-active {
   background: rgba(0, 100, 255, 0.2);
 }
 
-/* Additional styles for improved text selection */
+/* Text selection modes */
 .text-layer.text-selection-enabled {
   z-index: 2;
   pointer-events: auto !important;
-  opacity: 0.25;
+  opacity: 0.3;
 }
 
 .text-layer.text-selection-disabled {
   pointer-events: none !important;
   opacity: 0.1;
+  user-select: none;
 }
 
 .text-layer-debug .text-item {
