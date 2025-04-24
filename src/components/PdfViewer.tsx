@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import * as pdfjsLib from 'pdfjs-dist';
 import { PDFDocumentProxy, PDFPageProxy } from 'pdfjs-dist';
@@ -39,6 +40,7 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
   
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const textLayerRef = useRef<HTMLDivElement>(null);
   
   useEffect(() => {
     if (!file) return;
@@ -64,25 +66,54 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
   }, [file]);
   
   useEffect(() => {
-    if (!pdf || !canvasRef.current) return;
+    if (!pdf || !canvasRef.current || !textLayerRef.current) return;
     
     const renderPage = async () => {
       try {
         const page = await pdf.getPage(currentPage + 1);
         const viewport = page.getViewport({ scale });
         
+        // Render the canvas layer
         const canvas = canvasRef.current!;
-        const context = canvas.getContext('2d');
+        const canvasContext = canvas.getContext('2d');
         
-        if (!context) return;
+        if (!canvasContext) return;
         
         canvas.width = viewport.width;
         canvas.height = viewport.height;
         
         await page.render({
-          canvasContext: context,
+          canvasContext,
           viewport
         }).promise;
+
+        // Render the text layer for text selection
+        const textLayer = textLayerRef.current!;
+        textLayer.innerHTML = '';
+        textLayer.style.width = `${viewport.width}px`;
+        textLayer.style.height = `${viewport.height}px`;
+
+        const textContent = await page.getTextContent();
+        pdfjsLib.renderTextLayer({
+          textContent,
+          container: textLayer,
+          viewport: viewport,
+          textDivs: []
+        });
+        
+        // Find images in the page
+        const operatorList = await page.getOperatorList();
+        const imageItems = operatorList.fnArray.reduce((acc, fn, i) => {
+          // 93 is the code for the "paintImageXObject" function in PDF.js
+          if (fn === 93) {
+            const imgName = operatorList.argsArray[i][0];
+            acc.push(imgName);
+          }
+          return acc;
+        }, [] as string[]);
+
+        console.log(`Found ${imageItems.length} images on page ${currentPage + 1}`);
+        
       } catch (error) {
         console.error('Error rendering page:', error);
         toast.error('Failed to render page');
@@ -132,7 +163,7 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
         y: selectionRect.y,
         width: selectionRect.width,
         height: selectionRect.height,
-        type: currentSelectionType || 'area',
+        type: currentSelectionType as 'text' | 'image' | 'area',
         name: `Region ${regions.length + 1}`,
         audioPath: '',
         description: ''
@@ -149,10 +180,15 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
     const selection = window.getSelection();
     if (!selection || selection.rangeCount === 0) return;
 
+    // Check if there's actual text selected
+    const selectedText = selection.toString().trim();
+    if (!selectedText) return;
+
     const range = selection.getRangeAt(0);
     const rect = range.getBoundingClientRect();
     const containerRect = containerRef.current.getBoundingClientRect();
 
+    // Create a text region with the selection
     const newRegion: Omit<Region, 'id'> = {
       page: currentPage,
       x: rect.x - containerRect.x,
@@ -162,17 +198,63 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
       type: 'text',
       name: `Text Region ${regions.length + 1}`,
       audioPath: '',
-      description: selection.toString()
+      description: selectedText
     };
 
     onRegionCreate(newRegion);
     selection.removeAllRanges();
   };
 
+  const handleImageSelection = (e: React.MouseEvent) => {
+    if (currentSelectionType !== 'image' || !containerRef.current) return;
+
+    // Since we can't directly access PDF image objects through the DOM,
+    // we'll provide a way for users to select image areas manually
+    const rect = containerRef.current.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    
+    // Start with a default size for image selection
+    const DEFAULT_IMAGE_SIZE = 100;
+    
+    const newRegion: Omit<Region, 'id'> = {
+      page: currentPage,
+      x,
+      y,
+      width: DEFAULT_IMAGE_SIZE,
+      height: DEFAULT_IMAGE_SIZE,
+      type: 'image',
+      name: `Image Region ${regions.length + 1}`,
+      audioPath: '',
+      description: 'Image selection'
+    };
+    
+    onRegionCreate(newRegion);
+    toast.info('Image region created. Resize it to fit the image precisely.');
+  };
+
   useEffect(() => {
     if (currentSelectionType === 'text') {
       document.addEventListener('mouseup', handleTextSelection);
       return () => document.removeEventListener('mouseup', handleTextSelection);
+    }
+  }, [currentSelectionType, currentPage]);
+
+  useEffect(() => {
+    if (currentSelectionType === 'image') {
+      const handleImageClick = (e: MouseEvent) => {
+        handleImageSelection(e as unknown as React.MouseEvent);
+      };
+      
+      if (containerRef.current) {
+        containerRef.current.addEventListener('click', handleImageClick);
+      }
+      
+      return () => {
+        if (containerRef.current) {
+          containerRef.current.removeEventListener('click', handleImageClick);
+        }
+      };
     }
   }, [currentSelectionType, currentPage]);
 
@@ -261,13 +343,16 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
       <div className="flex-1 overflow-auto p-4">
         <div 
           ref={containerRef}
-          className={`pdf-page relative mx-auto ${isSelectionMode ? 'cursor-draw' : ''}`}
+          className={`pdf-page relative mx-auto ${isSelectionMode && currentSelectionType === 'area' ? 'cursor-crosshair' : 
+                                               isSelectionMode && currentSelectionType === 'text' ? 'cursor-text' : 
+                                               isSelectionMode && currentSelectionType === 'image' ? 'cursor-cell' : ''}`}
           onMouseDown={handleMouseDown}
           onMouseMove={handleMouseMove}
           onMouseUp={handleMouseUp}
           onMouseLeave={handleMouseUp}
         >
-          <canvas ref={canvasRef} />
+          <canvas ref={canvasRef} className="absolute top-0 left-0" />
+          <div ref={textLayerRef} className="absolute top-0 left-0 text-layer"></div>
           
           {pageRegions.map((region) => (
             <RegionOverlay

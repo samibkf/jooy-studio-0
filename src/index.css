@@ -1,4 +1,3 @@
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -177,6 +176,61 @@
 }
 
 /* Drawing tool cursor styles */
-.cursor-draw {
+.cursor-crosshair {
   cursor: crosshair;
+}
+
+.cursor-text {
+  cursor: text;
+}
+
+.cursor-cell {
+  cursor: cell;
+}
+
+/* Text layer styles */
+.text-layer {
+  position: absolute;
+  left: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  overflow: hidden;
+  opacity: 0.2;
+  line-height: 1.0;
+}
+
+.text-layer > span {
+  color: transparent;
+  position: absolute;
+  white-space: pre;
+  cursor: text;
+  transform-origin: 0% 0%;
+}
+
+.text-layer ::selection {
+  background: rgba(0, 0, 255, 0.3);
+}
+
+.text-layer .highlight {
+  margin: -1px;
+  padding: 1px;
+  background-color: rgba(180, 0, 170, 0.2);
+  border-radius: 4px;
+}
+
+.text-layer .highlight.begin {
+  border-radius: 4px 0px 0px 4px;
+}
+
+.text-layer .highlight.end {
+  border-radius: 0px 4px 4px 0px;
+}
+
+.text-layer .highlight.middle {
+  border-radius: 0px;
+}
+
+.text-layer .highlight.selected {
+  background-color: rgba(0, 100, 0, 0.2);
 }

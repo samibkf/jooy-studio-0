@@ -48,7 +48,7 @@ const Toolbar: React.FC<ToolbarProps> = ({
           </Toggle>
         </TooltipTrigger>
         <TooltipContent>
-          <p>Select image regions in the PDF</p>
+          <p>Click to create image regions in the PDF</p>
         </TooltipContent>
       </Tooltip>
 
