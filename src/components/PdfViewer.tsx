@@ -44,6 +44,72 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
   const textLayerRef = useRef<HTMLDivElement>(null);
   const selectionTimeoutRef = useRef<number | null>(null);
 
+  // ---- Process browser selection into region ----
+  const handleTextSelection = useCallback((e: MouseEvent) => {
+    if (selectionTimeoutRef.current) {
+      window.clearTimeout(selectionTimeoutRef.current);
+    }
+    selectionTimeoutRef.current = window.setTimeout(() => {
+      if (currentSelectionType !== 'text' || !containerRef.current || !textLayerRef.current) return;
+      const selection = window.getSelection();
+      if (!selection || selection.rangeCount === 0 || selection.isCollapsed) return;
+      try {
+        const range = selection.getRangeAt(0);
+        if (!textLayerRef.current.contains(range.commonAncestorContainer)) return;
+        const rects = range.getClientRects();
+        if (rects.length === 0) return;
+        const selectedText = selection.toString().trim();
+        if (!selectedText) return;
+
+        const containerRect = containerRef.current.getBoundingClientRect();
+        let minX = Infinity, minY = Infinity, maxX = 0, maxY = 0;
+        Array.from(rects).forEach(rect => {
+          minX = Math.min(minX, rect.left);
+          minY = Math.min(minY, rect.top);
+          maxX = Math.max(maxX, rect.right);
+          maxY = Math.max(maxY, rect.bottom);
+        });
+        const x = minX - containerRect.left;
+        const y = minY - containerRect.top;
+        const width = maxX - minX;
+        const height = maxY - minY;
+        if (width > 5 && height > 5 && selectedText) {
+          const newRegion: Omit<Region, "id"> = {
+            page: currentPage,
+            x,
+            y,
+            width,
+            height,
+            type: 'text',
+            name: selectedText.length > 20 ? `${selectedText.substring(0, 20)}...` : selectedText,
+            audioPath: '',
+            description: selectedText
+          };
+          onRegionCreate(newRegion);
+          toast.success('Text region created');
+          window.getSelection()?.removeAllRanges();
+        }
+      } catch (error) {
+        console.error('Error processing text selection:', error);
+      }
+    }, 100);
+  }, [currentPage, currentSelectionType, onRegionCreate]);
+
+  // ---- Selection mode toggling ----
+  const toggleTextSelectionMode = useCallback((enabled: boolean) => {
+    if (!textLayerRef.current) return;
+    if (enabled) {
+      textLayerRef.current.classList.add('text-selection-enabled');
+      textLayerRef.current.classList.remove('text-selection-disabled');
+      document.addEventListener('mouseup', handleTextSelection);
+    } else {
+      textLayerRef.current.classList.remove('text-selection-enabled');
+      textLayerRef.current.classList.add('text-selection-disabled');
+      document.removeEventListener('mouseup', handleTextSelection);
+      window.getSelection()?.removeAllRanges();
+    }
+  }, [handleTextSelection]);
+
   // ---- PDF loading ----
   useEffect(() => {
     if (!file) return;
@@ -135,79 +201,13 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
     // eslint-disable-next-line
   }, [pdf, currentPage, scale, debugMode, currentSelectionType]);
 
-  // ---- Selection mode toggling ----
-  const toggleTextSelectionMode = useCallback((enabled: boolean) => {
-    if (!textLayerRef.current) return;
-    if (enabled) {
-      textLayerRef.current.classList.add('text-selection-enabled');
-      textLayerRef.current.classList.remove('text-selection-disabled');
-      document.addEventListener('mouseup', handleTextSelection);
-    } else {
-      textLayerRef.current.classList.remove('text-selection-enabled');
-      textLayerRef.current.classList.add('text-selection-disabled');
-      document.removeEventListener('mouseup', handleTextSelection);
-      window.getSelection()?.removeAllRanges();
-    }
-  }, [handleTextSelection]);
-
   // Keep in sync with selection type
   useEffect(() => {
     toggleTextSelectionMode(currentSelectionType === 'text');
     return () => {
       document.removeEventListener('mouseup', handleTextSelection);
     };
-  }, [currentSelectionType, toggleTextSelectionMode]);
-
-  // ---- Process browser selection into region ----
-  const handleTextSelection = useCallback((e: MouseEvent) => {
-    if (selectionTimeoutRef.current) {
-      window.clearTimeout(selectionTimeoutRef.current);
-    }
-    selectionTimeoutRef.current = window.setTimeout(() => {
-      if (currentSelectionType !== 'text' || !containerRef.current || !textLayerRef.current) return;
-      const selection = window.getSelection();
-      if (!selection || selection.rangeCount === 0 || selection.isCollapsed) return;
-      try {
-        const range = selection.getRangeAt(0);
-        if (!textLayerRef.current.contains(range.commonAncestorContainer)) return;
-        const rects = range.getClientRects();
-        if (rects.length === 0) return;
-        const selectedText = selection.toString().trim();
-        if (!selectedText) return;
-
-        const containerRect = containerRef.current.getBoundingClientRect();
-        let minX = Infinity, minY = Infinity, maxX = 0, maxY = 0;
-        Array.from(rects).forEach(rect => {
-          minX = Math.min(minX, rect.left);
-          minY = Math.min(minY, rect.top);
-          maxX = Math.max(maxX, rect.right);
-          maxY = Math.max(maxY, rect.bottom);
-        });
-        const x = minX - containerRect.left;
-        const y = minY - containerRect.top;
-        const width = maxX - minX;
-        const height = maxY - minY;
-        if (width > 5 && height > 5 && selectedText) {
-          const newRegion: Omit<Region, "id"> = {
-            page: currentPage,
-            x,
-            y,
-            width,
-            height,
-            type: 'text',
-            name: selectedText.length > 20 ? `${selectedText.substring(0, 20)}...` : selectedText,
-            audioPath: '',
-            description: selectedText
-          };
-          onRegionCreate(newRegion);
-          toast.success('Text region created');
-          window.getSelection()?.removeAllRanges();
-        }
-      } catch (error) {
-        console.error('Error processing text selection:', error);
-      }
-    }, 100);
-  }, [currentPage, currentSelectionType, onRegionCreate, containerRef]);
+  }, [currentSelectionType, toggleTextSelectionMode, handleTextSelection]);
 
   // ---- Area selection handlers ----
   const handleMouseDown = (e: React.MouseEvent) => {
@@ -219,6 +219,7 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
     setSelectionStart({ x, y });
     setSelectionRect({ x, y, width: 0, height: 0 });
   };
+
   const handleMouseMove = (e: React.MouseEvent) => {
     if (!isSelecting || !containerRef.current) return;
     const rect = containerRef.current.getBoundingClientRect();
@@ -231,6 +232,7 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
       height: Math.abs(y - selectionStart.y)
     });
   };
+
   const handleMouseUp = () => {
     if (!isSelecting) return;
     setIsSelecting(false);
@@ -283,12 +285,14 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
       window.getSelection()?.removeAllRanges();
     }
   };
+
   const handlePrevPage = () => {
     if (currentPage > 0) {
       setCurrentPage(prev => prev - 1);
       window.getSelection()?.removeAllRanges();
     }
   };
+
   const handleZoomIn = () => setScale(prev => Math.min(prev + 0.1, 3.0));
   const handleZoomOut = () => setScale(prev => Math.max(prev - 0.1, 0.5));
 
