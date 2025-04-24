@@ -1,0 +1,142 @@
+
+import React from 'react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Separator } from '@/components/ui/separator';
+import { Textarea } from '@/components/ui/textarea';
+import { toast } from 'sonner';
+import { Region } from '@/types/regions';
+import { X } from 'lucide-react';
+
+interface SidebarProps {
+  selectedRegion: Region | null;
+  regions: Region[];
+  onRegionUpdate: (updatedRegion: Region) => void;
+  onRegionDelete: (regionId: string) => void;
+  onRegionSelect: (regionId: string) => void;
+}
+
+const Sidebar = ({ 
+  selectedRegion, 
+  regions, 
+  onRegionUpdate, 
+  onRegionDelete,
+  onRegionSelect
+}: SidebarProps) => {
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>, 
+    field: keyof Region
+  ) => {
+    if (!selectedRegion) return;
+    
+    const updatedRegion = { 
+      ...selectedRegion, 
+      [field]: e.target.value 
+    };
+    onRegionUpdate(updatedRegion);
+  };
+
+  const handleDelete = (regionId: string) => {
+    onRegionDelete(regionId);
+    toast.success('Region deleted');
+  };
+
+  return (
+    <div className="w-80 border-l border-gray-200 bg-white p-4 h-[calc(100vh-72px)] overflow-y-auto flex flex-col">
+      <h2 className="text-lg font-semibold mb-4">Regions</h2>
+      
+      {regions.length === 0 ? (
+        <div className="text-center py-8 text-gray-500">
+          <p>No regions defined yet.</p>
+          <p className="text-sm mt-2">Draw a region on the PDF to get started.</p>
+        </div>
+      ) : (
+        <div className="mb-6 flex-1 overflow-y-auto">
+          <div className="space-y-2">
+            {regions.map((region) => (
+              <div 
+                key={region.id} 
+                className={`p-3 rounded-md border cursor-pointer transition-colors ${
+                  selectedRegion?.id === region.id 
+                    ? 'border-primary bg-primary/5' 
+                    : 'border-gray-200 hover:bg-gray-50'
+                }`}
+                onClick={() => onRegionSelect(region.id)}
+              >
+                <div className="flex justify-between items-start">
+                  <div className="font-medium truncate">{region.name || 'Unnamed Region'}</div>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="h-6 w-6 p-0"
+                    onClick={(e) => {
+                      e.stopPropagation(); 
+                      handleDelete(region.id);
+                    }}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+                <div className="text-xs text-muted-foreground mt-1">
+                  Page {region.page + 1}, {region.type}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+      
+      <Separator className="my-4" />
+      
+      {selectedRegion ? (
+        <div className="space-y-4">
+          <h3 className="font-medium">Region Details</h3>
+          
+          <div className="space-y-2">
+            <Label htmlFor="region-name">Name</Label>
+            <Input
+              id="region-name"
+              value={selectedRegion.name}
+              onChange={(e) => handleChange(e, 'name')}
+              placeholder="Region name"
+            />
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="audio-path">Audio Path</Label>
+            <Input
+              id="audio-path"
+              value={selectedRegion.audioPath}
+              onChange={(e) => handleChange(e, 'audioPath')}
+              placeholder="Path to audio file"
+            />
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="description">Description</Label>
+            <Textarea
+              id="description"
+              value={selectedRegion.description}
+              onChange={(e) => handleChange(e, 'description')}
+              placeholder="Optional description"
+              rows={3}
+            />
+          </div>
+          
+          <div className="text-xs text-muted-foreground">
+            <div>Page: {selectedRegion.page + 1}</div>
+            <div>Position: {Math.round(selectedRegion.x)}, {Math.round(selectedRegion.y)}</div>
+            <div>Size: {Math.round(selectedRegion.width)} × {Math.round(selectedRegion.height)}</div>
+          </div>
+        </div>
+      ) : (
+        <div className="text-center py-4 text-gray-500">
+          <p>Select a region to edit its details</p>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default Sidebar;
