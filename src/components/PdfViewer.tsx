@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import * as pdfjsLib from 'pdfjs-dist';
 import { PDFDocumentProxy, PDFPageProxy } from 'pdfjs-dist';
@@ -40,7 +39,6 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   
-  // Load PDF when file changes
   useEffect(() => {
     if (!file) return;
     
@@ -64,7 +62,6 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
     loadPdf();
   }, [file]);
   
-  // Render PDF page when page or scale changes
   useEffect(() => {
     if (!pdf || !canvasRef.current) return;
     
@@ -94,7 +91,6 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
     renderPage();
   }, [pdf, currentPage, scale]);
   
-  // Handle mouse events for region selection
   const handleMouseDown = (e: React.MouseEvent) => {
     if (!isSelectionMode || !containerRef.current) return;
 
@@ -128,15 +124,14 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
     
     setIsSelecting(false);
     
-    // Create new region if selection is large enough
     if (selectionRect.width > 10 && selectionRect.height > 10) {
-      const newRegion = {
+      const newRegion: Omit<Region, 'id'> = {
         page: currentPage,
         x: selectionRect.x,
         y: selectionRect.y,
         width: selectionRect.width,
         height: selectionRect.height,
-        type: 'area',
+        type: 'area' as 'text' | 'image' | 'area',
         name: `Region ${regions.length + 1}`,
         audioPath: '',
         description: ''
@@ -167,7 +162,6 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
     setScale(prev => Math.max(prev - 0.1, 0.5));
   }, []);
 
-  // Filter regions for current page
   const pageRegions = regions.filter(region => region.page === currentPage);
   
   if (!file) {
@@ -185,7 +179,6 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
   
   return (
     <div className="flex flex-col h-[calc(100vh-72px)] bg-muted">
-      {/* Toolbar */}
       <div className="bg-white border-b border-gray-200 p-2 flex items-center justify-between">
         <div className="flex items-center space-x-2">
           <Button 
@@ -231,7 +224,6 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
         </div>
       </div>
       
-      {/* PDF Display Area */}
       <div className="flex-1 overflow-auto p-4">
         <div 
           ref={containerRef}
@@ -243,7 +235,6 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
         >
           <canvas ref={canvasRef} />
           
-          {/* Region Overlays */}
           {pageRegions.map((region) => (
             <RegionOverlay
               key={region.id}
@@ -255,7 +246,6 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
             />
           ))}
           
-          {/* Selection Rectangle */}
           {isSelecting && (
             <div 
               className="region-selection"
