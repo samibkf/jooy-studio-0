@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import * as pdfjsLib from 'pdfjs-dist';
 import { PDFDocumentProxy } from 'pdfjs-dist';
@@ -15,7 +16,7 @@ interface PdfViewerProps {
   onRegionUpdate: (region: Region) => void;
   selectedRegionId: string | null;
   onRegionSelect: (regionId: string | null) => void;
-  onRegionDelete: (regionId: string) => void;  // Add this prop
+  onRegionDelete: (regionId: string) => void;
   isSelectionMode: boolean;
   currentSelectionType: 'area' | null;
 }
@@ -27,7 +28,7 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
   onRegionUpdate,
   selectedRegionId,
   onRegionSelect,
-  onRegionDelete,  // Add this prop
+  onRegionDelete,
   isSelectionMode,
   currentSelectionType,
 }) => {
@@ -38,11 +39,9 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
   const [isSelecting, setIsSelecting] = useState(false);
   const [selectionStart, setSelectionStart] = useState({ x: 0, y: 0 });
   const [selectionRect, setSelectionRect] = useState({ x: 0, y: 0, width: 0, height: 0 });
-  const [selectionPoint, setSelectionPoint] = useState<{ x: number, y: number } | null>(null);
   
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const [initialPoint, setInitialPoint] = useState<{ x: number, y: number } | null>(null);
 
   useEffect(() => {
     if (!file) return;
@@ -108,47 +107,35 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [selectedRegionId, onRegionDelete]);
 
-  const handleDoubleClick = (e: React.MouseEvent) => {
-    if (!containerRef.current || currentSelectionType !== 'area') return;
-    
-    const rect = containerRef.current.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-    
-    setInitialPoint({ x, y });
-    setSelectionRect({ x, y, width: 0, height: 0 });
-    setIsSelecting(true);
-  };
-
   const handleMouseDown = (e: React.MouseEvent) => {
     if (!isSelectionMode || !containerRef.current || currentSelectionType !== 'area') return;
-    
-    if (!initialPoint) return; // Only allow drawing if we have an initial point
     
     const rect = containerRef.current.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
 
     setSelectionStart({ x, y });
+    setSelectionRect({ x, y, width: 0, height: 0 });
+    setIsSelecting(true);
   };
   
   const handleMouseMove = (e: React.MouseEvent) => {
-    if (!isSelecting || !containerRef.current || !initialPoint) return;
+    if (!isSelecting || !containerRef.current) return;
     
     const rect = containerRef.current.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
     
     setSelectionRect({
-      x: Math.min(x, initialPoint.x),
-      y: Math.min(y, initialPoint.y),
-      width: Math.abs(x - initialPoint.x),
-      height: Math.abs(y - initialPoint.y)
+      x: Math.min(selectionStart.x, x),
+      y: Math.min(selectionStart.y, y),
+      width: Math.abs(x - selectionStart.x),
+      height: Math.abs(y - selectionStart.y)
     });
   };
   
   const handleMouseUp = () => {
-    if (!isSelecting || !initialPoint) return;
+    if (!isSelecting) return;
     
     if (selectionRect.width > 10 && selectionRect.height > 10) {
       const nextNumber = getNextRegionNumber(currentPage + 1);
@@ -167,7 +154,6 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
     }
     
     setIsSelecting(false);
-    setInitialPoint(null);
     setSelectionRect({ x: 0, y: 0, width: 0, height: 0 });
   };
 
@@ -278,7 +264,6 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
           className={`pdf-page relative mx-auto ${
             currentSelectionType === 'area' ? 'cursor-crosshair' : ''
           }`}
-          onDoubleClick={handleDoubleClick}
           onMouseDown={handleMouseDown}
           onMouseMove={handleMouseMove}
           onMouseUp={handleMouseUp}
@@ -297,7 +282,7 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
             />
           ))}
           
-          {isSelecting && initialPoint && (
+          {isSelecting && (
             <div 
               className="region-selection"
               style={{
