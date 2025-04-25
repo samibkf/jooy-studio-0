@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,8 +9,8 @@ import { Region } from '@/types/regions';
 import { X, PanelRight } from 'lucide-react';
 import {
   Sheet,
-  SheetContent,
   SheetTrigger,
+  SheetContent,
 } from "@/components/ui/sheet";
 
 interface SidebarProps {
@@ -138,7 +137,7 @@ const Sidebar = ({
           <Button 
             variant="outline" 
             size="icon"
-            className="fixed right-4 top-20 z-40"  // Increased z-index and kept the same positioning
+            className="fixed right-4 top-24 z-50"  // Increased top position and z-index
           >
             <PanelRight className="h-4 w-4" />
           </Button>
