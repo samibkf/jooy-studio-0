@@ -42,6 +42,7 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
   
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const svgRef = useRef<SVGSVGElement>(null);
 
   const getNextRegionNumber = (pageNumber: number): number => {
     const pageRegions = regions.filter(region => region.page === pageNumber);
@@ -221,7 +222,7 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
     }
     
     if (currentSelectionType === 'area' || currentSelectionType === 'circle') {
-      if (!selectionStart) {
+      if (!isDrawing) {
         setSelectionStart({ x, y });
         setCurrentMousePosition({ x, y });
         setIsDrawing(true);
@@ -235,10 +236,7 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
           createCircleRegion(selectionStart, currentMousePosition);
         }
         
-        setSelectionStart(null);
-        setCurrentMousePosition(null);
-        setSelectionRect(null);
-        setIsDrawing(false);
+        resetSelectionState();
       }
     }
   };
@@ -261,27 +259,10 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
           height: Math.abs(y - selectionStart.y)
         });
       } else if (currentSelectionType === 'circle') {
-        const radius = Math.sqrt(
-          Math.pow(currentMousePosition.x - selectionStart.x, 2) + 
-          Math.pow(currentMousePosition.y - selectionStart.y, 2)
-        );
-        
-        setSelectionRect({
-          x: selectionStart.x - radius,
-          y: selectionStart.y - radius,
-          width: radius * 2,
-          height: radius * 2
-        });
+        // No need to update selectionRect for circle, we'll use selectionStart and currentMousePosition
       }
     }
   };
-  
-  const handleMouseUp = (e: React.MouseEvent) => {
-  };
-
-  useEffect(() => {
-    resetSelectionState();
-  }, [isSelectionMode, currentSelectionType]);
   
   const resetSelectionState = () => {
     setSelectionStart(null);
@@ -291,6 +272,10 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
     setIsDrawing(false);
   };
 
+  useEffect(() => {
+    resetSelectionState();
+  }, [isSelectionMode, currentSelectionType]);
+  
   const handleNextPage = () => {
     if (currentPage < totalPages - 1) {
       setCurrentPage(prev => prev + 1);
@@ -397,7 +382,11 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
             />
           ))}
           
-          <svg className="absolute top-0 left-0 w-full h-full pointer-events-none">
+          <svg 
+            ref={svgRef} 
+            className="absolute top-0 left-0 w-full h-full pointer-events-none"
+            style={{ zIndex: 10 }}
+          >
             {currentSelectionType === 'polygon' && polygonPoints.length > 0 && (
               <>
                 <polyline
@@ -432,12 +421,12 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
               </>
             )}
             
-            {currentSelectionType === 'area' && selectionRect && (
+            {currentSelectionType === 'area' && isDrawing && selectionStart && currentMousePosition && (
               <rect
-                x={selectionRect.x}
-                y={selectionRect.y}
-                width={selectionRect.width}
-                height={selectionRect.height}
+                x={Math.min(selectionStart.x, currentMousePosition.x)}
+                y={Math.min(selectionStart.y, currentMousePosition.y)}
+                width={Math.abs(currentMousePosition.x - selectionStart.x)}
+                height={Math.abs(currentMousePosition.y - selectionStart.y)}
                 fill="rgba(155, 135, 245, 0.2)"
                 stroke="#9b87f5"
                 strokeWidth="2"
@@ -445,7 +434,7 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
               />
             )}
             
-            {currentSelectionType === 'circle' && selectionStart && currentMousePosition && (
+            {currentSelectionType === 'circle' && isDrawing && selectionStart && currentMousePosition && (
               <circle
                 cx={selectionStart.x}
                 cy={selectionStart.y}
