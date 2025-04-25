@@ -44,13 +44,16 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
   const textLayerRef = useRef<HTMLDivElement>(null);
   const selectionTimeoutRef = useRef<number | null>(null);
 
+  // Function to get the next available region number for a specific page
   const getNextRegionNumber = (pageNumber: number): number => {
+    // Filter regions for the current page
     const pageRegions = regions.filter(region => region.page === pageNumber);
     
     if (pageRegions.length === 0) {
-      return 1;
+      return 1; // First region on this page
     }
     
+    // Extract region numbers from names (format: pageNum_regionNum)
     const regionNumbers = pageRegions
       .map(region => {
         const parts = region.name.split('_');
@@ -58,13 +61,14 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
       })
       .filter(num => !isNaN(num));
     
+    // Find the maximum region number and add 1
     const maxRegionNumber = regionNumbers.length > 0 
       ? Math.max(...regionNumbers) 
       : 0;
     
     return maxRegionNumber + 1;
   };
-
+  
   useEffect(() => {
     if (!file) return;
     
@@ -230,7 +234,7 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
         
         if (width > 5 && height > 5 && selectedText) {
           const nextNumber = getNextRegionNumber(currentPage);
-          const regionName = `${currentPage}_${nextNumber}`;
+          const regionName = `${currentPage + 1}_${nextNumber}`;
           
           const newRegion: Omit<Region, 'id'> = {
             page: currentPage,
@@ -298,7 +302,7 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
     
     if (selectionRect.width > 10 && selectionRect.height > 10 && currentSelectionType === 'area') {
       const nextNumber = getNextRegionNumber(currentPage);
-      const regionName = `${currentPage}_${nextNumber}`;
+      const regionName = `${currentPage + 1}_${nextNumber}`;
       
       const newRegion: Omit<Region, 'id'> = {
         page: currentPage,
@@ -328,7 +332,7 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
     
     const DEFAULT_IMAGE_SIZE = 100;
     const nextNumber = getNextRegionNumber(currentPage);
-    const regionName = `${currentPage}_${nextNumber}`;
+    const regionName = `${currentPage + 1}_${nextNumber}`;
     
     const newRegion: Omit<Region, 'id'> = {
       page: currentPage,
