@@ -8,7 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { toast } from 'sonner';
 import { Region } from '@/types/regions';
-import { PanelRight, X } from 'lucide-react';
+import { PanelRight } from 'lucide-react';
 import { ResizablePanel, ResizablePanelGroup, ResizableHandle } from '@/components/ui/resizable';
 
 interface SidebarProps {
@@ -134,8 +134,8 @@ const Sidebar = ({
   );
 
   return (
-    <div className="relative">
-      {!isOpen ? (
+    <>
+      {!isOpen && (
         <Button 
           variant="outline" 
           size="icon"
@@ -145,26 +145,39 @@ const Sidebar = ({
           <PanelRight className="h-4 w-4" />
           <span className="sr-only">Open regions panel</span>
         </Button>
-      ) : (
-        <div className="fixed right-0 top-16 bottom-0 z-40 bg-background border-l shadow-lg w-[350px] md:w-[400px] lg:w-[450px]">
-          <div className="h-full p-6 overflow-auto">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-lg font-semibold">Regions</h2>
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                className="h-6 w-6"
-                onClick={() => setIsOpen(false)}
-              >
-                <X className="h-4 w-4" />
-                <span className="sr-only">Close panel</span>
-              </Button>
-            </div>
-            {sidebarContent}
-          </div>
-        </div>
       )}
-    </div>
+
+      {isOpen && (
+        <ResizablePanelGroup 
+          direction="horizontal" 
+          className="fixed inset-0 top-16 z-40"
+        >
+          <ResizablePanel defaultSize={75} minSize={30}>
+            <div className="h-full bg-background">
+              {/* This panel will be for the PDF viewer */}
+            </div>
+          </ResizablePanel>
+          <ResizableHandle withHandle />
+          <ResizablePanel defaultSize={25} minSize={20} maxSize={40}>
+            <div className="h-full p-6 bg-background border-l">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-lg font-semibold">Regions</h2>
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="h-6 w-6"
+                  onClick={() => setIsOpen(false)}
+                >
+                  <PanelRight className="h-4 w-4" />
+                  <span className="sr-only">Close panel</span>
+                </Button>
+              </div>
+              {sidebarContent}
+            </div>
+          </ResizablePanel>
+        </ResizablePanelGroup>
+      )}
+    </>
   );
 };
 
