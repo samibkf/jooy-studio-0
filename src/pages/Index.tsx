@@ -1,4 +1,3 @@
-
 import React, { useState, useRef } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import Header from '@/components/Header';
@@ -120,7 +119,7 @@ const Index = () => {
       <div className="flex-1 overflow-hidden">
         <ResizablePanelGroup
           direction="horizontal"
-          className="h-full"
+          className="h-full relative"
         >
           <ResizablePanel defaultSize={75} minSize={30}>
             <PdfViewer
@@ -139,28 +138,30 @@ const Index = () => {
           
           <ResizableHandle withHandle />
           
-          <ResizablePanel 
-            defaultSize={25} 
-            minSize={20} 
-            maxSize={40}
-            className={`relative ${isSidebarCollapsed ? 'hidden' : ''}`}
-          >
-            <Button
-              variant="ghost"
-              size="icon"
-              className="absolute -left-6 top-2 z-10 rounded-full bg-background shadow-md border"
-              onClick={toggleSidebar}
+          {!isSidebarCollapsed && (
+            <ResizablePanel 
+              defaultSize={25} 
+              minSize={20} 
+              maxSize={40}
+              className="relative"
             >
-              <ChevronRight />
-            </Button>
-            <Sidebar
-              selectedRegion={selectedRegion}
-              regions={regions}
-              onRegionUpdate={handleRegionUpdate}
-              onRegionDelete={handleRegionDelete}
-              onRegionSelect={handleRegionSelect}
-            />
-          </ResizablePanel>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="absolute -left-6 top-2 z-10 rounded-full bg-background shadow-md border"
+                onClick={toggleSidebar}
+              >
+                <ChevronRight />
+              </Button>
+              <Sidebar
+                selectedRegion={selectedRegion}
+                regions={regions}
+                onRegionUpdate={handleRegionUpdate}
+                onRegionDelete={handleRegionDelete}
+                onRegionSelect={handleRegionSelect}
+              />
+            </ResizablePanel>
+          )}
           
           {isSidebarCollapsed && (
             <Button
