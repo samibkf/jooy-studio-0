@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import * as pdfjsLib from 'pdfjs-dist';
 import { PDFDocumentProxy } from 'pdfjs-dist';
@@ -34,32 +33,14 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
   const [currentPage, setCurrentPage] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   const [scale, setScale] = useState(1.0);
-  const [isSelecting, setIsSelecting] = useState(false);
-  const [selectionStart, setSelectionStart] = useState({ x: 0, y: 0 });
+  const [isDrawing, setIsDrawing] = useState(false);
+  const [selectionStart, setSelectionStart] = useState<{ x: number; y: number } | null>(null);
   const [selectionRect, setSelectionRect] = useState({ x: 0, y: 0, width: 0, height: 0 });
-  const [selectionPoint, setSelectionPoint] = useState<{ x: number, y: number } | null>(null);
   const [polygonPoints, setPolygonPoints] = useState<{ x: number; y: number }[]>([]);
-  const [isDrawingPolygon, setIsDrawingPolygon] = useState(false);
+  const [previewPoints, setPreviewPoints] = useState<{ x: number; y: number }[]>([]);
   
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-
-  const getNextRegionNumber = (pageNumber: number): number => {
-    const pageRegions = regions.filter(region => region.page === pageNumber);
-    
-    if (pageRegions.length === 0) {
-      return 1;
-    }
-    
-    const regionNumbers = pageRegions
-      .map(region => {
-        const parts = region.name.split('_');
-        return parts.length > 1 ? parseInt(parts[1], 10) : 0;
-      })
-      .filter(num => !isNaN(num));
-    
-    return Math.max(...regionNumbers, 0) + 1;
-  };
 
   useEffect(() => {
     if (!file) return;
@@ -113,194 +94,101 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
     renderPage();
   }, [pdf, currentPage, scale]);
 
+  const getNextRegionNumber = (pageNumber: number): number => {
+    const pageRegions = regions.filter(region => region.page === pageNumber);
+    return pageRegions.length === 0 ? 1 : Math.max(...pageRegions.map(r => parseInt(r.name.split('_')[1], 10)), 0) + 1;
+  };
+
+  const calculateSelectionRect = (start: { x: number; y: number }, end: { x: number; y: number }) => {
+    if (currentSelectionType === 'circle') {
+      const radius = Math.sqrt(
+        Math.pow(end.x - start.x, 2) + Math.pow(end.y - start.y, 2)
+      );
+      return {
+        x: start.x - radius,
+        y: start.y - radius,
+        width: radius * 2,
+        height: radius * 2,
+        radius
+      };
+    }
+    return {
+      x: Math.min(start.x, end.x),
+      y: Math.min(start.y, end.y),
+      width: Math.abs(end.x - start.x),
+      height: Math.abs(end.y - start.y)
+    };
+  };
+
   const handleMouseDown = (e: React.MouseEvent) => {
     if (!isSelectionMode || !containerRef.current || !currentSelectionType) return;
-    
+
     const rect = containerRef.current.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
 
-    console.log(`Mouse down with selection type: ${currentSelectionType}`);
-
-    switch (currentSelectionType) {
-      case 'area':
-        setSelectionPoint({ x, y });
-        setSelectionRect({ x, y, width: 0, height: 0 });
-        setIsSelecting(true);
-        break;
-      
-      case 'circle':
-        setSelectionPoint({ x, y });
-        setSelectionRect({ x, y, width: 0, height: 0 });
-        setIsSelecting(true);
-        break;
-      
-      case 'polygon':
-        if (!isDrawingPolygon) {
-          console.log("Starting new polygon");
-          setIsDrawingPolygon(true);
-          setPolygonPoints([{ x, y }]);
-        } else {
-          console.log("Adding point to polygon");
-          const firstPoint = polygonPoints[0];
-          const distanceToFirst = Math.sqrt(
-            Math.pow(x - firstPoint.x, 2) + Math.pow(y - firstPoint.y, 2)
-          );
-
-          if (distanceToFirst < 20 && polygonPoints.length >= 3) {
-            console.log("Closing polygon");
-            // Complete the polygon
-            const nextNumber = getNextRegionNumber(currentPage + 1);
-            const regionName = `${currentPage + 1}_${nextNumber}`;
-            
-            const xPoints = polygonPoints.map(p => p.x);
-            const yPoints = polygonPoints.map(p => p.y);
-            const minX = Math.min(...xPoints);
-            const maxX = Math.max(...xPoints);
-            const minY = Math.min(...yPoints);
-            const maxY = Math.max(...yPoints);
-            
-            const newRegion: Omit<Region, 'id'> = {
-              page: currentPage + 1,
-              x: minX,
-              y: minY,
-              width: maxX - minX,
-              height: maxY - minY,
-              type: 'polygon',
-              name: regionName,
-              description: '',
-              points: [...polygonPoints]
-            };
-            
-            onRegionCreate(newRegion);
-            setIsDrawingPolygon(false);
-            setPolygonPoints([]);
-          } else {
-            // Add a new point
-            setPolygonPoints([...polygonPoints, { x, y }]);
-          }
-        }
-        break;
-    }
-  };
-  
-  const handleMouseMove = (e: React.MouseEvent) => {
-    if (!isSelecting || !containerRef.current || !selectionPoint) return;
-    
-    const rect = containerRef.current.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-    
-    if (currentSelectionType === 'area') {
-      setSelectionRect({
-        x: Math.min(x, selectionPoint.x),
-        y: Math.min(y, selectionPoint.y),
-        width: Math.abs(x - selectionPoint.x),
-        height: Math.abs(y - selectionPoint.y)
-      });
-    } else if (currentSelectionType === 'circle') {
-      const radius = Math.sqrt(
-        Math.pow(x - selectionPoint.x, 2) + Math.pow(y - selectionPoint.y, 2)
-      );
-      setSelectionRect({
-        x: selectionPoint.x - radius,
-        y: selectionPoint.y - radius,
-        width: radius * 2,
-        height: radius * 2
-      });
-    }
-  };
-  
-  const handleMouseUp = (e: React.MouseEvent) => {
-    if (!isSelecting || !containerRef.current || !selectionPoint) return;
-    
-    const rect = containerRef.current.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-    
-    if (currentSelectionType === 'area') {
-      if (selectionRect.width > 10 && selectionRect.height > 10) {
-        // Create a rectangle region
-        const nextNumber = getNextRegionNumber(currentPage + 1);
-        const regionName = `${currentPage + 1}_${nextNumber}`;
-        
-        const newRegion: Omit<Region, 'id'> = {
-          page: currentPage + 1,
-          x: selectionRect.x,
-          y: selectionRect.y,
-          width: selectionRect.width,
-          height: selectionRect.height,
-          type: 'area',
-          name: regionName,
-          description: ''
-        };
-        
-        console.log("Creating area region:", newRegion);
-        onRegionCreate(newRegion);
+    if (!selectionStart) {
+      console.log('Setting initial point:', { x, y });
+      setSelectionStart({ x, y });
+      if (currentSelectionType === 'polygon') {
+        setPolygonPoints([{ x, y }]);
+        setPreviewPoints([{ x, y }]);
       }
-    } else if (currentSelectionType === 'circle') {
-      const radius = Math.sqrt(
-        Math.pow(x - selectionPoint.x, 2) + Math.pow(y - selectionPoint.y, 2)
-      );
-      
-      if (radius > 10) {
-        // Create a circle region
-        const nextNumber = getNextRegionNumber(currentPage + 1);
-        const regionName = `${currentPage + 1}_${nextNumber}`;
-        
+    } else {
+      // Second click - complete the selection
+      console.log('Completing selection');
+      const nextNumber = getNextRegionNumber(currentPage + 1);
+      const regionName = `${currentPage + 1}_${nextNumber}`;
+
+      if (currentSelectionType === 'polygon') {
         const newRegion: Omit<Region, 'id'> = {
           page: currentPage + 1,
-          x: selectionPoint.x - radius,
-          y: selectionPoint.y - radius,
-          width: radius * 2,
-          height: radius * 2,
-          type: 'circle',
+          x: Math.min(...polygonPoints.map(p => p.x)),
+          y: Math.min(...polygonPoints.map(p => p.y)),
+          width: Math.max(...polygonPoints.map(p => p.x)) - Math.min(...polygonPoints.map(p => p.x)),
+          height: Math.max(...polygonPoints.map(p => p.y)) - Math.min(...polygonPoints.map(p => p.y)),
+          type: 'polygon',
           name: regionName,
           description: '',
-          radius
+          points: [...polygonPoints, { x, y }]
         };
-        
-        console.log("Creating circle region:", newRegion);
+        onRegionCreate(newRegion);
+      } else {
+        const rect = calculateSelectionRect(selectionStart, { x, y });
+        const newRegion: Omit<Region, 'id'> = {
+          page: currentPage + 1,
+          ...rect,
+          type: currentSelectionType,
+          name: regionName,
+          description: '',
+          ...(currentSelectionType === 'circle' ? { radius: (rect as any).radius } : {})
+        };
         onRegionCreate(newRegion);
       }
-    }
-    
-    setIsSelecting(false);
-    setSelectionPoint(null);
-    setSelectionRect({ x: 0, y: 0, width: 0, height: 0 });
-  };
 
-  const handleNextPage = () => {
-    if (currentPage < totalPages - 1) {
-      setCurrentPage(prev => prev + 1);
-      window.getSelection()?.removeAllRanges();
-    }
-  };
-  
-  const handlePrevPage = () => {
-    if (currentPage > 0) {
-      setCurrentPage(prev => prev - 1);
-      window.getSelection()?.removeAllRanges();
-    }
-  };
-  
-  const handleZoomIn = () => {
-    setScale(prev => Math.min(prev + 0.1, 3.0));
-  };
-  
-  const handleZoomOut = () => {
-    setScale(prev => Math.max(prev - 0.1, 0.5));
-  };
-
-  const pageRegions = regions.filter(region => region.page === currentPage + 1);
-
-  // Reset polygon drawing if selection type changes
-  useEffect(() => {
-    if (currentSelectionType !== 'polygon') {
-      setIsDrawingPolygon(false);
+      // Reset selection state
+      setSelectionStart(null);
+      setSelectionRect({ x: 0, y: 0, width: 0, height: 0 });
       setPolygonPoints([]);
+      setPreviewPoints([]);
+      setIsDrawing(false);
     }
-  }, [currentSelectionType]);
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!selectionStart || !containerRef.current) return;
+
+    const rect = containerRef.current.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+
+    if (currentSelectionType === 'polygon') {
+      setPreviewPoints([...polygonPoints, { x, y }]);
+    } else {
+      const newRect = calculateSelectionRect(selectionStart, { x, y });
+      setSelectionRect(newRect);
+    }
+  };
 
   if (!file) {
     return (
@@ -365,17 +253,13 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
       <div className="flex-1 overflow-auto p-4">
         <div 
           ref={containerRef}
-          className={`pdf-page relative mx-auto ${
-            currentSelectionType ? 'cursor-crosshair' : ''
-          }`}
+          className={`pdf-page relative mx-auto ${currentSelectionType ? 'cursor-crosshair' : ''}`}
           onMouseDown={handleMouseDown}
           onMouseMove={handleMouseMove}
-          onMouseUp={handleMouseUp}
-          onMouseLeave={handleMouseUp}
         >
           <canvas ref={canvasRef} className="absolute top-0 left-0" />
           
-          {pageRegions.map((region) => (
+          {regions.map((region) => (
             <RegionOverlay
               key={region.id}
               region={region}
@@ -386,11 +270,9 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
             />
           ))}
           
-          {isSelecting && (
+          {selectionStart && currentSelectionType !== 'polygon' && (
             <div 
-              className={`region-selection ${
-                currentSelectionType === 'circle' ? 'rounded-full' : ''
-              }`}
+              className={`region-selection ${currentSelectionType === 'circle' ? 'rounded-full' : ''}`}
               style={{
                 left: selectionRect.x,
                 top: selectionRect.y,
@@ -400,18 +282,16 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
             />
           )}
 
-          {isDrawingPolygon && polygonPoints.length > 0 && (
+          {selectionStart && currentSelectionType === 'polygon' && previewPoints.length > 0 && (
             <svg className="absolute top-0 left-0 w-full h-full pointer-events-none">
               <path
-                d={`M ${polygonPoints.map(p => `${p.x},${p.y}`).join(' L ')}${
-                  polygonPoints.length > 2 ? ' Z' : ''
-                }`}
+                d={`M ${previewPoints.map(p => `${p.x},${p.y}`).join(' L ')}`}
                 fill="rgba(155, 135, 245, 0.1)"
                 stroke="#9b87f5"
                 strokeWidth="2"
                 strokeDasharray="4"
               />
-              {polygonPoints.map((point, index) => (
+              {previewPoints.map((point, index) => (
                 <circle
                   key={index}
                   cx={point.x}
