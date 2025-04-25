@@ -279,7 +279,11 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
                 left: selectionRect.x,
                 top: selectionRect.y,
                 width: selectionRect.width,
-                height: selectionRect.height
+                height: selectionRect.height,
+                position: 'absolute',
+                border: '2px solid #2563eb',
+                backgroundColor: 'rgba(37, 99, 235, 0.1)',
+                pointerEvents: 'none'
               }}
             />
           )}
