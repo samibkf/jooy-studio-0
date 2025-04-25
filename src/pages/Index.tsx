@@ -119,7 +119,7 @@ const Index = () => {
       <div className="flex-1 overflow-hidden">
         <ResizablePanelGroup
           direction="horizontal"
-          className="h-full"
+          className="h-full relative"
         >
           <ResizablePanel defaultSize={75} minSize={30}>
             <PdfViewer
@@ -148,7 +148,7 @@ const Index = () => {
               <Button
                 variant="ghost"
                 size="icon"
-                className="absolute -left-12 top-2 z-10 rounded-full bg-background shadow-md border"
+                className="absolute -left-6 top-2 z-10 rounded-full bg-background shadow-md border"
                 onClick={toggleSidebar}
               >
                 <ChevronRight />
