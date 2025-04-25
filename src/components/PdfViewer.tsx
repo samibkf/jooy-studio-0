@@ -250,7 +250,7 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
 
   if (!file) {
     return (
-      <div className="flex flex-col items-center justify-center h-full w-full bg-muted">
+      <div className="flex flex-col items-center justify-center h-[calc(100vh-72px)] bg-muted">
         <div className="text-center p-10">
           <h2 className="text-2xl font-bold mb-2">No PDF Document Loaded</h2>
           <p className="text-muted-foreground">
@@ -262,9 +262,9 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
   }
   
   return (
-    <div className="flex flex-col h-full w-full bg-muted">
+    <div className="flex flex-col h-[calc(100vh-72px)] bg-muted">
       <div className="bg-white border-b border-gray-200 p-2">
-        <div className="flex items-center justify-between w-full">
+        <div className="flex items-center justify-between max-w-[1200px] mx-auto">
           <div className="flex items-center space-x-6">
             <div className="flex items-center">
               <TooltipProvider>
@@ -336,17 +336,19 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
         </div>
       </div>
       
-      <div className="flex-1 overflow-auto p-4 w-full">
+      <div className="flex-1 overflow-auto p-4">
         <div 
           ref={containerRef}
-          className="pdf-page relative mx-auto overflow-visible"
+          className={`pdf-page relative mx-auto ${
+            currentSelectionType === 'area' || isDoubleClickMode ? 'cursor-crosshair' : ''
+          }`}
           onMouseDown={handleMouseDown}
           onMouseMove={handleMouseMove}
           onMouseUp={handleMouseUp}
           onMouseLeave={handleMouseUp}
           onDoubleClick={handleDoubleClick}
         >
-          <canvas ref={canvasRef} className="block" />
+          <canvas ref={canvasRef} className="absolute top-0 left-0" />
           
           {pageRegions.map((region) => (
             <RegionOverlay
