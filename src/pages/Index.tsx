@@ -1,3 +1,4 @@
+
 import React, { useState, useRef } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import Header from '@/components/Header';
@@ -109,7 +110,7 @@ const Index = () => {
         hasDocument={!!pdfFile}
       />
       
-      <div className="flex flex-1 overflow-hidden justify-center items-center">
+      <div className="flex flex-1 overflow-hidden">
         <div className="w-16 border-r border-gray-200">
           <Toolbar
             isSelectionMode={!!currentSelectionType}
@@ -118,19 +119,21 @@ const Index = () => {
           />
         </div>
         
-        <div className="flex-grow max-w-[1200px] w-full mx-auto">
-          <PdfViewer
-            file={pdfFile}
-            regions={regions}
-            onRegionCreate={handleRegionCreate}
-            onRegionUpdate={handleRegionUpdate}
-            selectedRegionId={selectedRegionId}
-            onRegionSelect={handleRegionSelect}
-            onRegionDelete={handleRegionDelete}
-            isSelectionMode={!!currentSelectionType}
-            currentSelectionType={currentSelectionType}
-            onCurrentSelectionTypeChange={handleToggleSelectionMode}
-          />
+        <div className="flex flex-grow justify-center">
+          <div className="max-w-[1200px] w-full">
+            <PdfViewer
+              file={pdfFile}
+              regions={regions}
+              onRegionCreate={handleRegionCreate}
+              onRegionUpdate={handleRegionUpdate}
+              selectedRegionId={selectedRegionId}
+              onRegionSelect={handleRegionSelect}
+              onRegionDelete={handleRegionDelete}
+              isSelectionMode={!!currentSelectionType}
+              currentSelectionType={currentSelectionType}
+              onCurrentSelectionTypeChange={handleToggleSelectionMode}
+            />
+          </div>
         </div>
         
         <Sidebar
