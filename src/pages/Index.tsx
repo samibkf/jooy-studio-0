@@ -1,3 +1,4 @@
+
 import React, { useState, useRef } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import Header from '@/components/Header';
@@ -144,7 +145,9 @@ const Index = () => {
             maxSize={40}
             className="relative"
             collapsible
-            collapsed={isSidebarCollapsed}
+            defaultCollapsed={isSidebarCollapsed}
+            onCollapse={() => setIsSidebarCollapsed(true)}
+            onExpand={() => setIsSidebarCollapsed(false)}
           >
             <Button
               variant="ghost"
