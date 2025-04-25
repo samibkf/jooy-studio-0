@@ -1,3 +1,4 @@
+
 import React, { useState, useRef } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import Header from '@/components/Header';
@@ -44,6 +45,9 @@ const Index = () => {
     setRegions(prev => [...prev, newRegion]);
     setSelectedRegionId(newRegion.id);
     toast.success('Region created');
+    
+    // Reset selection mode after creating a region
+    setCurrentSelectionType(null);
   };
   
   const handleRegionUpdate = (updatedRegion: Region) => {

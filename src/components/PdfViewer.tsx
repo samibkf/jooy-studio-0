@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import * as pdfjsLib from 'pdfjs-dist';
 import { PDFDocumentProxy } from 'pdfjs-dist';
@@ -113,80 +114,42 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
   }, [pdf, currentPage, scale]);
 
   const handleMouseDown = (e: React.MouseEvent) => {
-    if (!isSelectionMode || !containerRef.current) return;
+    if (!isSelectionMode || !containerRef.current || !currentSelectionType) return;
     
     const rect = containerRef.current.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
 
+    console.log(`Mouse down with selection type: ${currentSelectionType}`);
+
     switch (currentSelectionType) {
       case 'area':
-        if (selectionPoint) {
-          const nextNumber = getNextRegionNumber(currentPage + 1);
-          const regionName = `${currentPage + 1}_${nextNumber}`;
-          
-          const newRegion: Omit<Region, 'id'> = {
-            page: currentPage + 1,
-            x: selectionPoint.x,
-            y: selectionPoint.y,
-            width: Math.abs(x - selectionPoint.x),
-            height: Math.abs(y - selectionPoint.y),
-            type: 'area',
-            name: regionName,
-            description: ''
-          };
-          
-          onRegionCreate(newRegion);
-          toast.success('Area region created');
-        }
-        setSelectionPoint(null);
-        setIsSelecting(false);
+        setSelectionPoint({ x, y });
+        setSelectionRect({ x, y, width: 0, height: 0 });
+        setIsSelecting(true);
         break;
       
       case 'circle':
-        if (selectionPoint) {
-          const radius = Math.sqrt(
-            Math.pow(x - selectionPoint.x, 2) + Math.pow(y - selectionPoint.y, 2)
-          );
-          
-          if (radius > 10) {
-            const nextNumber = getNextRegionNumber(currentPage + 1);
-            const regionName = `${currentPage + 1}_${nextNumber}`;
-            
-            const newRegion: Omit<Region, 'id'> = {
-              page: currentPage + 1,
-              x: selectionPoint.x,
-              y: selectionPoint.y,
-              width: radius * 2,
-              height: radius * 2,
-              type: 'circle',
-              name: regionName,
-              description: '',
-              radius
-            };
-            
-            onRegionCreate(newRegion);
-            toast.success('Circle region created');
-          }
-          setSelectionPoint(null);
-          setIsSelecting(false);
-        } else {
-          setSelectionPoint({ x, y });
-          setIsSelecting(true);
-        }
+        setSelectionPoint({ x, y });
+        setSelectionRect({ x, y, width: 0, height: 0 });
+        setIsSelecting(true);
         break;
       
       case 'polygon':
         if (!isDrawingPolygon) {
+          console.log("Starting new polygon");
           setIsDrawingPolygon(true);
           setPolygonPoints([{ x, y }]);
         } else {
+          console.log("Adding point to polygon");
           const firstPoint = polygonPoints[0];
           const distanceToFirst = Math.sqrt(
             Math.pow(x - firstPoint.x, 2) + Math.pow(y - firstPoint.y, 2)
           );
 
           if (distanceToFirst < 20 && polygonPoints.length >= 3) {
+            console.log("Closing polygon");
+            // Complete the polygon
             const nextNumber = getNextRegionNumber(currentPage + 1);
             const regionName = `${currentPage + 1}_${nextNumber}`;
             
@@ -210,10 +173,10 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
             };
             
             onRegionCreate(newRegion);
-            toast.success('Polygon region created');
             setIsDrawingPolygon(false);
             setPolygonPoints([]);
           } else {
+            // Add a new point
             setPolygonPoints([...polygonPoints, { x, y }]);
           }
         }
@@ -248,8 +211,63 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
     }
   };
   
-  const handleMouseUp = () => {
-    return;
+  const handleMouseUp = (e: React.MouseEvent) => {
+    if (!isSelecting || !containerRef.current || !selectionPoint) return;
+    
+    const rect = containerRef.current.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    
+    if (currentSelectionType === 'area') {
+      if (selectionRect.width > 10 && selectionRect.height > 10) {
+        // Create a rectangle region
+        const nextNumber = getNextRegionNumber(currentPage + 1);
+        const regionName = `${currentPage + 1}_${nextNumber}`;
+        
+        const newRegion: Omit<Region, 'id'> = {
+          page: currentPage + 1,
+          x: selectionRect.x,
+          y: selectionRect.y,
+          width: selectionRect.width,
+          height: selectionRect.height,
+          type: 'area',
+          name: regionName,
+          description: ''
+        };
+        
+        console.log("Creating area region:", newRegion);
+        onRegionCreate(newRegion);
+      }
+    } else if (currentSelectionType === 'circle') {
+      const radius = Math.sqrt(
+        Math.pow(x - selectionPoint.x, 2) + Math.pow(y - selectionPoint.y, 2)
+      );
+      
+      if (radius > 10) {
+        // Create a circle region
+        const nextNumber = getNextRegionNumber(currentPage + 1);
+        const regionName = `${currentPage + 1}_${nextNumber}`;
+        
+        const newRegion: Omit<Region, 'id'> = {
+          page: currentPage + 1,
+          x: selectionPoint.x - radius,
+          y: selectionPoint.y - radius,
+          width: radius * 2,
+          height: radius * 2,
+          type: 'circle',
+          name: regionName,
+          description: '',
+          radius
+        };
+        
+        console.log("Creating circle region:", newRegion);
+        onRegionCreate(newRegion);
+      }
+    }
+    
+    setIsSelecting(false);
+    setSelectionPoint(null);
+    setSelectionRect({ x: 0, y: 0, width: 0, height: 0 });
   };
 
   const handleNextPage = () => {
@@ -275,6 +293,14 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
   };
 
   const pageRegions = regions.filter(region => region.page === currentPage + 1);
+
+  // Reset polygon drawing if selection type changes
+  useEffect(() => {
+    if (currentSelectionType !== 'polygon') {
+      setIsDrawingPolygon(false);
+      setPolygonPoints([]);
+    }
+  }, [currentSelectionType]);
 
   if (!file) {
     return (
