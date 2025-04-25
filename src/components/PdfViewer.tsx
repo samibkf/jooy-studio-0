@@ -194,13 +194,25 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
     toast.success('Polygon region created');
   };
 
+  const resetSelectionState = () => {
+    setSelectionStart(null);
+    setCurrentMousePosition(null);
+    setSelectionRect(null);
+    setPolygonPoints([]);
+    setIsDrawing(false);
+  };
+
+  useEffect(() => {
+    resetSelectionState();
+  }, [isSelectionMode, currentSelectionType]);
+
   const handleMouseDown = (e: React.MouseEvent) => {
     if (!isSelectionMode || !containerRef.current || !currentSelectionType) return;
     
     const rect = containerRef.current.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
-    
+
     if (currentSelectionType === 'polygon') {
       const newPoint = { x, y };
       
@@ -218,31 +230,15 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
       }
       
       setPolygonPoints(prev => [...prev, newPoint]);
-      return;
-    }
-    
-    if (currentSelectionType === 'area' || currentSelectionType === 'circle') {
-      if (!isDrawing) {
-        setSelectionStart({ x, y });
-        setCurrentMousePosition({ x, y });
-        setIsDrawing(true);
-      } else {
-        if (currentSelectionType === 'area' && selectionRect) {
-          createRectangleRegion(
-            { x: selectionRect.x, y: selectionRect.y },
-            { x: selectionRect.x + selectionRect.width, y: selectionRect.y + selectionRect.height }
-          );
-        } else if (currentSelectionType === 'circle' && selectionStart && currentMousePosition) {
-          createCircleRegion(selectionStart, currentMousePosition);
-        }
-        
-        resetSelectionState();
-      }
+    } else if (currentSelectionType === 'area' || currentSelectionType === 'circle') {
+      setSelectionStart({ x, y });
+      setCurrentMousePosition({ x, y });
+      setIsDrawing(true);
     }
   };
-  
+
   const handleMouseMove = (e: React.MouseEvent) => {
-    if (!containerRef.current || !isSelectionMode || !currentSelectionType) return;
+    if (!containerRef.current || !isSelectionMode) return;
     
     const rect = containerRef.current.getBoundingClientRect();
     const x = e.clientX - rect.left;
@@ -250,32 +246,33 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
     
     setCurrentMousePosition({ x, y });
     
-    if (selectionStart && isDrawing) {
-      if (currentSelectionType === 'area') {
-        setSelectionRect({
-          x: Math.min(x, selectionStart.x),
-          y: Math.min(y, selectionStart.y),
-          width: Math.abs(x - selectionStart.x),
-          height: Math.abs(y - selectionStart.y)
-        });
-      } else if (currentSelectionType === 'circle') {
-        // No need to update selectionRect for circle, we'll use selectionStart and currentMousePosition
-      }
+    if (isDrawing && selectionStart && currentSelectionType === 'area') {
+      setSelectionRect({
+        x: Math.min(x, selectionStart.x),
+        y: Math.min(y, selectionStart.y),
+        width: Math.abs(x - selectionStart.x),
+        height: Math.abs(y - selectionStart.y)
+      });
     }
   };
-  
-  const resetSelectionState = () => {
-    setSelectionStart(null);
-    setCurrentMousePosition(null);
-    setSelectionRect(null);
-    setPolygonPoints([]);
-    setIsDrawing(false);
+
+  const handleMouseUp = (e: React.MouseEvent) => {
+    if (!isSelectionMode || !containerRef.current || !currentSelectionType) return;
+    
+    if (isDrawing) {
+      if (currentSelectionType === 'area' && selectionRect) {
+        createRectangleRegion(
+          { x: selectionRect.x, y: selectionRect.y },
+          { x: selectionRect.x + selectionRect.width, y: selectionRect.y + selectionRect.height }
+        );
+      } else if (currentSelectionType === 'circle' && selectionStart && currentMousePosition) {
+        createCircleRegion(selectionStart, currentMousePosition);
+      }
+      
+      resetSelectionState();
+    }
   };
 
-  useEffect(() => {
-    resetSelectionState();
-  }, [isSelectionMode, currentSelectionType]);
-  
   const handleNextPage = () => {
     if (currentPage < totalPages - 1) {
       setCurrentPage(prev => prev + 1);
@@ -368,6 +365,8 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
           }`}
           onMouseDown={handleMouseDown}
           onMouseMove={handleMouseMove}
+          onMouseUp={handleMouseUp}
+          style={{ position: 'relative' }}
         >
           <canvas ref={canvasRef} className="absolute top-0 left-0" />
           
@@ -384,8 +383,8 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
           
           <svg 
             ref={svgRef} 
-            className="absolute top-0 left-0 w-full h-full pointer-events-none"
-            style={{ zIndex: 10 }}
+            className="absolute top-0 left-0 w-full h-full pointer-events-none" 
+            style={{ zIndex: 20 }}
           >
             {currentSelectionType === 'polygon' && polygonPoints.length > 0 && (
               <>
@@ -427,7 +426,7 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
                 y={Math.min(selectionStart.y, currentMousePosition.y)}
                 width={Math.abs(currentMousePosition.x - selectionStart.x)}
                 height={Math.abs(currentMousePosition.y - selectionStart.y)}
-                fill="rgba(155, 135, 245, 0.2)"
+                fill="rgba(155, 135, 245, 0.3)"
                 stroke="#9b87f5"
                 strokeWidth="2"
                 strokeDasharray="4"
@@ -442,7 +441,7 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
                   Math.pow(currentMousePosition.x - selectionStart.x, 2) + 
                   Math.pow(currentMousePosition.y - selectionStart.y, 2)
                 )}
-                fill="rgba(155, 135, 245, 0.2)"
+                fill="rgba(155, 135, 245, 0.3)"
                 stroke="#9b87f5"
                 strokeWidth="2"
                 strokeDasharray="4"
