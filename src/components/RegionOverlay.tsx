@@ -183,8 +183,12 @@ const RegionOverlay: React.FC<RegionOverlayProps> = ({
           <div className="absolute -top-8 right-0 flex items-center gap-2">
             <Popover>
               <PopoverTrigger asChild>
-                <Button variant="outline" size="icon" className="h-6 w-6">
-                  <StickyNote className="h-4 w-4" />
+                <Button variant="outline" size="icon" className="h-8 w-8">
+                  <StickyNote 
+                    className="h-6 w-6" 
+                    color="#FEF7CD"
+                    strokeWidth={2}
+                  />
                 </Button>
               </PopoverTrigger>
               <PopoverContent side="top" className="w-80">
