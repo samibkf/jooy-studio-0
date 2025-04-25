@@ -8,7 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { toast } from 'sonner';
 import { Region } from '@/types/regions';
-import { PanelRight } from 'lucide-react';
+import { PanelRight, X } from 'lucide-react';
 import { ResizablePanel, ResizablePanelGroup, ResizableHandle } from '@/components/ui/resizable';
 
 interface SidebarProps {
