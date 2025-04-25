@@ -1,6 +1,7 @@
+
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import * as pdfjsLib from 'pdfjs-dist';
-import { PDFDocumentProxy } from 'pdfjs-dist';
+import { PDFDocumentProxy, TextItem, TextMarkedContent } from 'pdfjs-dist';
 // pdfjs worker setup
 pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
 
@@ -163,31 +164,35 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
 
           // Borrow logic from pdf.js TextLayerBuilder for correct positioning
           for (let i = 0; i < textContent.items.length; i++) {
-            // @ts-ignore
             const item = textContent.items[i];
-            // Transform item matrix into canvas coordinates
-            const tx = pdfjsLib.Util.transform(viewport.transform, item.transform);
+            
+            // Type check to handle different item types
+            if ('transform' in item && 'str' in item) {
+              // It's a TextItem
+              // Transform item matrix into canvas coordinates
+              const tx = pdfjsLib.Util.transform(viewport.transform, item.transform);
 
-            // Font size and transforms: see pdf.js's Web/TextLayerBuilder.js
-            const [a, b, c, d, e, f] = tx;
-            const left = e;
-            // Top adjustment: subtract font size (for vertical text alignment)
-            const fontSize = Math.sqrt(a * a + b * b);
-            const top = f - fontSize;
+              // Font size and transforms: see pdf.js's Web/TextLayerBuilder.js
+              const [a, b, c, d, e, f] = tx;
+              const left = e;
+              // Top adjustment: subtract font size (for vertical text alignment)
+              const fontSize = Math.sqrt(a * a + b * b);
+              const top = f - fontSize;
 
-            const textSpan = document.createElement('span');
-            textSpan.textContent = item.str;
-            textSpan.style.position = 'absolute';
-            textSpan.style.left = `${left}px`;
-            textSpan.style.top = `${top}px`;
-            textSpan.style.fontSize = `${fontSize}px`;
-            textSpan.style.fontFamily = 'sans-serif';
-            textSpan.style.whiteSpace = 'pre';
-            textSpan.style.transform = `matrix(${a / fontSize}, ${b / fontSize}, ${c / fontSize}, ${d / fontSize}, 0, 0)`;
-            textSpan.style.userSelect = 'text';
-            textSpan.className = 'text-item';
-            textLayerRef.current.appendChild(textSpan);
-            textDivs.push(textSpan);
+              const textSpan = document.createElement('span');
+              textSpan.textContent = item.str;
+              textSpan.style.position = 'absolute';
+              textSpan.style.left = `${left}px`;
+              textSpan.style.top = `${top}px`;
+              textSpan.style.fontSize = `${fontSize}px`;
+              textSpan.style.fontFamily = 'sans-serif';
+              textSpan.style.whiteSpace = 'pre';
+              textSpan.style.transform = `matrix(${a / fontSize}, ${b / fontSize}, ${c / fontSize}, ${d / fontSize}, 0, 0)`;
+              textSpan.style.userSelect = 'text';
+              textSpan.className = 'text-item';
+              textLayerRef.current.appendChild(textSpan);
+              textDivs.push(textSpan);
+            }
           }
         }
         // Enable selection mode
@@ -341,7 +346,7 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
           <RegionOverlay
             key={region.id}
             region={region}
-            selected={region.id === selectedRegionId}
+            isSelected={region.id === selectedRegionId}
             onSelect={() => onRegionSelect(region.id)}
             onUpdate={onRegionUpdate}
             scale={scale}
