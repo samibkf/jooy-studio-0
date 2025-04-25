@@ -5,6 +5,7 @@ import { Region } from '@/types/regions';
 import RegionOverlay from './RegionOverlay';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
+import { ArrowLeft, ArrowRight } from 'lucide-react';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
 
@@ -264,22 +265,24 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
         <div className="flex items-center space-x-2">
           <Button 
             variant="outline" 
-            size="sm" 
+            size="icon"
             onClick={handlePrevPage}
             disabled={currentPage <= 0}
           >
-            Previous
+            <ArrowLeft className="h-4 w-4" />
+            <span className="sr-only">Previous page</span>
           </Button>
           <span className="text-sm">
             Page {currentPage + 1} of {totalPages}
           </span>
           <Button 
             variant="outline" 
-            size="sm" 
+            size="icon"
             onClick={handleNextPage}
             disabled={currentPage >= totalPages - 1}
           >
-            Next
+            <ArrowRight className="h-4 w-4" />
+            <span className="sr-only">Next page</span>
           </Button>
         </div>
         <div className="absolute left-1/2 transform -translate-x-1/2 flex items-center space-x-2">
