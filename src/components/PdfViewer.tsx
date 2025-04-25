@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import * as pdfjsLib from 'pdfjs-dist';
 import { PDFDocumentProxy } from 'pdfjs-dist';
@@ -84,7 +83,6 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
         canvas.width = viewport.width;
         canvas.height = viewport.height;
         
-        // Clear the text layer
         if (textLayerRef.current) {
           textLayerRef.current.innerHTML = '';
           textLayerRef.current.style.width = `${viewport.width}px`;
@@ -97,25 +95,20 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
           }
         }
         
-        // Render the PDF page
         await page.render({
           canvasContext,
           viewport
         }).promise;
         
-        // Get text content and render it properly
         if (textLayerRef.current) {
           try {
             const textContent = await page.getTextContent();
             
-            // Create text spans for each text item with proper positioning
             textContent.items.forEach((item: any) => {
               const tx = pdfjsLib.Util.transform(viewport.transform, item.transform);
               
-              // Calculate font size from transform
               const fontSize = Math.sqrt((tx[2] * tx[2]) + (tx[3] * tx[3]));
               
-              // Create text element
               const textSpan = document.createElement('span');
               textSpan.textContent = item.str;
               textSpan.style.left = `${tx[4]}px`;
@@ -124,22 +117,19 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
               textSpan.style.fontFamily = 'sans-serif';
               textSpan.style.position = 'absolute';
               textSpan.classList.add('text-item');
-              textSpan.dataset.text = item.str; // Store the text content as a data attribute
+              textSpan.dataset.text = item.str;
               
-              // Add to text layer
               textLayerRef.current!.appendChild(textSpan);
             });
             
             setTextLayerVisible(true);
             
-            // Apply text selection mode
             toggleTextSelectionMode(currentSelectionType === 'text');
           } catch (error) {
             console.error('Error rendering text layer:', error);
             toast.error('Failed to render text layer');
           }
         }
-        
       } catch (error) {
         console.error('Error rendering page:', error);
         toast.error('Failed to render page');
@@ -149,7 +139,6 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
     renderPage();
   }, [pdf, currentPage, scale, debugMode, currentSelectionType]);
   
-  // Function to toggle text selection mode
   const toggleTextSelectionMode = useCallback((enabled: boolean) => {
     if (!textLayerRef.current) return;
     
@@ -157,21 +146,17 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
       textLayerRef.current.classList.add('text-selection-enabled');
       textLayerRef.current.classList.remove('text-selection-disabled');
       
-      // Add text selection handler
       document.addEventListener('mouseup', handleTextSelection);
     } else {
       textLayerRef.current.classList.remove('text-selection-enabled');
       textLayerRef.current.classList.add('text-selection-disabled');
       
-      // Remove text selection handler
       document.removeEventListener('mouseup', handleTextSelection);
       
-      // Clear any selection
       window.getSelection()?.removeAllRanges();
     }
   }, []);
   
-  // Handle toggling of text selection mode when currentSelectionType changes
   useEffect(() => {
     toggleTextSelectionMode(currentSelectionType === 'text');
     
@@ -181,14 +166,11 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
   }, [currentSelectionType, toggleTextSelectionMode]);
   
   const handleTextSelection = useCallback((e: MouseEvent) => {
-    // Clear previous timeout if exists
     if (selectionTimeoutRef.current) {
       window.clearTimeout(selectionTimeoutRef.current);
     }
     
-    // Use a small timeout to allow the selection to complete
     selectionTimeoutRef.current = window.setTimeout(() => {
-      // Only process if text selection is active
       if (currentSelectionType !== 'text' || !containerRef.current || !textLayerRef.current) {
         return;
       }
@@ -201,7 +183,6 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
       try {
         const range = selection.getRangeAt(0);
         
-        // Check if selection is within the text layer
         if (!textLayerRef.current.contains(range.commonAncestorContainer)) {
           return;
         }
@@ -211,7 +192,6 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
           return;
         }
         
-        // Get the selection's text
         const selectedText = selection.toString().trim();
         if (!selectedText) {
           return;
@@ -221,7 +201,6 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
         
         const containerRect = containerRef.current.getBoundingClientRect();
         
-        // Calculate bounds of the selection
         let minX = Infinity, minY = Infinity, maxX = 0, maxY = 0;
         
         Array.from(rects).forEach(rect => {
@@ -231,14 +210,15 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
           maxY = Math.max(maxY, rect.bottom);
         });
         
-        // Convert to container coordinates
         const x = minX - containerRect.left;
         const y = minY - containerRect.top;
         const width = maxX - minX;
         const height = maxY - minY;
         
-        // Create a new region for meaningful selections
         if (width > 5 && height > 5 && selectedText) {
+          const nextNumber = getNextRegionNumber(currentPage);
+          const regionName = `${currentPage + 1}_${nextNumber}`;
+          
           const newRegion: Omit<Region, 'id'> = {
             page: currentPage,
             x,
@@ -246,7 +226,7 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
             width,
             height,
             type: 'text',
-            name: selectedText.length > 20 ? `${selectedText.substring(0, 20)}...` : selectedText,
+            name: regionName,
             audioPath: '',
             description: selectedText
           };
@@ -254,16 +234,14 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
           onRegionCreate(newRegion);
           toast.success('Text region created');
           
-          // Clear selection after creating region
           window.getSelection()?.removeAllRanges();
         }
       } catch (error) {
         console.error('Error processing text selection:', error);
       }
     }, 100);
-  }, [currentPage, currentSelectionType, onRegionCreate, containerRef]);
+  }, [currentPage, currentSelectionType, onRegionCreate, getNextRegionNumber]);
   
-  // Area selection handlers
   const handleMouseDown = (e: React.MouseEvent) => {
     if (!isSelectionMode || !containerRef.current || currentSelectionType !== 'area') return;
     
@@ -298,6 +276,9 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
     setIsSelecting(false);
     
     if (selectionRect.width > 10 && selectionRect.height > 10 && currentSelectionType === 'area') {
+      const nextNumber = getNextRegionNumber(currentPage);
+      const regionName = `${currentPage + 1}_${nextNumber}`;
+      
       const newRegion: Omit<Region, 'id'> = {
         page: currentPage,
         x: selectionRect.x,
@@ -305,7 +286,7 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
         width: selectionRect.width,
         height: selectionRect.height,
         type: 'area',
-        name: `Area ${regions.length + 1}`,
+        name: regionName,
         audioPath: '',
         description: ''
       };
@@ -313,12 +294,10 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
       onRegionCreate(newRegion);
       toast.success('Area region created');
       
-      // Reset selection rectangle
       setSelectionRect({ x: 0, y: 0, width: 0, height: 0 });
     }
   };
   
-  // Image selection handler
   const handleImageClick = (e: React.MouseEvent) => {
     if (currentSelectionType !== 'image' || !containerRef.current) return;
     
@@ -327,6 +306,8 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
     const y = e.clientY - rect.top;
     
     const DEFAULT_IMAGE_SIZE = 100;
+    const nextNumber = getNextRegionNumber(currentPage);
+    const regionName = `${currentPage + 1}_${nextNumber}`;
     
     const newRegion: Omit<Region, 'id'> = {
       page: currentPage,
@@ -335,7 +316,7 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
       width: DEFAULT_IMAGE_SIZE,
       height: DEFAULT_IMAGE_SIZE,
       type: 'image',
-      name: `Image ${regions.length + 1}`,
+      name: regionName,
       audioPath: '',
       description: 'Image selection'
     };
@@ -344,16 +325,13 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
     toast.info('Image region created. Resize it to fit the image precisely.');
   };
   
-  // Toggle debug mode (for development only)
   const toggleDebugMode = () => {
     setDebugMode(!debugMode);
   };
   
-  // Navigation controls
   const handleNextPage = () => {
     if (currentPage < totalPages - 1) {
       setCurrentPage(prev => prev + 1);
-      // Clear any existing selection
       window.getSelection()?.removeAllRanges();
     }
   };
@@ -361,12 +339,10 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
   const handlePrevPage = () => {
     if (currentPage > 0) {
       setCurrentPage(prev => prev - 1);
-      // Clear any existing selection
       window.getSelection()?.removeAllRanges();
     }
   };
   
-  // Zoom controls
   const handleZoomIn = () => {
     setScale(prev => Math.min(prev + 0.1, 3.0));
   };
@@ -375,7 +351,6 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
     setScale(prev => Math.max(prev - 0.1, 0.5));
   };
   
-  // Only show regions for the current page
   const pageRegions = regions.filter(region => region.page === currentPage);
   
   if (!file) {
@@ -435,7 +410,6 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
           >
             +
           </Button>
-          {/* Debug toggle - hidden in production */}
           {process.env.NODE_ENV === 'development' && (
             <Button
               variant="outline"
