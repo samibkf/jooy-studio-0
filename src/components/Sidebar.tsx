@@ -8,13 +8,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { toast } from 'sonner';
 import { Region } from '@/types/regions';
-import { X, PanelRight } from 'lucide-react';
-import {
-  Sheet,
-  SheetTrigger,
-  SheetContent,
-  SheetClose,
-} from "@/components/ui/sheet";
+import { PanelRight } from 'lucide-react';
+import { ResizablePanel, ResizablePanelGroup, ResizableHandle } from '@/components/ui/resizable';
 
 interface SidebarProps {
   selectedRegion: Region | null;
@@ -31,6 +26,8 @@ const Sidebar = ({
   onRegionDelete,
   onRegionSelect
 }: SidebarProps) => {
+  const [isOpen, setIsOpen] = React.useState(false);
+
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>, 
     field: keyof Region
@@ -137,27 +134,50 @@ const Sidebar = ({
   );
 
   return (
-    <Sheet>
-      <SheetTrigger asChild>
+    <>
+      {!isOpen && (
         <Button 
           variant="outline" 
           size="icon"
           className="fixed right-4 top-20 z-50 shadow-md hover:bg-primary/10"
+          onClick={() => setIsOpen(true)}
         >
           <PanelRight className="h-4 w-4" />
           <span className="sr-only">Open regions panel</span>
         </Button>
-      </SheetTrigger>
-      <SheetContent
-        className="w-[350px] sm:w-[450px] p-6 overflow-y-auto"
-      >
-        {sidebarContent}
-        <SheetClose className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-secondary">
-          <X className="h-4 w-4" />
-          <span className="sr-only">Close</span>
-        </SheetClose>
-      </SheetContent>
-    </Sheet>
+      )}
+
+      {isOpen && (
+        <ResizablePanelGroup 
+          direction="horizontal" 
+          className="fixed inset-0 top-16 z-40"
+        >
+          <ResizablePanel defaultSize={75} minSize={30}>
+            <div className="h-full bg-background">
+              {/* This panel will be for the PDF viewer */}
+            </div>
+          </ResizablePanel>
+          <ResizableHandle withHandle />
+          <ResizablePanel defaultSize={25} minSize={20} maxSize={40}>
+            <div className="h-full p-6 bg-background border-l">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-lg font-semibold">Regions</h2>
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="h-6 w-6"
+                  onClick={() => setIsOpen(false)}
+                >
+                  <PanelRight className="h-4 w-4" />
+                  <span className="sr-only">Close panel</span>
+                </Button>
+              </div>
+              {sidebarContent}
+            </div>
+          </ResizablePanel>
+        </ResizablePanelGroup>
+      )}
+    </>
   );
 };
 
