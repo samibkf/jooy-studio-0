@@ -230,6 +230,19 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
     setScale(prev => Math.max(prev - 0.1, 0.5));
   };
 
+  const handleEscKey = (e: KeyboardEvent) => {
+    if (e.key === 'Escape' && selectionPoint) {
+      setSelectionPoint(null);
+      setSelectionRect({ x: 0, y: 0, width: 0, height: 0 });
+      setIsSelecting(false);
+    }
+  };
+
+  useEffect(() => {
+    window.addEventListener('keydown', handleEscKey);
+    return () => window.removeEventListener('keydown', handleEscKey);
+  }, [selectionPoint]);
+
   const pageRegions = regions.filter(region => region.page === currentPage + 1);
 
   if (!file) {
