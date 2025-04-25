@@ -18,6 +18,7 @@ interface PdfViewerProps {
   onRegionDelete: (regionId: string) => void;
   isSelectionMode: boolean;
   currentSelectionType: 'area' | null;
+  onCurrentSelectionTypeChange: (type: 'area' | null) => void;
 }
 
 const PdfViewer: React.FC<PdfViewerProps> = ({
@@ -30,6 +31,7 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
   onRegionDelete,
   isSelectionMode,
   currentSelectionType,
+  onCurrentSelectionTypeChange,
 }) => {
   const [pdf, setPdf] = useState<PDFDocumentProxy | null>(null);
   const [currentPage, setCurrentPage] = useState(0);
@@ -175,7 +177,7 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
     setSelectionPoint({ x, y });
     setSelectionRect({ x, y, width: 0, height: 0 });
     setIsSelecting(true);
-    setCurrentSelectionType('area');
+    onCurrentSelectionTypeChange('area');
   };
   
   const handleMouseMove = (e: React.MouseEvent) => {

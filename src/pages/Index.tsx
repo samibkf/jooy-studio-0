@@ -129,6 +129,7 @@ const Index = () => {
             onRegionDelete={handleRegionDelete}
             isSelectionMode={!!currentSelectionType}
             currentSelectionType={currentSelectionType}
+            onCurrentSelectionTypeChange={handleToggleSelectionMode}
           />
         </div>
         
