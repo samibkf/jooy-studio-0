@@ -263,7 +263,7 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
   
   return (
     <div className="flex flex-col h-full w-full">
-      <div className="bg-white border-b border-gray-200 p-2 w-full">
+      <div className="bg-white border-b border-gray-200 p-2 w-full sticky top-0 z-10">
         <div className="flex items-center justify-between max-w-[1200px] mx-auto">
           <div className="flex items-center space-x-6">
             <div className="flex items-center">
@@ -336,7 +336,7 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
         </div>
       </div>
       
-      <div className="flex-1 overflow-auto p-4 flex items-center justify-center w-full">
+      <div className="flex-1 p-4 flex items-center justify-center w-full mt-2">
         <div 
           ref={containerRef}
           className={`pdf-page relative ${
