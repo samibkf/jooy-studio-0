@@ -25,6 +25,13 @@ const RegionOverlay: React.FC<RegionOverlayProps> = ({
   const [resizing, setResizing] = useState<string | null>(null);
   const overlayRef = useRef<HTMLDivElement>(null);
   
+  const scaledStyle = {
+    left: region.x * scale,
+    top: region.y * scale,
+    width: region.width * scale,
+    height: region.height * scale,
+  };
+
   const handleTextAreaInteraction = (e: React.MouseEvent | React.KeyboardEvent) => {
     e.stopPropagation();
   };
@@ -57,8 +64,8 @@ const RegionOverlay: React.FC<RegionOverlayProps> = ({
     if (!isDragging && !resizing) return;
     
     if (isDragging) {
-      const deltaX = e.clientX - dragStart.x;
-      const deltaY = e.clientY - dragStart.y;
+      const deltaX = (e.clientX - dragStart.x) / scale;
+      const deltaY = (e.clientY - dragStart.y) / scale;
       
       const updatedRegion = {
         ...region,
@@ -72,8 +79,8 @@ const RegionOverlay: React.FC<RegionOverlayProps> = ({
       const parentRect = overlayRef.current.parentElement?.getBoundingClientRect();
       if (!parentRect) return;
 
-      const x = e.clientX - parentRect.left;
-      const y = e.clientY - parentRect.top;
+      const x = (e.clientX - parentRect.left) / scale;
+      const y = (e.clientY - parentRect.top) / scale;
       
       let updatedRegion = { ...region };
 
@@ -165,12 +172,7 @@ const RegionOverlay: React.FC<RegionOverlayProps> = ({
     <div
       ref={overlayRef}
       className={`region-overlay ${isSelected ? 'selected' : ''}`}
-      style={{
-        left: region.x,
-        top: region.y,
-        width: region.width,
-        height: region.height,
-      }}
+      style={scaledStyle}
       onClick={onSelect}
       onMouseDown={handleMouseDown}
     >
