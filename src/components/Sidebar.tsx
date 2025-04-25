@@ -134,8 +134,8 @@ const Sidebar = ({
   );
 
   return (
-    <>
-      {!isOpen && (
+    <div className="relative">
+      {!isOpen ? (
         <Button 
           variant="outline" 
           size="icon"
@@ -145,39 +145,37 @@ const Sidebar = ({
           <PanelRight className="h-4 w-4" />
           <span className="sr-only">Open regions panel</span>
         </Button>
-      )}
-
-      {isOpen && (
-        <ResizablePanelGroup 
-          direction="horizontal" 
-          className="fixed inset-0 top-16 z-40"
-        >
-          <ResizablePanel defaultSize={75} minSize={30}>
-            <div className="h-full bg-background">
-              {/* This panel will be for the PDF viewer */}
-            </div>
-          </ResizablePanel>
-          <ResizableHandle withHandle />
-          <ResizablePanel defaultSize={25} minSize={20} maxSize={40}>
-            <div className="h-full p-6 bg-background border-l">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-lg font-semibold">Regions</h2>
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  className="h-6 w-6"
-                  onClick={() => setIsOpen(false)}
-                >
-                  <PanelRight className="h-4 w-4" />
-                  <span className="sr-only">Close panel</span>
-                </Button>
+      ) : (
+        <div className="fixed inset-0 top-16 z-40 bg-background/80">
+          <ResizablePanelGroup 
+            direction="horizontal" 
+            className="h-full"
+          >
+            <ResizablePanel defaultSize={75} minSize={40}>
+              {/* This space is for the PDF viewer - we don't render anything here */}
+            </ResizablePanel>
+            <ResizableHandle withHandle />
+            <ResizablePanel defaultSize={25} minSize={20} maxSize={50}>
+              <div className="h-full p-6 bg-background border-l">
+                <div className="flex justify-between items-center mb-4">
+                  <h2 className="text-lg font-semibold">Regions</h2>
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="h-6 w-6"
+                    onClick={() => setIsOpen(false)}
+                  >
+                    <X className="h-4 w-4" />
+                    <span className="sr-only">Close panel</span>
+                  </Button>
+                </div>
+                {sidebarContent}
               </div>
-              {sidebarContent}
-            </div>
-          </ResizablePanel>
-        </ResizablePanelGroup>
+            </ResizablePanel>
+          </ResizablePanelGroup>
+        </div>
       )}
-    </>
+    </div>
   );
 };
 
