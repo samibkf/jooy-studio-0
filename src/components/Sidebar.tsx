@@ -43,7 +43,7 @@ const Sidebar = ({
   };
 
   return (
-    <div className="w-80 border-l border-gray-200 bg-white p-4 h-[calc(100vh-72px)] overflow-y-auto flex flex-col">
+    <div className="w-96 border-l border-gray-200 bg-white p-4 h-[calc(100vh-72px)] overflow-y-auto flex flex-col">
       <h2 className="text-lg font-semibold mb-4">Regions</h2>
       
       {regions.length === 0 ? (
@@ -53,11 +53,11 @@ const Sidebar = ({
         </div>
       ) : (
         <div className="mb-6 flex-1 overflow-y-auto">
-          <div className="space-y-2">
+          <div className="space-y-3">
             {regions.map((region) => (
               <div 
                 key={region.id} 
-                className={`p-3 rounded-md border cursor-pointer transition-colors ${
+                className={`p-4 rounded-md border cursor-pointer transition-colors ${
                   selectedRegion?.id === region.id 
                     ? 'border-primary bg-primary/5' 
                     : 'border-gray-200 hover:bg-gray-50'
@@ -104,16 +104,6 @@ const Sidebar = ({
           </div>
           
           <div className="space-y-2">
-            <Label htmlFor="audio-path">Audio Path</Label>
-            <Input
-              id="audio-path"
-              value={selectedRegion.audioPath}
-              onChange={(e) => handleChange(e, 'audioPath')}
-              placeholder="Path to audio file"
-            />
-          </div>
-          
-          <div className="space-y-2">
             <Label htmlFor="description">Description</Label>
             <Textarea
               id="description"
@@ -125,7 +115,7 @@ const Sidebar = ({
           </div>
           
           <div className="text-xs text-muted-foreground">
-            <div>Page: {selectedRegion.page + 1}</div>
+            <div>Page: {selectedRegion.page}</div>
             <div>Position: {Math.round(selectedRegion.x)}, {Math.round(selectedRegion.y)}</div>
             <div>Size: {Math.round(selectedRegion.width)} × {Math.round(selectedRegion.height)}</div>
           </div>

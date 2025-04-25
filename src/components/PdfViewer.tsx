@@ -16,7 +16,7 @@ interface PdfViewerProps {
   selectedRegionId: string | null;
   onRegionSelect: (regionId: string | null) => void;
   isSelectionMode: boolean;
-  currentSelectionType: 'text' | 'image' | 'area' | null;
+  currentSelectionType: 'area' | null;
 }
 
 const PdfViewer: React.FC<PdfViewerProps> = ({
@@ -36,13 +36,9 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
   const [isSelecting, setIsSelecting] = useState(false);
   const [selectionStart, setSelectionStart] = useState({ x: 0, y: 0 });
   const [selectionRect, setSelectionRect] = useState({ x: 0, y: 0, width: 0, height: 0 });
-  const [textLayerVisible, setTextLayerVisible] = useState(false);
-  const [debugMode, setDebugMode] = useState(false);
   
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const textLayerRef = useRef<HTMLDivElement>(null);
-  const selectionTimeoutRef = useRef<number | null>(null);
 
   const getNextRegionNumber = (pageNumber: number): number => {
     const pageRegions = regions.filter(region => region.page === pageNumber);
@@ -100,53 +96,10 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
         canvas.width = viewport.width;
         canvas.height = viewport.height;
         
-        if (textLayerRef.current) {
-          textLayerRef.current.innerHTML = '';
-          textLayerRef.current.style.width = `${viewport.width}px`;
-          textLayerRef.current.style.height = `${viewport.height}px`;
-          
-          if (debugMode) {
-            textLayerRef.current.classList.add('text-layer-debug');
-          } else {
-            textLayerRef.current.classList.remove('text-layer-debug');
-          }
-        }
-        
         await page.render({
           canvasContext,
           viewport
         }).promise;
-        
-        if (textLayerRef.current) {
-          try {
-            const textContent = await page.getTextContent();
-            
-            textContent.items.forEach((item: any) => {
-              const tx = pdfjsLib.Util.transform(viewport.transform, item.transform);
-              
-              const fontSize = Math.sqrt((tx[2] * tx[2]) + (tx[3] * tx[3]));
-              
-              const textSpan = document.createElement('span');
-              textSpan.textContent = item.str;
-              textSpan.style.left = `${tx[4]}px`;
-              textSpan.style.top = `${tx[5] - fontSize}px`;
-              textSpan.style.fontSize = `${fontSize}px`;
-              textSpan.style.fontFamily = 'sans-serif';
-              textSpan.style.position = 'absolute';
-              textSpan.classList.add('text-item');
-              textSpan.dataset.text = item.str;
-              
-              textLayerRef.current!.appendChild(textSpan);
-            });
-            
-            setTextLayerVisible(true);
-            
-            toggleTextSelectionMode(currentSelectionType === 'text');
-          } catch (error) {
-            console.error('Error rendering text layer:', error);
-            toast.error('Failed to render text layer');
-          }
-        }
       } catch (error) {
         console.error('Error rendering page:', error);
         toast.error('Failed to render page');
@@ -154,111 +107,8 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
     };
     
     renderPage();
-  }, [pdf, currentPage, scale, debugMode, currentSelectionType]);
-  
-  const toggleTextSelectionMode = useCallback((enabled: boolean) => {
-    if (!textLayerRef.current) return;
-    
-    if (enabled) {
-      textLayerRef.current.classList.add('text-selection-enabled');
-      textLayerRef.current.classList.remove('text-selection-disabled');
-      
-      document.addEventListener('mouseup', handleTextSelection);
-    } else {
-      textLayerRef.current.classList.remove('text-selection-enabled');
-      textLayerRef.current.classList.add('text-selection-disabled');
-      
-      document.removeEventListener('mouseup', handleTextSelection);
-      
-      window.getSelection()?.removeAllRanges();
-    }
-  }, []);
-  
-  const handleTextSelection = useCallback((e: MouseEvent) => {
-    if (selectionTimeoutRef.current) {
-      window.clearTimeout(selectionTimeoutRef.current);
-    }
-    
-    selectionTimeoutRef.current = window.setTimeout(() => {
-      if (currentSelectionType !== 'text' || !containerRef.current || !textLayerRef.current) {
-        return;
-      }
-      
-      const selection = window.getSelection();
-      if (!selection || selection.rangeCount === 0 || selection.isCollapsed) {
-        return;
-      }
-      
-      try {
-        const range = selection.getRangeAt(0);
-        
-        if (!textLayerRef.current.contains(range.commonAncestorContainer)) {
-          return;
-        }
-        
-        const rects = range.getClientRects();
-        if (rects.length === 0) {
-          return;
-        }
-        
-        const selectedText = selection.toString().trim();
-        if (!selectedText) {
-          return;
-        }
-        
-        console.log("Selected text:", selectedText);
-        
-        const containerRect = containerRef.current.getBoundingClientRect();
-        
-        let minX = Infinity, minY = Infinity, maxX = 0, maxY = 0;
-        
-        Array.from(rects).forEach(rect => {
-          minX = Math.min(minX, rect.left);
-          minY = Math.min(minY, rect.top);
-          maxX = Math.max(maxX, rect.right);
-          maxY = Math.max(maxY, rect.bottom);
-        });
-        
-        const x = minX - containerRect.left;
-        const y = minY - containerRect.top;
-        const width = maxX - minX;
-        const height = maxY - minY;
-        
-        if (width > 5 && height > 5 && selectedText) {
-          const nextNumber = getNextRegionNumber(currentPage + 1);
-          const regionName = `${currentPage + 1}_${nextNumber}`;
-          
-          const newRegion: Omit<Region, 'id'> = {
-            page: currentPage + 1,
-            x,
-            y,
-            width,
-            height,
-            type: 'text',
-            name: regionName,
-            audioPath: '',
-            description: selectedText
-          };
-          
-          onRegionCreate(newRegion);
-          toast.success('Text region created');
-          
-          window.getSelection()?.removeAllRanges();
-        }
-      } catch (error) {
-        console.error('Error processing text selection:', error);
-      }
-    }, 100);
-  }, [currentPage, currentSelectionType, onRegionCreate, regions]);
-  
-  useEffect(() => {
-    toggleTextSelectionMode(currentSelectionType === 'text');
-    
-    return () => {
-      document.removeEventListener('mouseup', handleTextSelection);
-    };
-  }, [currentSelectionType, toggleTextSelectionMode]);
-  
+  }, [pdf, currentPage, scale]);
+
   const handleMouseDown = (e: React.MouseEvent) => {
     if (!isSelectionMode || !containerRef.current || currentSelectionType !== 'area') return;
     
@@ -292,7 +142,7 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
     
     setIsSelecting(false);
     
-    if (selectionRect.width > 10 && selectionRect.height > 10 && currentSelectionType === 'area') {
+    if (selectionRect.width > 10 && selectionRect.height > 10) {
       const nextNumber = getNextRegionNumber(currentPage + 1);
       const regionName = `${currentPage + 1}_${nextNumber}`;
       
@@ -304,7 +154,6 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
         height: selectionRect.height,
         type: 'area',
         name: regionName,
-        audioPath: '',
         description: ''
       };
       
@@ -314,38 +163,7 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
       setSelectionRect({ x: 0, y: 0, width: 0, height: 0 });
     }
   };
-  
-  const handleImageClick = (e: React.MouseEvent) => {
-    if (currentSelectionType !== 'image' || !containerRef.current) return;
-    
-    const rect = containerRef.current.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-    
-    const DEFAULT_IMAGE_SIZE = 100;
-    const nextNumber = getNextRegionNumber(currentPage + 1);
-    const regionName = `${currentPage + 1}_${nextNumber}`;
-    
-    const newRegion: Omit<Region, 'id'> = {
-      page: currentPage + 1,
-      x,
-      y,
-      width: DEFAULT_IMAGE_SIZE,
-      height: DEFAULT_IMAGE_SIZE,
-      type: 'image',
-      name: regionName,
-      audioPath: '',
-      description: 'Image selection'
-    };
-    
-    onRegionCreate(newRegion);
-    toast.info('Image region created. Resize it to fit the image precisely.');
-  };
-  
-  const toggleDebugMode = () => {
-    setDebugMode(!debugMode);
-  };
-  
+
   const handleNextPage = () => {
     if (currentPage < totalPages - 1) {
       setCurrentPage(prev => prev + 1);
@@ -367,9 +185,9 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
   const handleZoomOut = () => {
     setScale(prev => Math.max(prev - 0.1, 0.5));
   };
-  
-  const pageRegions = regions.filter(region => region.page === currentPage);
-  
+
+  const pageRegions = regions.filter(region => region.page === currentPage + 1);
+
   if (!file) {
     return (
       <div className="flex flex-col items-center justify-center h-[calc(100vh-72px)] bg-muted">
@@ -427,16 +245,6 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
           >
             +
           </Button>
-          {process.env.NODE_ENV === 'development' && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={toggleDebugMode}
-              className="ml-2"
-            >
-              {debugMode ? 'Debug: ON' : 'Debug: OFF'}
-            </Button>
-          )}
         </div>
       </div>
       
@@ -444,30 +252,14 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
         <div 
           ref={containerRef}
           className={`pdf-page relative mx-auto ${
-            currentSelectionType === 'area' ? 'cursor-crosshair' : 
-            currentSelectionType === 'text' ? 'cursor-text' : 
-            currentSelectionType === 'image' ? 'cursor-cell' : ''
+            currentSelectionType === 'area' ? 'cursor-crosshair' : ''
           }`}
           onMouseDown={handleMouseDown}
           onMouseMove={handleMouseMove}
           onMouseUp={handleMouseUp}
           onMouseLeave={handleMouseUp}
-          onClick={currentSelectionType === 'image' ? handleImageClick : undefined}
         >
           <canvas ref={canvasRef} className="absolute top-0 left-0" />
-          
-          <div 
-            ref={textLayerRef} 
-            className={`text-layer ${
-              textLayerVisible ? 'visible' : 'hidden'
-            } ${
-              currentSelectionType === 'text' 
-                ? 'text-selection-enabled' 
-                : 'text-selection-disabled'
-            } ${
-              debugMode ? 'debug' : ''
-            }`}
-          ></div>
           
           {pageRegions.map((region) => (
             <RegionOverlay

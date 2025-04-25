@@ -6,9 +6,8 @@ export interface Region {
   y: number;
   width: number;
   height: number;
-  type: 'text' | 'image' | 'area';
+  type: 'area';
   name: string;
-  audioPath: string;
   description: string;
 }
 
