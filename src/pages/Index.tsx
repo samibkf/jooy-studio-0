@@ -4,7 +4,6 @@ import { v4 as uuidv4 } from 'uuid';
 import Header from '@/components/Header';
 import Sidebar from '@/components/Sidebar';
 import PdfViewer from '@/components/PdfViewer';
-import Toolbar from '@/components/ToolBar';
 import { Region, RegionMapping } from '@/types/regions';
 import { exportRegionMapping } from '@/utils/exportUtils';
 import { toast } from 'sonner';
@@ -111,14 +110,6 @@ const Index = () => {
       />
       
       <div className="flex flex-1 overflow-hidden">
-        <div className="w-16 border-r border-gray-200">
-          <Toolbar
-            isSelectionMode={!!currentSelectionType}
-            onToggleSelectionMode={handleToggleSelectionMode}
-            currentSelectionType={currentSelectionType}
-          />
-        </div>
-        
         <div className="flex flex-grow justify-center">
           <div className="max-w-[1200px] w-full">
             <PdfViewer
