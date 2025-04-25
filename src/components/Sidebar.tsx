@@ -35,7 +35,7 @@ const Sidebar = ({
     toast.success('Region deleted');
   };
   return <div className="h-full flex flex-col bg-background border-l">
-      <div className="flex justify-between items-center mb-4 p-4 py-[5px]">
+      <div className="flex justify-between items-center mb-4 p-4 py-[12px]">
         <h2 className="text-lg font-semibold mx-[45px]">Regions</h2>
       </div>
       
@@ -43,7 +43,7 @@ const Sidebar = ({
           <p>No regions defined yet.</p>
           <p className="text-sm mt-2">Draw a region on the PDF to get started.</p>
         </div> : <ScrollArea className="flex-1">
-          <div className="space-y-3 p-4">
+          <div className="space-y-3 p-4 py-[6px] my-0">
             {regions.map(region => <div key={region.id} className={`p-4 rounded-md border cursor-pointer transition-colors ${selectedRegion?.id === region.id ? 'border-primary bg-primary/5' : 'border-gray-200 hover:bg-gray-50'}`} onClick={() => onRegionSelect(region.id)}>
                 <div className="flex justify-between items-start">
                   <div className="font-medium truncate">{region.name || 'Unnamed Region'}</div>
@@ -64,7 +64,7 @@ const Sidebar = ({
       
       <Separator className="my-4" />
       
-      {selectedRegion && <div className="space-y-4 p-4">
+      {selectedRegion && <div className="space-y-4 p-4 py-[6px]">
           <h3 className="font-medium text-sm">Region Details</h3>
           
           <div className="space-y-2">
