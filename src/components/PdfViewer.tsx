@@ -36,6 +36,7 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
   const [isSelecting, setIsSelecting] = useState(false);
   const [selectionStart, setSelectionStart] = useState({ x: 0, y: 0 });
   const [selectionRect, setSelectionRect] = useState({ x: 0, y: 0, width: 0, height: 0 });
+  const [selectionPoint, setSelectionPoint] = useState<{ x: number, y: number } | null>(null);
   
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -112,56 +113,58 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
   const handleMouseDown = (e: React.MouseEvent) => {
     if (!isSelectionMode || !containerRef.current || currentSelectionType !== 'area') return;
     
-    setIsSelecting(true);
-    
     const rect = containerRef.current.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
-    
-    setSelectionStart({ x, y });
-    setSelectionRect({ x, y, width: 0, height: 0 });
+
+    if (selectionPoint) {
+      setSelectionRect(prev => {
+        if (prev.width > 10 && prev.height > 10) {
+          const nextNumber = getNextRegionNumber(currentPage + 1);
+          const regionName = `${currentPage + 1}_${nextNumber}`;
+          
+          const newRegion: Omit<Region, 'id'> = {
+            page: currentPage + 1,
+            x: prev.x,
+            y: prev.y,
+            width: prev.width,
+            height: prev.height,
+            type: 'area',
+            name: regionName,
+            description: ''
+          };
+          
+          onRegionCreate(newRegion);
+          toast.success('Area region created');
+        }
+        return { x: 0, y: 0, width: 0, height: 0 };
+      });
+      setSelectionPoint(null);
+      setIsSelecting(false);
+    } else {
+      setSelectionPoint({ x, y });
+      setSelectionRect({ x, y, width: 0, height: 0 });
+      setIsSelecting(true);
+    }
   };
   
   const handleMouseMove = (e: React.MouseEvent) => {
-    if (!isSelecting || !containerRef.current) return;
+    if (!isSelecting || !containerRef.current || !selectionPoint) return;
     
     const rect = containerRef.current.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
     
     setSelectionRect({
-      x: Math.min(x, selectionStart.x),
-      y: Math.min(y, selectionStart.y),
-      width: Math.abs(x - selectionStart.x),
-      height: Math.abs(y - selectionStart.y)
+      x: Math.min(x, selectionPoint.x),
+      y: Math.min(y, selectionPoint.y),
+      width: Math.abs(x - selectionPoint.x),
+      height: Math.abs(y - selectionPoint.y)
     });
   };
   
   const handleMouseUp = () => {
-    if (!isSelecting) return;
-    
-    setIsSelecting(false);
-    
-    if (selectionRect.width > 10 && selectionRect.height > 10) {
-      const nextNumber = getNextRegionNumber(currentPage + 1);
-      const regionName = `${currentPage + 1}_${nextNumber}`;
-      
-      const newRegion: Omit<Region, 'id'> = {
-        page: currentPage + 1,
-        x: selectionRect.x,
-        y: selectionRect.y,
-        width: selectionRect.width,
-        height: selectionRect.height,
-        type: 'area',
-        name: regionName,
-        description: ''
-      };
-      
-      onRegionCreate(newRegion);
-      toast.success('Area region created');
-      
-      setSelectionRect({ x: 0, y: 0, width: 0, height: 0 });
-    }
+    return;
   };
 
   const handleNextPage = () => {
