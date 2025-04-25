@@ -109,7 +109,7 @@ const Index = () => {
         hasDocument={!!pdfFile}
       />
       
-      <div className="flex flex-1 overflow-hidden justify-center">
+      <div className="flex flex-1 overflow-hidden justify-center items-center">
         <div className="w-16 border-r border-gray-200">
           <Toolbar
             isSelectionMode={!!currentSelectionType}
@@ -118,7 +118,7 @@ const Index = () => {
           />
         </div>
         
-        <div className="flex-grow max-w-[1200px] mx-auto">
+        <div className="flex-grow max-w-[1200px] w-full mx-auto">
           <PdfViewer
             file={pdfFile}
             regions={regions}
