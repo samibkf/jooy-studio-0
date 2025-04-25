@@ -262,7 +262,7 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
   }
   
   return (
-    <div className="flex flex-col h-[calc(100vh-72px)] bg-muted">
+    <div className="flex flex-col h-[calc(100vh-72px)]">
       <div className="bg-white border-b border-gray-200 p-2">
         <div className="flex items-center justify-between max-w-[1200px] mx-auto">
           <div className="flex items-center space-x-6">
@@ -336,10 +336,10 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
         </div>
       </div>
       
-      <div className="flex-1 overflow-auto p-4">
+      <div className="flex-1 overflow-auto p-4 flex items-center justify-center">
         <div 
           ref={containerRef}
-          className={`pdf-page relative mx-auto ${
+          className={`pdf-page relative ${
             currentSelectionType === 'area' || isDoubleClickMode ? 'cursor-crosshair' : ''
           }`}
           onMouseDown={handleMouseDown}
@@ -348,7 +348,7 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
           onMouseLeave={handleMouseUp}
           onDoubleClick={handleDoubleClick}
         >
-          <canvas ref={canvasRef} className="absolute top-0 left-0" />
+          <canvas ref={canvasRef} />
           
           {pageRegions.map((region) => (
             <RegionOverlay
