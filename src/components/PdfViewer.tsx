@@ -167,7 +167,16 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
   };
 
   const handleDoubleClick = (e: React.MouseEvent) => {
-    if (!containerRef.current || isSelectionMode) return;
+    if (!containerRef.current) return;
+    
+    if (isSelectionMode) {
+      setIsDoubleClickMode(false);
+      setSelectionPoint(null);
+      setSelectionRect({ x: 0, y: 0, width: 0, height: 0 });
+      setIsSelecting(false);
+      onCurrentSelectionTypeChange(null);
+      return;
+    }
     
     const rect = containerRef.current.getBoundingClientRect();
     const x = e.clientX - rect.left;
