@@ -36,7 +36,7 @@ const Sidebar = ({
   };
   return <div className="h-full flex flex-col bg-background border-l">
       <div className="flex justify-between items-center mb-4 p-4 py-[12px]">
-        <h2 className="font-semibold py-0 my-0 mx-[45px] text-base">Regions</h2>
+        <h2 className="font-semibold py-0 my-0 mx-[45px] text-base text-center">Regions</h2>
       </div>
       
       {regions.length === 0 ? <div className="text-center text-gray-500 px-4 py-[55px]">
