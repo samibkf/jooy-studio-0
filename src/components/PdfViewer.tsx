@@ -5,10 +5,9 @@ import { Region } from '@/types/regions';
 import RegionOverlay from './RegionOverlay';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
-import { ArrowLeft, ArrowRight, MousePointer, PanelRight } from 'lucide-react';
+import { ArrowLeft, ArrowRight, MousePointer } from 'lucide-react';
 import { Toggle } from '@/components/ui/toggle';
 import { TooltipProvider, TooltipTrigger, TooltipContent, Tooltip } from '@/components/ui/tooltip';
-import { Sheet, SheetTrigger } from "@/components/ui/sheet";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
 
@@ -333,18 +332,6 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
                 +
               </Button>
             </div>
-
-            <Sheet>
-              <SheetTrigger asChild>
-                <Button 
-                  variant="outline" 
-                  size="icon"
-                >
-                  <PanelRight className="h-4 w-4" />
-                  <span className="sr-only">Toggle Sidebar</span>
-                </Button>
-              </SheetTrigger>
-            </Sheet>
           </div>
         </div>
       </div>
