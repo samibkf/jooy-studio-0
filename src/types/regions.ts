@@ -1,4 +1,3 @@
-
 export interface Region {
   id: string;
   page: number;
@@ -6,9 +5,11 @@ export interface Region {
   y: number;
   width: number;
   height: number;
-  type: 'area';
+  type: 'area' | 'polygon' | 'circle';
   name: string;
   description: string;
+  points?: { x: number; y: number }[]; // For polygon
+  radius?: number; // For circle
 }
 
 export interface RegionMapping {

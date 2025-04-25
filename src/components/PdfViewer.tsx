@@ -16,7 +16,7 @@ interface PdfViewerProps {
   selectedRegionId: string | null;
   onRegionSelect: (regionId: string | null) => void;
   isSelectionMode: boolean;
-  currentSelectionType: 'area' | null;
+  currentSelectionType: 'area' | 'polygon' | 'circle' | null;
 }
 
 const PdfViewer: React.FC<PdfViewerProps> = ({
@@ -37,6 +37,8 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
   const [selectionStart, setSelectionStart] = useState({ x: 0, y: 0 });
   const [selectionRect, setSelectionRect] = useState({ x: 0, y: 0, width: 0, height: 0 });
   const [selectionPoint, setSelectionPoint] = useState<{ x: number, y: number } | null>(null);
+  const [polygonPoints, setPolygonPoints] = useState<{ x: number; y: number }[]>([]);
+  const [isDrawingPolygon, setIsDrawingPolygon] = useState(false);
   
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -111,24 +113,24 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
   }, [pdf, currentPage, scale]);
 
   const handleMouseDown = (e: React.MouseEvent) => {
-    if (!isSelectionMode || !containerRef.current || currentSelectionType !== 'area') return;
+    if (!isSelectionMode || !containerRef.current) return;
     
     const rect = containerRef.current.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
 
-    if (selectionPoint) {
-      setSelectionRect(prev => {
-        if (prev.width > 10 && prev.height > 10) {
+    switch (currentSelectionType) {
+      case 'area':
+        if (selectionPoint) {
           const nextNumber = getNextRegionNumber(currentPage + 1);
           const regionName = `${currentPage + 1}_${nextNumber}`;
           
           const newRegion: Omit<Region, 'id'> = {
             page: currentPage + 1,
-            x: prev.x,
-            y: prev.y,
-            width: prev.width,
-            height: prev.height,
+            x: selectionPoint.x,
+            y: selectionPoint.y,
+            width: Math.abs(x - selectionPoint.x),
+            height: Math.abs(y - selectionPoint.y),
             type: 'area',
             name: regionName,
             description: ''
@@ -137,14 +139,85 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
           onRegionCreate(newRegion);
           toast.success('Area region created');
         }
-        return { x: 0, y: 0, width: 0, height: 0 };
-      });
-      setSelectionPoint(null);
-      setIsSelecting(false);
-    } else {
-      setSelectionPoint({ x, y });
-      setSelectionRect({ x, y, width: 0, height: 0 });
-      setIsSelecting(true);
+        setSelectionPoint(null);
+        setIsSelecting(false);
+        break;
+      
+      case 'circle':
+        if (selectionPoint) {
+          const radius = Math.sqrt(
+            Math.pow(x - selectionPoint.x, 2) + Math.pow(y - selectionPoint.y, 2)
+          );
+          
+          if (radius > 10) {
+            const nextNumber = getNextRegionNumber(currentPage + 1);
+            const regionName = `${currentPage + 1}_${nextNumber}`;
+            
+            const newRegion: Omit<Region, 'id'> = {
+              page: currentPage + 1,
+              x: selectionPoint.x,
+              y: selectionPoint.y,
+              width: radius * 2,
+              height: radius * 2,
+              type: 'circle',
+              name: regionName,
+              description: '',
+              radius
+            };
+            
+            onRegionCreate(newRegion);
+            toast.success('Circle region created');
+          }
+          setSelectionPoint(null);
+          setIsSelecting(false);
+        } else {
+          setSelectionPoint({ x, y });
+          setIsSelecting(true);
+        }
+        break;
+      
+      case 'polygon':
+        if (!isDrawingPolygon) {
+          setIsDrawingPolygon(true);
+          setPolygonPoints([{ x, y }]);
+        } else {
+          const firstPoint = polygonPoints[0];
+          const distanceToFirst = Math.sqrt(
+            Math.pow(x - firstPoint.x, 2) + Math.pow(y - firstPoint.y, 2)
+          );
+
+          if (distanceToFirst < 20 && polygonPoints.length >= 3) {
+            const nextNumber = getNextRegionNumber(currentPage + 1);
+            const regionName = `${currentPage + 1}_${nextNumber}`;
+            
+            const xPoints = polygonPoints.map(p => p.x);
+            const yPoints = polygonPoints.map(p => p.y);
+            const minX = Math.min(...xPoints);
+            const maxX = Math.max(...xPoints);
+            const minY = Math.min(...yPoints);
+            const maxY = Math.max(...yPoints);
+            
+            const newRegion: Omit<Region, 'id'> = {
+              page: currentPage + 1,
+              x: minX,
+              y: minY,
+              width: maxX - minX,
+              height: maxY - minY,
+              type: 'polygon',
+              name: regionName,
+              description: '',
+              points: [...polygonPoints]
+            };
+            
+            onRegionCreate(newRegion);
+            toast.success('Polygon region created');
+            setIsDrawingPolygon(false);
+            setPolygonPoints([]);
+          } else {
+            setPolygonPoints([...polygonPoints, { x, y }]);
+          }
+        }
+        break;
     }
   };
   
@@ -155,12 +228,24 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
     
-    setSelectionRect({
-      x: Math.min(x, selectionPoint.x),
-      y: Math.min(y, selectionPoint.y),
-      width: Math.abs(x - selectionPoint.x),
-      height: Math.abs(y - selectionPoint.y)
-    });
+    if (currentSelectionType === 'area') {
+      setSelectionRect({
+        x: Math.min(x, selectionPoint.x),
+        y: Math.min(y, selectionPoint.y),
+        width: Math.abs(x - selectionPoint.x),
+        height: Math.abs(y - selectionPoint.y)
+      });
+    } else if (currentSelectionType === 'circle') {
+      const radius = Math.sqrt(
+        Math.pow(x - selectionPoint.x, 2) + Math.pow(y - selectionPoint.y, 2)
+      );
+      setSelectionRect({
+        x: selectionPoint.x - radius,
+        y: selectionPoint.y - radius,
+        width: radius * 2,
+        height: radius * 2
+      });
+    }
   };
   
   const handleMouseUp = () => {
@@ -255,7 +340,7 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
         <div 
           ref={containerRef}
           className={`pdf-page relative mx-auto ${
-            currentSelectionType === 'area' ? 'cursor-crosshair' : ''
+            currentSelectionType ? 'cursor-crosshair' : ''
           }`}
           onMouseDown={handleMouseDown}
           onMouseMove={handleMouseMove}
@@ -277,18 +362,41 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
           
           {isSelecting && (
             <div 
-              className="region-selection"
+              className={`region-selection ${
+                currentSelectionType === 'circle' ? 'rounded-full' : ''
+              }`}
               style={{
                 left: selectionRect.x,
                 top: selectionRect.y,
                 width: selectionRect.width,
                 height: selectionRect.height,
-                position: 'absolute',
-                border: '2px solid #2563eb',
-                backgroundColor: 'rgba(37, 99, 235, 0.1)',
-                pointerEvents: 'none'
               }}
             />
+          )}
+
+          {isDrawingPolygon && polygonPoints.length > 0 && (
+            <svg className="absolute top-0 left-0 w-full h-full pointer-events-none">
+              <path
+                d={`M ${polygonPoints.map(p => `${p.x},${p.y}`).join(' L ')}${
+                  polygonPoints.length > 2 ? ' Z' : ''
+                }`}
+                fill="rgba(155, 135, 245, 0.1)"
+                stroke="#9b87f5"
+                strokeWidth="2"
+                strokeDasharray="4"
+              />
+              {polygonPoints.map((point, index) => (
+                <circle
+                  key={index}
+                  cx={point.x}
+                  cy={point.y}
+                  r={4}
+                  fill={index === 0 ? '#7b66d9' : '#9b87f5'}
+                  stroke="white"
+                  strokeWidth="2"
+                />
+              ))}
+            </svg>
           )}
         </div>
       </div>

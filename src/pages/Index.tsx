@@ -12,7 +12,7 @@ const Index = () => {
   const [pdfFile, setPdfFile] = useState<File | null>(null);
   const [regions, setRegions] = useState<Region[]>([]);
   const [selectedRegionId, setSelectedRegionId] = useState<string | null>(null);
-  const [currentSelectionType, setCurrentSelectionType] = useState<'area' | null>(null);
+  const [currentSelectionType, setCurrentSelectionType] = useState<'area' | 'polygon' | 'circle' | null>(null);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   
@@ -65,7 +65,7 @@ const Index = () => {
     setSelectedRegionId(regionId);
   };
   
-  const handleToggleSelectionMode = (mode: 'area' | null) => {
+  const handleToggleSelectionMode = (mode: 'area' | 'polygon' | 'circle' | null) => {
     setCurrentSelectionType(mode);
   };
   
