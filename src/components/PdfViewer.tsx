@@ -15,7 +15,7 @@ interface PdfViewerProps {
   onRegionUpdate: (region: Region) => void;
   selectedRegionId: string | null;
   onRegionSelect: (regionId: string | null) => void;
-  onRegionDelete: (regionId: string) => void;  // Add this prop
+  onRegionDelete: (regionId: string) => void;
   isSelectionMode: boolean;
   currentSelectionType: 'area' | null;
 }
@@ -27,7 +27,7 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
   onRegionUpdate,
   selectedRegionId,
   onRegionSelect,
-  onRegionDelete,  // Add this prop
+  onRegionDelete,
   isSelectionMode,
   currentSelectionType,
 }) => {
@@ -39,6 +39,7 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
   const [selectionStart, setSelectionStart] = useState({ x: 0, y: 0 });
   const [selectionRect, setSelectionRect] = useState({ x: 0, y: 0, width: 0, height: 0 });
   const [selectionPoint, setSelectionPoint] = useState<{ x: number, y: number } | null>(null);
+  const [isDoubleClickMode, setIsDoubleClickMode] = useState(false);
   
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -125,7 +126,7 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
   }, [selectedRegionId, onRegionDelete]);
 
   const handleMouseDown = (e: React.MouseEvent) => {
-    if (!isSelectionMode || !containerRef.current || currentSelectionType !== 'area') return;
+    if ((!isSelectionMode && !isDoubleClickMode) || !containerRef.current) return;
     
     const rect = containerRef.current.getBoundingClientRect();
     const x = e.clientX - rect.left;
@@ -155,11 +156,26 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
       });
       setSelectionPoint(null);
       setIsSelecting(false);
+      setIsDoubleClickMode(false);
     } else {
       setSelectionPoint({ x, y });
       setSelectionRect({ x, y, width: 0, height: 0 });
       setIsSelecting(true);
     }
+  };
+
+  const handleDoubleClick = (e: React.MouseEvent) => {
+    if (!containerRef.current || isSelectionMode) return;
+    
+    const rect = containerRef.current.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+
+    setIsDoubleClickMode(true);
+    setSelectionPoint({ x, y });
+    setSelectionRect({ x, y, width: 0, height: 0 });
+    setIsSelecting(true);
+    setCurrentSelectionType('area');
   };
   
   const handleMouseMove = (e: React.MouseEvent) => {
@@ -269,12 +285,13 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
         <div 
           ref={containerRef}
           className={`pdf-page relative mx-auto ${
-            currentSelectionType === 'area' ? 'cursor-crosshair' : ''
+            currentSelectionType === 'area' || isDoubleClickMode ? 'cursor-crosshair' : ''
           }`}
           onMouseDown={handleMouseDown}
           onMouseMove={handleMouseMove}
           onMouseUp={handleMouseUp}
           onMouseLeave={handleMouseUp}
+          onDoubleClick={handleDoubleClick}
         >
           <canvas ref={canvasRef} className="absolute top-0 left-0" />
           
