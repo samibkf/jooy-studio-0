@@ -2,7 +2,7 @@
 import React from 'react';
 import { TooltipProvider, TooltipTrigger, TooltipContent, Tooltip } from '@/components/ui/tooltip';
 import { Toggle } from '@/components/ui/toggle';
-import { Square, Circle, Polygon } from 'lucide-react';
+import { Square, Circle, Triangle } from 'lucide-react';
 
 interface ToolbarProps {
   isSelectionMode: boolean;
@@ -60,7 +60,7 @@ const Toolbar: React.FC<ToolbarProps> = ({
               aria-label="Toggle polygon selection tool"
               className={`w-full ${currentSelectionType === 'polygon' ? 'bg-blue-100 ring-2 ring-primary' : ''}`}
             >
-              <Polygon className="h-4 w-4 mr-2" />
+              <Triangle className="h-4 w-4 mr-2" />
               Polygon
             </Toggle>
           </TooltipTrigger>
