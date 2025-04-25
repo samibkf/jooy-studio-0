@@ -7,7 +7,12 @@ import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 import { Region } from '@/types/regions';
-import { X } from 'lucide-react';
+import { X, PanelRight } from 'lucide-react';
+import {
+  Sheet,
+  SheetContent,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 
 interface SidebarProps {
   selectedRegion: Region | null;
@@ -42,9 +47,11 @@ const Sidebar = ({
     toast.success('Region deleted');
   };
 
-  return (
-    <div className="w-96 border-l border-gray-200 bg-white p-4 h-[calc(100vh-72px)] overflow-y-auto flex flex-col">
-      <h2 className="text-lg font-semibold mb-4">Regions</h2>
+  const sidebarContent = (
+    <div className="h-full flex flex-col">
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-lg font-semibold">Regions</h2>
+      </div>
       
       {regions.length === 0 ? (
         <div className="text-center py-8 text-gray-500">
@@ -52,7 +59,7 @@ const Sidebar = ({
           <p className="text-sm mt-2">Draw a region on the PDF to get started.</p>
         </div>
       ) : (
-        <div className="mb-6 flex-1 overflow-y-auto">
+        <div className="flex-1 overflow-y-auto mb-6">
           <div className="space-y-3">
             {regions.map((region) => (
               <div 
@@ -87,10 +94,10 @@ const Sidebar = ({
         </div>
       )}
       
-      <Separator className="my-4" />
+      <Separator />
       
-      {selectedRegion ? (
-        <div className="space-y-4">
+      {selectedRegion && (
+        <div className="space-y-4 mt-4">
           <h3 className="font-medium">Region Details</h3>
           
           <div className="space-y-2">
@@ -120,12 +127,27 @@ const Sidebar = ({
             <div>Size: {Math.round(selectedRegion.width)} × {Math.round(selectedRegion.height)}</div>
           </div>
         </div>
-      ) : (
-        <div className="text-center py-4 text-gray-500">
-          <p>Select a region to edit its details</p>
-        </div>
       )}
     </div>
+  );
+
+  return (
+    <>
+      <Sheet>
+        <SheetTrigger asChild>
+          <Button 
+            variant="outline" 
+            size="icon"
+            className="fixed right-4 top-20 z-50"
+          >
+            <PanelRight className="h-4 w-4" />
+          </Button>
+        </SheetTrigger>
+        <SheetContent className="w-[400px] sm:w-[540px] p-6 overflow-y-auto">
+          {sidebarContent}
+        </SheetContent>
+      </Sheet>
+    </>
   );
 };
 
