@@ -1,6 +1,9 @@
-
 import React, { useState, useRef } from 'react';
 import { Region } from '@/types/regions';
+import { Textarea } from '@/components/ui/textarea';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Button } from '@/components/ui/button';
+import { StickyNote } from 'lucide-react';
 
 interface RegionOverlayProps {
   region: Region;
@@ -22,12 +25,17 @@ const RegionOverlay: React.FC<RegionOverlayProps> = ({
   const [resizing, setResizing] = useState<string | null>(null);
   const overlayRef = useRef<HTMLDivElement>(null);
   
-  // Handle dragging functionality
+  const handleDescriptionChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    onUpdate({
+      ...region,
+      description: e.target.value
+    });
+  };
+
   const handleMouseDown = (e: React.MouseEvent) => {
     e.stopPropagation();
     onSelect();
 
-    // Check if clicking on resize handle
     const target = e.target as HTMLElement;
     if (target.classList.contains('resize-handle')) {
       setResizing(target.dataset.direction || null);
@@ -44,11 +52,9 @@ const RegionOverlay: React.FC<RegionOverlayProps> = ({
     if (!isDragging && !resizing) return;
     
     if (isDragging) {
-      // Calculate movement delta
       const deltaX = e.clientX - dragStart.x;
       const deltaY = e.clientY - dragStart.y;
       
-      // Update region position
       const updatedRegion = {
         ...region,
         x: region.x + deltaX,
@@ -66,7 +72,6 @@ const RegionOverlay: React.FC<RegionOverlayProps> = ({
       
       let updatedRegion = { ...region };
 
-      // Handle different resize directions
       switch (resizing) {
         case 'n':
           updatedRegion = {
@@ -128,7 +133,6 @@ const RegionOverlay: React.FC<RegionOverlayProps> = ({
           break;
       }
       
-      // Ensure minimum size
       if (updatedRegion.width > 10 && updatedRegion.height > 10) {
         onUpdate(updatedRegion);
       }
@@ -175,6 +179,27 @@ const RegionOverlay: React.FC<RegionOverlayProps> = ({
           <div className="resize-handle nw" data-direction="nw" />
           <div className="resize-handle se" data-direction="se" />
           <div className="resize-handle sw" data-direction="sw" />
+          
+          <div className="absolute -top-8 right-0 flex items-center gap-2">
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" size="icon" className="h-6 w-6">
+                  <StickyNote className="h-4 w-4" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent side="top" className="w-80">
+                <div className="space-y-2">
+                  <h4 className="font-medium">Region Description</h4>
+                  <Textarea
+                    placeholder="Add a description..."
+                    value={region.description}
+                    onChange={handleDescriptionChange}
+                    rows={3}
+                  />
+                </div>
+              </PopoverContent>
+            </Popover>
+          </div>
         </>
       )}
       <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white text-xs px-1 truncate">
