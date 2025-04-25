@@ -108,8 +108,8 @@ const Index = () => {
         hasDocument={!!pdfFile}
       />
       
-      <div className="flex flex-1 overflow-hidden justify-center">
-        <div className="flex flex-grow justify-center max-w-[1200px] w-full">
+      <div className="flex flex-1 overflow-hidden">
+        <div className="flex-1 flex justify-center">
           <PdfViewer
             file={pdfFile}
             regions={regions}
