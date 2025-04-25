@@ -225,7 +225,7 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
             Next
           </Button>
         </div>
-        <div className="flex items-center space-x-2">
+        <div className="absolute left-1/2 transform -translate-x-1/2 flex items-center space-x-2">
           <Button 
             variant="outline" 
             size="sm" 
