@@ -143,11 +143,7 @@ const Index = () => {
             defaultSize={25} 
             minSize={20} 
             maxSize={40}
-            className="relative"
-            collapsible
-            defaultCollapsed={isSidebarCollapsed}
-            onCollapse={() => setIsSidebarCollapsed(true)}
-            onExpand={() => setIsSidebarCollapsed(false)}
+            className={`relative ${isSidebarCollapsed ? 'hidden' : ''}`}
           >
             <Button
               variant="ghost"
@@ -155,7 +151,7 @@ const Index = () => {
               className="absolute -left-6 top-2 z-10 rounded-full bg-background shadow-md border"
               onClick={toggleSidebar}
             >
-              {isSidebarCollapsed ? <ChevronLeft /> : <ChevronRight />}
+              <ChevronRight />
             </Button>
             <Sidebar
               selectedRegion={selectedRegion}
@@ -165,6 +161,17 @@ const Index = () => {
               onRegionSelect={handleRegionSelect}
             />
           </ResizablePanel>
+          
+          {isSidebarCollapsed && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="absolute right-2 top-2 z-10 rounded-full bg-background shadow-md border"
+              onClick={toggleSidebar}
+            >
+              <ChevronLeft />
+            </Button>
+          )}
         </ResizablePanelGroup>
       </div>
     </div>
