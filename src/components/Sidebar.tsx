@@ -148,8 +148,26 @@ const Sidebar = ({
           <span className="sr-only">Open regions panel</span>
         </Button>
       </SheetTrigger>
-      <SheetContent className="w-[350px] sm:w-[450px] p-6 overflow-y-auto">
+      <SheetContent
+        className="w-[350px] sm:w-[450px] p-6 overflow-y-auto pointer-events-auto"
+        onInteractOutside={(e) => {
+          // Prevent closing the sheet when clicking outside
+          e.preventDefault();
+        }}
+        onPointerDownOutside={(e) => {
+          // Prevent closing the sheet when clicking outside
+          e.preventDefault();
+        }}
+        onEscapeKeyDown={(e) => {
+          // Prevent closing the sheet with escape key
+          e.preventDefault();
+        }}
+      >
         {sidebarContent}
+        <SheetClose className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-secondary">
+          <X className="h-4 w-4" />
+          <span className="sr-only">Close</span>
+        </SheetClose>
       </SheetContent>
     </Sheet>
   );
