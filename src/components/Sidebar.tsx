@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -137,9 +138,10 @@ const Sidebar = ({
           <Button 
             variant="outline" 
             size="icon"
-            className="fixed right-4 top-24 z-50"  // Increased top position and z-index
+            className="fixed right-4 top-20 z-50"  // Reduced top position to align with toolbar
           >
             <PanelRight className="h-4 w-4" />
+            <span className="sr-only">Open sidebar</span>
           </Button>
         </SheetTrigger>
         <SheetContent className="w-[400px] sm:w-[540px] p-6 overflow-y-auto">
