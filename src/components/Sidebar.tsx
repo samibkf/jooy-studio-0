@@ -36,14 +36,14 @@ const Sidebar = ({
   };
   return <div className="h-full flex flex-col bg-background border-l">
       <div className="flex justify-between items-center mb-4 p-4 py-[12px]">
-        <h2 className="text-lg font-semibold mx-[45px]">Regions</h2>
+        <h2 className="font-semibold py-0 my-0 mx-[45px] text-base">Regions</h2>
       </div>
       
       {regions.length === 0 ? <div className="text-center text-gray-500 px-4 py-[55px]">
           <p>No regions defined yet.</p>
           <p className="text-sm mt-2">Draw a region on the PDF to get started.</p>
         </div> : <ScrollArea className="flex-1">
-          <div className="space-y-3 p-4 py-[6px] my-0">
+          <div className="space-y-3 p-4 my-0 py-0 px-[20px]">
             {regions.map(region => <div key={region.id} className={`p-4 rounded-md border cursor-pointer transition-colors ${selectedRegion?.id === region.id ? 'border-primary bg-primary/5' : 'border-gray-200 hover:bg-gray-50'}`} onClick={() => onRegionSelect(region.id)}>
                 <div className="flex justify-between items-start">
                   <div className="font-medium truncate">{region.name || 'Unnamed Region'}</div>
