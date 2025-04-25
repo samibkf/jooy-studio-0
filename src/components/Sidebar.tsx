@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,6 +9,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { toast } from 'sonner';
 import { Region } from '@/types/regions';
 import { PanelRight, X } from 'lucide-react';
+import { ResizablePanel, ResizablePanelGroup, ResizableHandle } from '@/components/ui/resizable';
 
 interface SidebarProps {
   selectedRegion: Region | null;
@@ -132,7 +134,7 @@ const Sidebar = ({
   );
 
   return (
-    <div className="relative h-full">
+    <div className="relative">
       {!isOpen ? (
         <Button 
           variant="outline" 
@@ -144,7 +146,7 @@ const Sidebar = ({
           <span className="sr-only">Open regions panel</span>
         </Button>
       ) : (
-        <div className="h-full bg-background border-l">
+        <div className="fixed right-0 top-16 bottom-0 z-40 bg-background border-l shadow-lg w-[350px] md:w-[400px] lg:w-[450px]">
           <div className="h-full p-6 overflow-auto">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-lg font-semibold">Regions</h2>
