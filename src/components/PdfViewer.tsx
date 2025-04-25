@@ -43,6 +43,31 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const textLayerRef = useRef<HTMLDivElement>(null);
   const selectionTimeoutRef = useRef<number | null>(null);
+
+  // Function to get the next available region number for a specific page
+  const getNextRegionNumber = (pageNumber: number): number => {
+    // Filter regions for the current page
+    const pageRegions = regions.filter(region => region.page === pageNumber);
+    
+    if (pageRegions.length === 0) {
+      return 1; // First region on this page
+    }
+    
+    // Extract region numbers from names (format: pageNum_regionNum)
+    const regionNumbers = pageRegions
+      .map(region => {
+        const parts = region.name.split('_');
+        return parts.length > 1 ? parseInt(parts[1], 10) : 0;
+      })
+      .filter(num => !isNaN(num));
+    
+    // Find the maximum region number and add 1
+    const maxRegionNumber = regionNumbers.length > 0 
+      ? Math.max(...regionNumbers) 
+      : 0;
+    
+    return maxRegionNumber + 1;
+  };
   
   useEffect(() => {
     if (!file) return;
@@ -157,14 +182,6 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
     }
   }, []);
   
-  useEffect(() => {
-    toggleTextSelectionMode(currentSelectionType === 'text');
-    
-    return () => {
-      document.removeEventListener('mouseup', handleTextSelection);
-    };
-  }, [currentSelectionType, toggleTextSelectionMode]);
-  
   const handleTextSelection = useCallback((e: MouseEvent) => {
     if (selectionTimeoutRef.current) {
       window.clearTimeout(selectionTimeoutRef.current);
@@ -240,7 +257,15 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
         console.error('Error processing text selection:', error);
       }
     }, 100);
-  }, [currentPage, currentSelectionType, onRegionCreate, getNextRegionNumber]);
+  }, [currentPage, currentSelectionType, onRegionCreate, regions]);
+  
+  useEffect(() => {
+    toggleTextSelectionMode(currentSelectionType === 'text');
+    
+    return () => {
+      document.removeEventListener('mouseup', handleTextSelection);
+    };
+  }, [currentSelectionType, toggleTextSelectionMode]);
   
   const handleMouseDown = (e: React.MouseEvent) => {
     if (!isSelectionMode || !containerRef.current || currentSelectionType !== 'area') return;
