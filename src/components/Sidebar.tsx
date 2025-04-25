@@ -79,7 +79,7 @@ const Sidebar = ({
                   </Button>
                 </div>
                 <div className="text-xs text-muted-foreground mt-1">
-                  Page {region.page + 1}, {region.type}
+                  Page {region.page}, {region.type}
                 </div>
               </div>
             ))}
