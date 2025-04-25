@@ -1,3 +1,4 @@
+
 import React, { useState, useRef } from 'react';
 import { Region } from '@/types/regions';
 import { Textarea } from '@/components/ui/textarea';
@@ -33,6 +34,11 @@ const RegionOverlay: React.FC<RegionOverlayProps> = ({
   };
 
   const handleTextAreaInteraction = (e: React.MouseEvent | React.KeyboardEvent) => {
+    e.stopPropagation();
+  };
+
+  // Prevent keydown events from bubbling up that could delete the region
+  const handleKeyDown = (e: React.KeyboardEvent) => {
     e.stopPropagation();
   };
 
@@ -211,6 +217,7 @@ const RegionOverlay: React.FC<RegionOverlayProps> = ({
                     onChange={handleDescriptionChange}
                     onMouseDown={handleTextAreaInteraction}
                     onDoubleClick={handleTextAreaInteraction}
+                    onKeyDown={handleKeyDown}
                     rows={3}
                   />
                 </div>
