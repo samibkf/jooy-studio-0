@@ -1,4 +1,3 @@
-
 import React, { useState, useRef } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import Header from '@/components/Header';
@@ -7,6 +6,7 @@ import PdfViewer from '@/components/PdfViewer';
 import { Region, RegionMapping } from '@/types/regions';
 import { exportRegionMapping } from '@/utils/exportUtils';
 import { toast } from 'sonner';
+import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/components/ui/resizable';
 
 const Index = () => {
   const [pdfFile, setPdfFile] = useState<File | null>(null);
@@ -109,27 +109,35 @@ const Index = () => {
         hasDocument={!!pdfFile}
       />
       
-      <div className="flex-1 overflow-hidden relative">
-        <PdfViewer
-          file={pdfFile}
-          regions={regions}
-          onRegionCreate={handleRegionCreate}
-          onRegionUpdate={handleRegionUpdate}
-          selectedRegionId={selectedRegionId}
-          onRegionSelect={handleRegionSelect}
-          onRegionDelete={handleRegionDelete}
-          isSelectionMode={!!currentSelectionType}
-          currentSelectionType={currentSelectionType}
-          onCurrentSelectionTypeChange={handleToggleSelectionMode}
-        />
+      <div className="flex-1 overflow-hidden">
+        <ResizablePanelGroup direction="horizontal" className="h-full">
+          <ResizablePanel defaultSize={75} minSize={50} className="h-full">
+            <PdfViewer
+              file={pdfFile}
+              regions={regions}
+              onRegionCreate={handleRegionCreate}
+              onRegionUpdate={handleRegionUpdate}
+              selectedRegionId={selectedRegionId}
+              onRegionSelect={handleRegionSelect}
+              onRegionDelete={handleRegionDelete}
+              isSelectionMode={!!currentSelectionType}
+              currentSelectionType={currentSelectionType}
+              onCurrentSelectionTypeChange={handleToggleSelectionMode}
+            />
+          </ResizablePanel>
           
-        <Sidebar
-          selectedRegion={selectedRegion}
-          regions={regions}
-          onRegionUpdate={handleRegionUpdate}
-          onRegionDelete={handleRegionDelete}
-          onRegionSelect={handleRegionSelect}
-        />
+          <ResizableHandle withHandle />
+          
+          <ResizablePanel defaultSize={25} minSize={15} maxSize={40}>
+            <Sidebar
+              selectedRegion={selectedRegion}
+              regions={regions}
+              onRegionUpdate={handleRegionUpdate}
+              onRegionDelete={handleRegionDelete}
+              onRegionSelect={handleRegionSelect}
+            />
+          </ResizablePanel>
+        </ResizablePanelGroup>
       </div>
     </div>
   );
