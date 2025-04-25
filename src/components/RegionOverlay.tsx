@@ -157,28 +157,29 @@ const RegionOverlay: React.FC<RegionOverlayProps> = ({
   }, [isDragging, resizing]);
   
   return (
-    <>
-      {region.type === 'polygon' && region.points ? (
-        <div
-          className={`region-overlay ${isSelected ? 'selected' : ''}`}
-          style={{
-            left: region.x,
-            top: region.y,
-            width: region.width,
-            height: region.height,
-            background: 'none',
-            border: 'none',
-          }}
-          onClick={onSelect}
-        >
-          <svg className="absolute top-0 left-0 w-full h-full">
-            <path
-              d={`M ${region.points.map(p => `${p.x},${p.y}`).join(' L ')} Z`}
-              fill="rgba(155, 135, 245, 0.1)"
-              stroke={isSelected ? '#7b66d9' : '#9b87f5'}
-              strokeWidth="2"
-            />
-          </svg>
+    <div
+      ref={overlayRef}
+      className={`region-overlay ${isSelected ? 'selected' : ''}`}
+      style={{
+        left: region.x,
+        top: region.y,
+        width: region.width,
+        height: region.height,
+      }}
+      onClick={onSelect}
+      onMouseDown={handleMouseDown}
+    >
+      {isSelected && (
+        <>
+          <div className="resize-handle n" data-direction="n" />
+          <div className="resize-handle s" data-direction="s" />
+          <div className="resize-handle e" data-direction="e" />
+          <div className="resize-handle w" data-direction="w" />
+          <div className="resize-handle ne" data-direction="ne" />
+          <div className="resize-handle nw" data-direction="nw" />
+          <div className="resize-handle se" data-direction="se" />
+          <div className="resize-handle sw" data-direction="sw" />
+          
           <div className="absolute -top-8 right-0 flex items-center gap-2">
             <Popover>
               <PopoverTrigger asChild>
@@ -207,126 +208,12 @@ const RegionOverlay: React.FC<RegionOverlayProps> = ({
               </PopoverContent>
             </Popover>
           </div>
-          <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white text-xs px-1 truncate">
-            {region.name || 'Unnamed Region'}
-          </div>
-        </div>
-      ) : region.type === 'circle' ? (
-        <div
-          className={`region-overlay ${isSelected ? 'selected' : ''} rounded-full`}
-          style={{
-            left: region.x,
-            top: region.y,
-            width: region.width,
-            height: region.height,
-          }}
-          onClick={onSelect}
-          onMouseDown={handleMouseDown}
-        >
-          {isSelected && (
-            <>
-              <div className="resize-handle n" data-direction="n" />
-              <div className="resize-handle s" data-direction="s" />
-              <div className="resize-handle e" data-direction="e" />
-              <div className="resize-handle w" data-direction="w" />
-              <div className="resize-handle ne" data-direction="ne" />
-              <div className="resize-handle nw" data-direction="nw" />
-              <div className="resize-handle se" data-direction="se" />
-              <div className="resize-handle sw" data-direction="sw" />
-              
-              <div className="absolute -top-8 right-0 flex items-center gap-2">
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button 
-                      variant="outline" 
-                      size="icon" 
-                      className="h-8 w-8 bg-yellow-400 hover:bg-yellow-500"
-                    >
-                      <StickyNote 
-                        className="h-6 w-6" 
-                        color="#10B981"
-                        strokeWidth={2}
-                      />
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent side="top" className="w-80">
-                    <div className="space-y-2">
-                      <h4 className="font-medium">Region Description</h4>
-                      <Textarea
-                        placeholder="Add a description..."
-                        value={region.description}
-                        onChange={handleDescriptionChange}
-                        rows={3}
-                      />
-                    </div>
-                  </PopoverContent>
-                </Popover>
-              </div>
-            </>
-          )}
-          <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white text-xs px-1 truncate">
-            {region.name || 'Unnamed Region'}
-          </div>
-        </div>
-      ) : (
-        <div
-          className={`region-overlay ${isSelected ? 'selected' : ''}`}
-          style={{
-            left: region.x,
-            top: region.y,
-            width: region.width,
-            height: region.height,
-          }}
-          onClick={onSelect}
-          onMouseDown={handleMouseDown}
-        >
-          {isSelected && (
-            <>
-              <div className="resize-handle n" data-direction="n" />
-              <div className="resize-handle s" data-direction="s" />
-              <div className="resize-handle e" data-direction="e" />
-              <div className="resize-handle w" data-direction="w" />
-              <div className="resize-handle ne" data-direction="ne" />
-              <div className="resize-handle nw" data-direction="nw" />
-              <div className="resize-handle se" data-direction="se" />
-              <div className="resize-handle sw" data-direction="sw" />
-              
-              <div className="absolute -top-8 right-0 flex items-center gap-2">
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button 
-                      variant="outline" 
-                      size="icon" 
-                      className="h-8 w-8 bg-yellow-400 hover:bg-yellow-500"
-                    >
-                      <StickyNote 
-                        className="h-6 w-6" 
-                        color="#10B981"
-                        strokeWidth={2}
-                      />
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent side="top" className="w-80">
-                    <div className="space-y-2">
-                      <h4 className="font-medium">Region Description</h4>
-                      <Textarea
-                        placeholder="Add a description..."
-                        value={region.description}
-                        onChange={handleDescriptionChange}
-                        rows={3}
-                      />
-                    </div>
-                  </PopoverContent>
-                </Popover>
-              </div>
-            </>
-          )}
-          <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white text-xs px-1 truncate">
-            {region.name || 'Unnamed Region'}
-          </div>
-        </div>
+        </>
       )}
-    </>
+      <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white text-xs px-1 truncate">
+        {region.name || 'Unnamed Region'}
+      </div>
+    </div>
   );
 };
 

@@ -1,4 +1,3 @@
-
 import React, { useState, useRef } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import Header from '@/components/Header';
@@ -13,7 +12,7 @@ const Index = () => {
   const [pdfFile, setPdfFile] = useState<File | null>(null);
   const [regions, setRegions] = useState<Region[]>([]);
   const [selectedRegionId, setSelectedRegionId] = useState<string | null>(null);
-  const [currentSelectionType, setCurrentSelectionType] = useState<'area' | 'polygon' | 'circle' | null>(null);
+  const [currentSelectionType, setCurrentSelectionType] = useState<'area' | null>(null);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   
@@ -45,9 +44,6 @@ const Index = () => {
     setRegions(prev => [...prev, newRegion]);
     setSelectedRegionId(newRegion.id);
     toast.success('Region created');
-    
-    // Reset selection mode after creating a region
-    setCurrentSelectionType(null);
   };
   
   const handleRegionUpdate = (updatedRegion: Region) => {
@@ -69,7 +65,7 @@ const Index = () => {
     setSelectedRegionId(regionId);
   };
   
-  const handleToggleSelectionMode = (mode: 'area' | 'polygon' | 'circle' | null) => {
+  const handleToggleSelectionMode = (mode: 'area' | null) => {
     setCurrentSelectionType(mode);
   };
   
