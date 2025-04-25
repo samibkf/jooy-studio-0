@@ -5,7 +5,9 @@ import { Region } from '@/types/regions';
 import RegionOverlay from './RegionOverlay';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
-import { ArrowLeft, ArrowRight } from 'lucide-react';
+import { ArrowLeft, ArrowRight, MousePointer } from 'lucide-react';
+import { Toggle } from '@/components/ui/toggle';
+import { TooltipProvider, TooltipTrigger, TooltipContent, Tooltip } from '@/components/ui/tooltip';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
 
@@ -262,30 +264,50 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
   return (
     <div className="flex flex-col h-[calc(100vh-72px)] bg-muted">
       <div className="bg-white border-b border-gray-200 p-2 flex items-center justify-between">
-        <div className="flex items-center space-x-2">
-          <Button 
-            variant="outline" 
-            size="icon"
-            onClick={handlePrevPage}
-            disabled={currentPage <= 0}
-          >
-            <ArrowLeft className="h-4 w-4" />
-            <span className="sr-only">Previous page</span>
-          </Button>
-          <span className="text-sm">
-            Page {currentPage + 1} of {totalPages}
-          </span>
-          <Button 
-            variant="outline" 
-            size="icon"
-            onClick={handleNextPage}
-            disabled={currentPage >= totalPages - 1}
-          >
-            <ArrowRight className="h-4 w-4" />
-            <span className="sr-only">Next page</span>
-          </Button>
+        <div className="flex items-center space-x-4">
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Toggle
+                  pressed={currentSelectionType === 'area'}
+                  onPressedChange={() => onCurrentSelectionTypeChange(currentSelectionType === 'area' ? null : 'area')}
+                  aria-label="Toggle area selection tool"
+                  className={`${currentSelectionType === 'area' ? 'bg-blue-100 ring-2 ring-primary' : ''}`}
+                >
+                  <MousePointer className="h-4 w-4" />
+                  <span className="sr-only">Area Selection</span>
+                </Toggle>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Draw custom area regions</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+          <div className="flex items-center space-x-2">
+            <Button 
+              variant="outline" 
+              size="icon"
+              onClick={handlePrevPage}
+              disabled={currentPage <= 0}
+            >
+              <ArrowLeft className="h-4 w-4" />
+              <span className="sr-only">Previous page</span>
+            </Button>
+            <span className="text-sm">
+              Page {currentPage + 1} of {totalPages}
+            </span>
+            <Button 
+              variant="outline" 
+              size="icon"
+              onClick={handleNextPage}
+              disabled={currentPage >= totalPages - 1}
+            >
+              <ArrowRight className="h-4 w-4" />
+              <span className="sr-only">Next page</span>
+            </Button>
+          </div>
         </div>
-        <div className="absolute left-1/2 transform -translate-x-1/2 flex items-center space-x-2">
+        <div className="flex items-center space-x-2">
           <Button 
             variant="outline" 
             size="sm" 
