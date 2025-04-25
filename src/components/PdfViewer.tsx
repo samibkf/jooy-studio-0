@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 import { ArrowLeft, ArrowRight, MousePointer } from 'lucide-react';
 import { Toggle } from '@/components/ui/toggle';
 import { TooltipProvider, TooltipTrigger, TooltipContent, Tooltip } from '@/components/ui/tooltip';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
 
@@ -336,49 +337,50 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
         </div>
       </div>
       
-      <div className="flex-1 p-4 flex items-center justify-center w-full mt-2">
-        <div 
-          ref={containerRef}
-          className={`pdf-page relative ${
-            currentSelectionType === 'area' || isDoubleClickMode ? 'cursor-crosshair' : ''
-          }`}
-          style={{ minWidth: 'fit-content' }}
-          onMouseDown={handleMouseDown}
-          onMouseMove={handleMouseMove}
-          onMouseUp={handleMouseUp}
-          onMouseLeave={handleMouseUp}
-          onDoubleClick={handleDoubleClick}
-        >
-          <canvas ref={canvasRef} style={{ display: 'block' }} />
-          
-          {pageRegions.map((region) => (
-            <RegionOverlay
-              key={region.id}
-              region={region}
-              isSelected={region.id === selectedRegionId}
-              onSelect={() => onRegionSelect(region.id)}
-              onUpdate={onRegionUpdate}
-              scale={scale}
-            />
-          ))}
-          
-          {isSelecting && (
-            <div 
-              className="region-selection"
-              style={{
-                left: selectionRect.x,
-                top: selectionRect.y,
-                width: selectionRect.width,
-                height: selectionRect.height,
-                position: 'absolute',
-                border: '2px solid #2563eb',
-                backgroundColor: 'rgba(37, 99, 235, 0.1)',
-                pointerEvents: 'none'
-              }}
-            />
-          )}
+      <ScrollArea className="flex-1 w-full h-[calc(100%-72px)]">
+        <div className="flex justify-center p-4">
+          <div 
+            ref={containerRef}
+            className={`pdf-page relative ${
+              currentSelectionType === 'area' || isDoubleClickMode ? 'cursor-crosshair' : ''
+            }`}
+            onMouseDown={handleMouseDown}
+            onMouseMove={handleMouseMove}
+            onMouseUp={handleMouseUp}
+            onMouseLeave={handleMouseUp}
+            onDoubleClick={handleDoubleClick}
+          >
+            <canvas ref={canvasRef} style={{ display: 'block' }} />
+            
+            {pageRegions.map((region) => (
+              <RegionOverlay
+                key={region.id}
+                region={region}
+                isSelected={region.id === selectedRegionId}
+                onSelect={() => onRegionSelect(region.id)}
+                onUpdate={onRegionUpdate}
+                scale={scale}
+              />
+            ))}
+            
+            {isSelecting && (
+              <div 
+                className="region-selection"
+                style={{
+                  left: selectionRect.x,
+                  top: selectionRect.y,
+                  width: selectionRect.width,
+                  height: selectionRect.height,
+                  position: 'absolute',
+                  border: '2px solid #2563eb',
+                  backgroundColor: 'rgba(37, 99, 235, 0.1)',
+                  pointerEvents: 'none'
+                }}
+              />
+            )}
+          </div>
         </div>
-      </div>
+      </ScrollArea>
     </div>
   );
 };
