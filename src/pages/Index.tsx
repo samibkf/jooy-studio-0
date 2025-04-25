@@ -1,3 +1,4 @@
+
 import React, { useState, useRef } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import Header from '@/components/Header';
@@ -148,7 +149,7 @@ const Index = () => {
               <Button
                 variant="ghost"
                 size="icon"
-                className="absolute -left-6 top-2 z-10 rounded-full bg-background shadow-md border"
+                className="absolute -left-12 top-2 z-10 rounded-full bg-background shadow-md border"
                 onClick={toggleSidebar}
               >
                 <ChevronRight />
