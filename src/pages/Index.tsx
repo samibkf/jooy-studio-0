@@ -1,3 +1,4 @@
+
 import React, { useState, useRef } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import Header from '@/components/Header';
@@ -108,22 +109,20 @@ const Index = () => {
         hasDocument={!!pdfFile}
       />
       
-      <div className="flex flex-1 overflow-hidden">
-        <div className="flex-1">
-          <PdfViewer
-            file={pdfFile}
-            regions={regions}
-            onRegionCreate={handleRegionCreate}
-            onRegionUpdate={handleRegionUpdate}
-            selectedRegionId={selectedRegionId}
-            onRegionSelect={handleRegionSelect}
-            onRegionDelete={handleRegionDelete}
-            isSelectionMode={!!currentSelectionType}
-            currentSelectionType={currentSelectionType}
-            onCurrentSelectionTypeChange={handleToggleSelectionMode}
-          />
-        </div>
-        
+      <div className="flex-1 overflow-hidden">
+        <PdfViewer
+          file={pdfFile}
+          regions={regions}
+          onRegionCreate={handleRegionCreate}
+          onRegionUpdate={handleRegionUpdate}
+          selectedRegionId={selectedRegionId}
+          onRegionSelect={handleRegionSelect}
+          onRegionDelete={handleRegionDelete}
+          isSelectionMode={!!currentSelectionType}
+          currentSelectionType={currentSelectionType}
+          onCurrentSelectionTypeChange={handleToggleSelectionMode}
+        />
+          
         <Sidebar
           selectedRegion={selectedRegion}
           regions={regions}
