@@ -25,7 +25,12 @@ const RegionOverlay: React.FC<RegionOverlayProps> = ({
   const [resizing, setResizing] = useState<string | null>(null);
   const overlayRef = useRef<HTMLDivElement>(null);
   
+  const handleTextAreaInteraction = (e: React.MouseEvent | React.KeyboardEvent) => {
+    e.stopPropagation();
+  };
+
   const handleDescriptionChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    e.stopPropagation();
     onUpdate({
       ...region,
       description: e.target.value
@@ -195,13 +200,15 @@ const RegionOverlay: React.FC<RegionOverlayProps> = ({
                   />
                 </Button>
               </PopoverTrigger>
-              <PopoverContent side="top" className="w-80">
+              <PopoverContent side="top" className="w-80" onClick={handleTextAreaInteraction}>
                 <div className="space-y-2">
                   <h4 className="font-medium">Region Description</h4>
                   <Textarea
                     placeholder="Add a description..."
                     value={region.description}
                     onChange={handleDescriptionChange}
+                    onMouseDown={handleTextAreaInteraction}
+                    onDoubleClick={handleTextAreaInteraction}
                     rows={3}
                   />
                 </div>
