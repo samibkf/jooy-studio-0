@@ -15,6 +15,7 @@ interface PdfViewerProps {
   onRegionUpdate: (region: Region) => void;
   selectedRegionId: string | null;
   onRegionSelect: (regionId: string | null) => void;
+  onRegionDelete: (regionId: string) => void;  // Add this prop
   isSelectionMode: boolean;
   currentSelectionType: 'area' | null;
 }
@@ -26,6 +27,7 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
   onRegionUpdate,
   selectedRegionId,
   onRegionSelect,
+  onRegionDelete,  // Add this prop
   isSelectionMode,
   currentSelectionType,
 }) => {
@@ -109,6 +111,18 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
     
     renderPage();
   }, [pdf, currentPage, scale]);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.key === 'Delete' || e.key === 'Backspace') && selectedRegionId) {
+        onRegionDelete(selectedRegionId);
+        toast.success('Region deleted');
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [selectedRegionId, onRegionDelete]);
 
   const handleMouseDown = (e: React.MouseEvent) => {
     if (!isSelectionMode || !containerRef.current || currentSelectionType !== 'area') return;

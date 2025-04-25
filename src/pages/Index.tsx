@@ -59,6 +59,7 @@ const Index = () => {
     if (selectedRegionId === regionId) {
       setSelectedRegionId(null);
     }
+    toast.success('Region deleted');
   };
   
   const handleRegionSelect = (regionId: string | null) => {
@@ -125,6 +126,7 @@ const Index = () => {
             onRegionUpdate={handleRegionUpdate}
             selectedRegionId={selectedRegionId}
             onRegionSelect={handleRegionSelect}
+            onRegionDelete={handleRegionDelete}
             isSelectionMode={!!currentSelectionType}
             currentSelectionType={currentSelectionType}
           />
