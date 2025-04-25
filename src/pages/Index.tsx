@@ -7,12 +7,15 @@ import { Region, RegionMapping } from '@/types/regions';
 import { exportRegionMapping } from '@/utils/exportUtils';
 import { toast } from 'sonner';
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/components/ui/resizable';
+import { Button } from '@/components/ui/button';
+import { ChevronRight, ChevronLeft } from 'lucide-react';
 
 const Index = () => {
   const [pdfFile, setPdfFile] = useState<File | null>(null);
   const [regions, setRegions] = useState<Region[]>([]);
   const [selectedRegionId, setSelectedRegionId] = useState<string | null>(null);
   const [currentSelectionType, setCurrentSelectionType] = useState<'area' | null>(null);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(true);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   
@@ -91,6 +94,10 @@ const Index = () => {
     toast.success('Data exported successfully');
   };
   
+  const toggleSidebar = () => {
+    setIsSidebarCollapsed(!isSidebarCollapsed);
+  };
+  
   const selectedRegion = regions.find(r => r.id === selectedRegionId) || null;
   
   return (
@@ -131,7 +138,22 @@ const Index = () => {
           
           <ResizableHandle withHandle />
           
-          <ResizablePanel defaultSize={25} minSize={20} maxSize={40}>
+          <ResizablePanel 
+            defaultSize={25} 
+            minSize={20} 
+            maxSize={40}
+            className="relative"
+            collapsible
+            collapsed={isSidebarCollapsed}
+          >
+            <Button
+              variant="ghost"
+              size="icon"
+              className="absolute -left-6 top-2 z-10 rounded-full bg-background shadow-md border"
+              onClick={toggleSidebar}
+            >
+              {isSidebarCollapsed ? <ChevronLeft /> : <ChevronRight />}
+            </Button>
             <Sidebar
               selectedRegion={selectedRegion}
               regions={regions}
