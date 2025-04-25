@@ -8,8 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { toast } from 'sonner';
 import { Region } from '@/types/regions';
-import { PanelRight } from 'lucide-react';
-import { ResizablePanel, ResizablePanelGroup, ResizableHandle } from '@/components/ui/resizable';
+import { X } from 'lucide-react';
 
 interface SidebarProps {
   selectedRegion: Region | null;
@@ -19,24 +18,22 @@ interface SidebarProps {
   onRegionSelect: (regionId: string) => void;
 }
 
-const Sidebar = ({ 
-  selectedRegion, 
-  regions, 
-  onRegionUpdate, 
+const Sidebar = ({
+  selectedRegion,
+  regions,
+  onRegionUpdate,
   onRegionDelete,
   onRegionSelect
 }: SidebarProps) => {
-  const [isOpen, setIsOpen] = React.useState(false);
-
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>, 
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
     field: keyof Region
   ) => {
     if (!selectedRegion) return;
     
-    const updatedRegion = { 
-      ...selectedRegion, 
-      [field]: e.target.value 
+    const updatedRegion = {
+      ...selectedRegion,
+      [field]: e.target.value
     };
     onRegionUpdate(updatedRegion);
   };
@@ -46,38 +43,38 @@ const Sidebar = ({
     toast.success('Region deleted');
   };
 
-  const sidebarContent = (
-    <div className="h-full flex flex-col">
-      <div className="flex justify-between items-center mb-4">
+  return (
+    <div className="h-full flex flex-col bg-background border-l">
+      <div className="flex justify-between items-center mb-4 p-4">
         <h2 className="text-lg font-semibold">Regions</h2>
       </div>
       
       {regions.length === 0 ? (
-        <div className="text-center py-8 text-gray-500">
+        <div className="text-center py-8 text-gray-500 px-4">
           <p>No regions defined yet.</p>
           <p className="text-sm mt-2">Draw a region on the PDF to get started.</p>
         </div>
       ) : (
-        <ScrollArea className="flex-1 max-h-[70vh]">
-          <div className="space-y-3 pr-4">
+        <ScrollArea className="flex-1">
+          <div className="space-y-3 p-4">
             {regions.map((region) => (
-              <div 
-                key={region.id} 
+              <div
+                key={region.id}
                 className={`p-4 rounded-md border cursor-pointer transition-colors ${
-                  selectedRegion?.id === region.id 
-                    ? 'border-primary bg-primary/5' 
+                  selectedRegion?.id === region.id
+                    ? 'border-primary bg-primary/5'
                     : 'border-gray-200 hover:bg-gray-50'
                 }`}
                 onClick={() => onRegionSelect(region.id)}
               >
                 <div className="flex justify-between items-start">
                   <div className="font-medium truncate">{region.name || 'Unnamed Region'}</div>
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
+                  <Button
+                    variant="ghost"
+                    size="sm"
                     className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 hover:opacity-100 focus:opacity-100"
                     onClick={(e) => {
-                      e.stopPropagation(); 
+                      e.stopPropagation();
                       handleDelete(region.id);
                     }}
                   >
@@ -97,7 +94,7 @@ const Sidebar = ({
       <Separator className="my-4" />
       
       {selectedRegion && (
-        <div className="space-y-4">
+        <div className="space-y-4 p-4">
           <h3 className="font-medium text-sm">Region Details</h3>
           
           <div className="space-y-2">
@@ -131,53 +128,6 @@ const Sidebar = ({
         </div>
       )}
     </div>
-  );
-
-  return (
-    <>
-      {!isOpen && (
-        <Button 
-          variant="outline" 
-          size="icon"
-          className="fixed right-4 top-20 z-50 shadow-md hover:bg-primary/10"
-          onClick={() => setIsOpen(true)}
-        >
-          <PanelRight className="h-4 w-4" />
-          <span className="sr-only">Open regions panel</span>
-        </Button>
-      )}
-
-      {isOpen && (
-        <ResizablePanelGroup 
-          direction="horizontal" 
-          className="fixed inset-0 top-16 z-40"
-        >
-          <ResizablePanel defaultSize={75} minSize={30}>
-            <div className="h-full bg-background">
-              {/* This panel will be for the PDF viewer */}
-            </div>
-          </ResizablePanel>
-          <ResizableHandle withHandle />
-          <ResizablePanel defaultSize={25} minSize={20} maxSize={40}>
-            <div className="h-full p-6 bg-background border-l">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-lg font-semibold">Regions</h2>
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  className="h-6 w-6"
-                  onClick={() => setIsOpen(false)}
-                >
-                  <PanelRight className="h-4 w-4" />
-                  <span className="sr-only">Close panel</span>
-                </Button>
-              </div>
-              {sidebarContent}
-            </div>
-          </ResizablePanel>
-        </ResizablePanelGroup>
-      )}
-    </>
   );
 };
 
