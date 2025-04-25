@@ -37,9 +37,10 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
   
   // Selection state
   const [selectionStart, setSelectionStart] = useState<{ x: number, y: number } | null>(null);
+  const [selectionEnd, setSelectionEnd] = useState<{ x: number, y: number } | null>(null);
   const [selectionRect, setSelectionRect] = useState<{ x: number, y: number, width: number, height: number } | null>(null);
   const [polygonPoints, setPolygonPoints] = useState<{ x: number; y: number }[]>([]);
-  const [isSelectingActive, setIsSelectingActive] = useState(false);
+  const [isDrawing, setIsDrawing] = useState(false);
   
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -197,11 +198,12 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
   const handleMouseDown = (e: React.MouseEvent) => {
     if (!isSelectionMode || !containerRef.current || !currentSelectionType) return;
     
+    // Get mouse coordinates relative to the container
     const rect = containerRef.current.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
     
-    // Polygon selection
+    // Handle polygon selection
     if (currentSelectionType === 'polygon') {
       const newPoint = { x, y };
       
@@ -219,49 +221,46 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
         }
       }
       
-      setPolygonPoints([...polygonPoints, newPoint]);
+      setPolygonPoints(prev => [...prev, newPoint]);
       return;
     }
     
-    // Rectangle and Circle selection
-    if (!selectionStart) {
-      setSelectionStart({ x, y });
-      setIsSelectingActive(true);
-      
-      if (currentSelectionType === 'circle') {
-        setSelectionRect({
-          x: x,
-          y: y,
-          width: 0,
-          height: 0
-        });
+    // Handle rectangle and circle selection
+    if (currentSelectionType === 'area' || currentSelectionType === 'circle') {
+      if (!selectionStart) {
+        // First click - set start point
+        setSelectionStart({ x, y });
+        setIsDrawing(true);
+      } else {
+        // Second click - complete the selection
+        if (currentSelectionType === 'area') {
+          createRectangleRegion(selectionStart, { x, y });
+        } else if (currentSelectionType === 'circle') {
+          createCircleRegion(selectionStart, { x, y });
+        }
+        
+        // Reset selection state
+        setSelectionStart(null);
+        setSelectionEnd(null);
+        setSelectionRect(null);
+        setIsDrawing(false);
       }
-    } else {
-      // Second click completes the selection
-      if (currentSelectionType === 'area') {
-        createRectangleRegion(selectionStart, { x, y });
-      } else if (currentSelectionType === 'circle') {
-        createCircleRegion(selectionStart, { x, y });
-      }
-      
-      // Reset selection state
-      setSelectionStart(null);
-      setSelectionRect(null);
-      setIsSelectingActive(false);
     }
   };
   
   const handleMouseMove = (e: React.MouseEvent) => {
-    if (!containerRef.current || !isSelectionMode || !currentSelectionType) return;
+    if (!containerRef.current || !isSelectionMode || !currentSelectionType || !isDrawing && currentSelectionType !== 'polygon') return;
     
     const rect = containerRef.current.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
     
-    // Only update rectangle preview if we have an initial point
-    if (selectionStart && isSelectingActive) {
+    // Update the end point for ongoing selections
+    if (selectionStart && (currentSelectionType === 'area' || currentSelectionType === 'circle')) {
+      setSelectionEnd({ x, y });
+      
       if (currentSelectionType === 'area') {
-        // Rectangle preview
+        // Update rectangle preview
         setSelectionRect({
           x: Math.min(x, selectionStart.x),
           y: Math.min(y, selectionStart.y),
@@ -269,7 +268,7 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
           height: Math.abs(y - selectionStart.y)
         });
       } else if (currentSelectionType === 'circle') {
-        // Circle preview
+        // Update circle preview
         const radius = Math.sqrt(
           Math.pow(x - selectionStart.x, 2) + Math.pow(y - selectionStart.y, 2)
         );
@@ -283,19 +282,24 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
       }
     }
   };
-
-  const resetSelectionState = () => {
-    setSelectionStart(null);
-    setSelectionRect(null);
-    setPolygonPoints([]);
-    setIsSelectingActive(false);
+  
+  const handleMouseUp = (e: React.MouseEvent) => {
+    // We don't finalize on mouse up - we use the second click approach instead
+    // This is just kept for future reference
   };
 
+  // Reset selection state when selection mode or type changes
   useEffect(() => {
-    if (!isSelectionMode || !currentSelectionType) {
-      resetSelectionState();
-    }
+    resetSelectionState();
   }, [isSelectionMode, currentSelectionType]);
+  
+  const resetSelectionState = () => {
+    setSelectionStart(null);
+    setSelectionEnd(null);
+    setSelectionRect(null);
+    setPolygonPoints([]);
+    setIsDrawing(false);
+  };
 
   const handleNextPage = () => {
     if (currentPage < totalPages - 1) {
@@ -389,6 +393,7 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
           }`}
           onMouseDown={handleMouseDown}
           onMouseMove={handleMouseMove}
+          onMouseUp={handleMouseUp}
         >
           <canvas ref={canvasRef} className="absolute top-0 left-0" />
           
@@ -408,9 +413,9 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
             {/* Polygon Preview */}
             {currentSelectionType === 'polygon' && polygonPoints.length > 0 && (
               <>
-                <path
-                  d={`M ${polygonPoints.map(p => `${p.x},${p.y}`).join(' L ')}`}
-                  fill="rgba(155, 135, 245, 0.2)"
+                <polyline
+                  points={polygonPoints.map(p => `${p.x},${p.y}`).join(' ')}
+                  fill="none"
                   stroke="#9b87f5"
                   strokeWidth="2"
                   strokeDasharray="4"
