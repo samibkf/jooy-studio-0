@@ -101,7 +101,7 @@ const Index = () => {
   const selectedRegion = regions.find(r => r.id === selectedRegionId) || null;
   
   return (
-    <div className="flex flex-col h-screen">
+    <div className="flex-col h-screen">
       <input
         type="file"
         ref={fileInputRef}
@@ -148,7 +148,7 @@ const Index = () => {
               <Button
                 variant="ghost"
                 size="icon"
-                className="absolute -left-6 top-2 z-10 rounded-full bg-background shadow-md border"
+                className="absolute left-0 top-2 -translate-x-full z-10 rounded-full bg-background shadow-md border"
                 onClick={toggleSidebar}
               >
                 <ChevronRight />
