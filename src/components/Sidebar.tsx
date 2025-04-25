@@ -138,7 +138,7 @@ const Sidebar = ({
           <Button 
             variant="outline" 
             size="icon"
-            className="fixed right-4 top-20 z-50"
+            className="fixed right-4 top-20 z-40"  // Increased z-index and kept the same positioning
           >
             <PanelRight className="h-4 w-4" />
           </Button>
