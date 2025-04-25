@@ -92,7 +92,7 @@ const Index = () => {
           <ResizableHandle withHandle />
           
           {!isSidebarCollapsed && <ResizablePanel defaultSize={25} minSize={20} maxSize={40} className="relative">
-              <Button variant="ghost" size="icon" onClick={toggleSidebar} className="absolute -left-6 top-2 z-10 rounded-full bg-background shadow-md border px-0 mx-[240px] text-left">
+              <Button variant="ghost" size="icon" onClick={toggleSidebar} className="absolute -left-6 top-2 z-10 rounded-full bg-background shadow-md border px-0 mx-[150px]">
                 <ChevronRight />
               </Button>
               <Sidebar selectedRegion={selectedRegion} regions={regions} onRegionUpdate={handleRegionUpdate} onRegionDelete={handleRegionDelete} onRegionSelect={handleRegionSelect} />
