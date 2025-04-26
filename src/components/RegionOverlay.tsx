@@ -33,6 +33,7 @@ const RegionOverlay: React.FC<RegionOverlayProps> = ({
     height: region.height * scale,
   };
 
+  // Make sure textarea events don't propagate to prevent unexpected behavior
   const handleTextAreaInteraction = (e: React.MouseEvent | React.KeyboardEvent) => {
     e.stopPropagation();
   };
