@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import * as pdfjsLib from 'pdfjs-dist';
 import { PDFDocumentProxy } from 'pdfjs-dist';
@@ -47,6 +48,7 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
   const [selectionPoint, setSelectionPoint] = useState<{ x: number, y: number } | null>(null);
   const [isDoubleClickMode, setIsDoubleClickMode] = useState(false);
   const [regionCreated, setRegionCreated] = useState(false);
+  const [preventCreateRegion, setPreventCreateRegion] = useState(false);
   
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -133,17 +135,15 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
   }, [selectedRegionId, onRegionDelete]);
 
   const handleMouseDown = (e: React.MouseEvent) => {
-    if ((!isSelectionMode && !isDoubleClickMode) || !containerRef.current) return;
+    if ((!isSelectionMode && !isDoubleClickMode) || !containerRef.current || preventCreateRegion) return;
     
     const rect = containerRef.current.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
-
-    setRegionCreated(false);
     
     if (selectionPoint) {
       setSelectionRect(prev => {
-        if (prev.width > 10 && prev.height > 10 && !regionCreated) {
+        if (prev.width > 10 && prev.height > 10 && !regionCreated && !preventCreateRegion) {
           const nextNumber = getNextRegionNumber(currentPage + 1);
           const regionName = `${currentPage + 1}_${nextNumber}`;
           
@@ -160,6 +160,8 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
           
           onRegionCreate(newRegion);
           setRegionCreated(true);
+          setPreventCreateRegion(true);
+          setTimeout(() => setPreventCreateRegion(false), 500); // Prevent rapid creation
           toast.success('Area region created');
         }
         return { x: 0, y: 0, width: 0, height: 0 };
@@ -220,6 +222,12 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
     if (currentPage < totalPages - 1) {
       setCurrentPage(prev => prev + 1);
       window.getSelection()?.removeAllRanges();
+      // Reset state when changing pages
+      setSelectionPoint(null);
+      setSelectionRect({ x: 0, y: 0, width: 0, height: 0 });
+      setIsSelecting(false);
+      setRegionCreated(false);
+      setPreventCreateRegion(false);
     }
   };
   
@@ -227,6 +235,12 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
     if (currentPage > 0) {
       setCurrentPage(prev => prev - 1);
       window.getSelection()?.removeAllRanges();
+      // Reset state when changing pages
+      setSelectionPoint(null);
+      setSelectionRect({ x: 0, y: 0, width: 0, height: 0 });
+      setIsSelecting(false);
+      setRegionCreated(false);
+      setPreventCreateRegion(false);
     }
   };
   
@@ -255,6 +269,7 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
 
   useEffect(() => {
     setRegionCreated(false);
+    setPreventCreateRegion(false);
   }, [currentPage]);
 
   if (!file) {

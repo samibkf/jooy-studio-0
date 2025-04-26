@@ -90,33 +90,35 @@ const DocumentList: React.FC<DocumentListProps> = ({
                   <span className="truncate">{doc.name}</span>
                 </div>
 
-                <div className={`flex gap-1 ${documentOptionsVisible === doc.id ? 'opacity-100' : 'opacity-0'}`}>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setIsRenaming(doc.id);
-                      setNewName(doc.name);
-                      setDocumentOptionsVisible(null);
-                    }}
-                  >
-                    <Pencil className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 text-destructive"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setDocumentToDelete(doc.id);
-                      setDocumentOptionsVisible(null);
-                    }}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
+                {documentOptionsVisible === doc.id && (
+                  <div className="flex gap-1">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setIsRenaming(doc.id);
+                        setNewName(doc.name);
+                        setDocumentOptionsVisible(null);
+                      }}
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-destructive"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setDocumentToDelete(doc.id);
+                        setDocumentOptionsVisible(null);
+                      }}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                )}
               </div>
             ))}
           </div>
