@@ -30,6 +30,7 @@ const DocumentList: React.FC<DocumentListProps> = ({
   const [isRenaming, setIsRenaming] = useState<string | null>(null);
   const [newName, setNewName] = useState("");
   const [documentToDelete, setDocumentToDelete] = useState<string | null>(null);
+  const [activeDocument, setActiveDocument] = useState<string | null>(null);
 
   const handleRenameSubmit = (documentId: string) => {
     if (newName.trim()) {
@@ -46,6 +47,10 @@ const DocumentList: React.FC<DocumentListProps> = ({
       setDocumentToDelete(null);
       toast.success('Document deleted');
     }
+  };
+
+  const handleDocumentDoubleClick = (docId: string) => {
+    setActiveDocument(activeDocument === docId ? null : docId);
   };
 
   return (
@@ -75,6 +80,7 @@ const DocumentList: React.FC<DocumentListProps> = ({
                 className={`p-3 rounded-md flex items-center justify-between group hover:bg-accent/50 ${
                   selectedDocumentId === doc.id ? 'bg-accent' : ''
                 }`}
+                onDoubleClick={() => handleDocumentDoubleClick(doc.id)}
               >
                 {isRenaming === doc.id ? (
                   <form
@@ -104,7 +110,7 @@ const DocumentList: React.FC<DocumentListProps> = ({
                   </button>
                 )}
 
-                <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className={`flex gap-1 transition-opacity ${activeDocument === doc.id ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
                   <Button
                     variant="ghost"
                     size="icon"
