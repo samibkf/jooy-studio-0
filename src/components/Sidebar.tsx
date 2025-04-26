@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef, useState } from 'react';
 import { Textarea } from '@/components/ui/textarea';
 import { Region } from '@/types/regions';
@@ -17,7 +16,6 @@ const Sidebar = ({
   onRegionUpdate
 }: SidebarProps) => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const scrollAreaRef = useRef<HTMLDivElement>(null);
 
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>, field: keyof Region) => {
     if (!selectedRegion) return;
@@ -34,17 +32,19 @@ const Sidebar = ({
   };
 
   return (
-    <div className="h-full flex flex-col bg-background border-l p-4">
+    <div className="h-full flex flex-col bg-background border-l">
       {selectedRegion && (
-        <div className="flex-1 overflow-hidden">
-          <Textarea 
-            ref={textareaRef}
-            value={selectedRegion?.description || ''} 
-            onChange={e => handleChange(e, 'description')}
-            onKeyDown={handleKeyDown}
-            placeholder="Add a description..." 
-            className="w-full h-full resize-none overflow-y-auto"
-          />
+        <div className="flex-1 p-4">
+          <div className="h-full w-full">
+            <Textarea 
+              ref={textareaRef}
+              value={selectedRegion?.description || ''} 
+              onChange={e => handleChange(e, 'description')}
+              onKeyDown={handleKeyDown}
+              placeholder="Add a description..." 
+              className="w-full h-full resize-none overflow-y-auto"
+            />
+          </div>
         </div>
       )}
     </div>
