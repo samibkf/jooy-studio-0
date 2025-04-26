@@ -193,11 +193,12 @@ const Index = () => {
           <Button
             variant="ghost"
             size="icon"
-            className={`absolute top-2 z-10 rounded-full bg-background shadow-md border ${isSidebarCollapsed ? 'left-0' : '-left-12'}`}
+            className={`fixed z-10 rounded-full bg-background shadow-md border ${isSidebarCollapsed ? 'right-2' : 'right-[310px]'} top-20`}
             onClick={toggleSidebar}
           >
-            {isSidebarCollapsed ? <ChevronRight /> : <ChevronLeft />}
+            {isSidebarCollapsed ? <ChevronLeft /> : <ChevronRight />}
           </Button>
+          
           <div className="h-full">
             <Sidebar
               selectedRegion={selectedDocument?.regions.find(r => r.id === selectedRegionId) || null}
