@@ -1,3 +1,4 @@
+
 import React, { useState, useRef } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
@@ -189,24 +190,30 @@ const Index = () => {
           />
         </div>
         
-        <div className={`transition-all duration-300 relative ${isSidebarCollapsed ? 'w-0 opacity-0 overflow-hidden' : 'w-[300px]'}`}>
+        {/* Right sidebar container with fixed position button */}
+        <div className="relative">
+          {/* Fixed toggle button that's always visible regardless of sidebar state */}
           <Button
             variant="ghost"
             size="icon"
-            className={`fixed z-10 top-20 bg-background shadow-md border rounded-full ${isSidebarCollapsed ? 'right-2' : 'right-[310px]'}`}
+            className="fixed z-20 top-20 bg-background shadow-md border rounded-full"
+            style={{ right: isSidebarCollapsed ? '16px' : '310px' }}
             onClick={toggleSidebar}
           >
             {isSidebarCollapsed ? <ChevronLeft /> : <ChevronRight />}
           </Button>
           
-          <div className="h-full">
-            <Sidebar
-              selectedRegion={selectedDocument?.regions.find(r => r.id === selectedRegionId) || null}
-              regions={selectedDocument?.regions || []}
-              onRegionUpdate={handleRegionUpdate}
-              onRegionDelete={handleRegionDelete}
-              onRegionSelect={setSelectedRegionId}
-            />
+          {/* Sidebar content */}
+          <div className={`transition-all duration-300 ${isSidebarCollapsed ? 'w-0 opacity-0 overflow-hidden' : 'w-[300px]'}`}>
+            <div className="h-full">
+              <Sidebar
+                selectedRegion={selectedDocument?.regions.find(r => r.id === selectedRegionId) || null}
+                regions={selectedDocument?.regions || []}
+                onRegionUpdate={handleRegionUpdate}
+                onRegionDelete={handleRegionDelete}
+                onRegionSelect={setSelectedRegionId}
+              />
+            </div>
           </div>
         </div>
       </div>
