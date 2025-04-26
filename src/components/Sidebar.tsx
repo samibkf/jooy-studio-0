@@ -1,7 +1,7 @@
-import React, { useEffect, useRef, useState } from 'react';
+
+import React, { useRef } from 'react';
 import { Textarea } from '@/components/ui/textarea';
 import { Region } from '@/types/regions';
-import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface SidebarProps {
   selectedRegion: Region | null;
@@ -33,18 +33,20 @@ const Sidebar = ({
 
   return (
     <div className="h-full flex flex-col bg-background border-l">
-      {selectedRegion && (
-        <div className="flex-1 p-4">
-          <div className="h-full w-full">
-            <Textarea 
-              ref={textareaRef}
-              value={selectedRegion?.description || ''} 
-              onChange={e => handleChange(e, 'description')}
-              onKeyDown={handleKeyDown}
-              placeholder="Add a description..." 
-              className="w-full h-full resize-none overflow-y-auto"
-            />
-          </div>
+      {selectedRegion ? (
+        <div className="flex-1 p-4 flex flex-col h-full">
+          <Textarea 
+            ref={textareaRef}
+            value={selectedRegion.description || ''} 
+            onChange={e => handleChange(e, 'description')}
+            onKeyDown={handleKeyDown}
+            placeholder="Add a description..." 
+            className="flex-1 w-full min-h-0 resize-none overflow-y-auto"
+          />
+        </div>
+      ) : (
+        <div className="flex-1 flex items-center justify-center p-4 text-muted-foreground">
+          <p>Select a region to view or edit its description</p>
         </div>
       )}
     </div>
