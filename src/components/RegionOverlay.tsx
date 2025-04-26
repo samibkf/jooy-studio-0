@@ -63,13 +63,6 @@ const RegionOverlay: React.FC<RegionOverlayProps> = ({
           ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'].includes(e.key)) {
         // Stop propagation to prevent page scrolling
         e.stopPropagation();
-        
-        // Only prevent default at the edge of textarea content to allow internal navigation
-        if ((e.key === 'ArrowUp' || e.key === 'ArrowDown') && 
-            (textareaRef.current.selectionStart === textareaRef.current.value.length ||
-             textareaRef.current.selectionStart === 0)) {
-          e.preventDefault();
-        }
       }
     };
 
@@ -238,20 +231,26 @@ const RegionOverlay: React.FC<RegionOverlayProps> = ({
                   />
                 </Button>
               </PopoverTrigger>
-              <PopoverContent side="top" className="w-80 max-h-[300px] overflow-auto" onClick={handleTextAreaInteraction}>
+              <PopoverContent 
+                side="top" 
+                className="w-80 max-h-[300px]" 
+                onClick={handleTextAreaInteraction}
+              >
                 <div className="space-y-2">
                   <h4 className="font-medium">Region Description</h4>
-                  <Textarea
-                    ref={textareaRef}
-                    placeholder="Add a description..."
-                    value={region.description}
-                    onChange={handleDescriptionChange}
-                    onMouseDown={handleTextAreaInteraction}
-                    onDoubleClick={handleTextAreaInteraction}
-                    onKeyDown={handleKeyDown}
-                    rows={5}
-                    className="min-h-[100px]"
-                  />
+                  <div className="max-h-[250px] overflow-auto">
+                    <Textarea
+                      ref={textareaRef}
+                      placeholder="Add a description..."
+                      value={region.description}
+                      onChange={handleDescriptionChange}
+                      onMouseDown={handleTextAreaInteraction}
+                      onDoubleClick={handleTextAreaInteraction}
+                      onKeyDown={handleKeyDown}
+                      rows={5}
+                      className="min-h-[100px] w-full"
+                    />
+                  </div>
                 </div>
               </PopoverContent>
             </Popover>
