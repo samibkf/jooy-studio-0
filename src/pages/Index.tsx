@@ -10,15 +10,22 @@ import { Document } from '@/types/documents';
 import { exportRegionMapping } from '@/utils/exportUtils';
 import { toast } from 'sonner';
 import DocumentList from '@/components/DocumentList';
+import { useDocumentState } from '@/hooks/useDocumentState';
 
 const Index = () => {
   const [documents, setDocuments] = useState<Document[]>([]);
   const [selectedDocumentId, setSelectedDocumentId] = useState<string | null>(null);
-  const [selectedRegionId, setSelectedRegionId] = useState<string | null>(null);
-  const [currentSelectionType, setCurrentSelectionType] = useState<'area' | null>(null);
   const [isDocumentListCollapsed, setIsDocumentListCollapsed] = useState(true);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(true);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const {
+    selectedRegionId,
+    setSelectedRegionId,
+    currentSelectionType,
+    setCurrentSelectionType,
+    resetStates
+  } = useDocumentState(selectedDocumentId);
 
   const selectedDocument = documents.find(doc => doc.id === selectedDocumentId);
 
@@ -45,9 +52,14 @@ const Index = () => {
 
     setDocuments(prev => [...prev, newDocument]);
     setSelectedDocumentId(newDocument.id);
-    setSelectedRegionId(null);
+    resetStates();
     setIsDocumentListCollapsed(false);
     toast.success('Document added successfully');
+  };
+
+  const handleDocumentSelect = (documentId: string) => {
+    setSelectedDocumentId(documentId);
+    resetStates();
   };
 
   const handleDocumentRename = (documentId: string, newName: string) => {
@@ -167,7 +179,7 @@ const Index = () => {
         <DocumentList
           documents={documents}
           selectedDocumentId={selectedDocumentId}
-          onDocumentSelect={setSelectedDocumentId}
+          onDocumentSelect={handleDocumentSelect}
           onDocumentRename={handleDocumentRename}
           onDocumentDelete={handleDocumentDelete}
           isCollapsed={isDocumentListCollapsed}
@@ -189,9 +201,7 @@ const Index = () => {
           />
         </div>
         
-        {/* Right sidebar container with fixed position button */}
         <div className="relative">
-          {/* Fixed toggle button that's always visible regardless of sidebar state */}
           <Button
             variant="ghost"
             size="icon"
@@ -202,7 +212,6 @@ const Index = () => {
             {isSidebarCollapsed ? <ChevronLeft /> : <ChevronRight />}
           </Button>
           
-          {/* Sidebar content */}
           <div className={`transition-all duration-300 ${isSidebarCollapsed ? 'w-0 opacity-0 overflow-hidden' : 'w-[300px]'}`}>
             <div className="h-full">
               <Sidebar
