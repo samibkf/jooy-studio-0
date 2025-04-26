@@ -41,6 +41,12 @@ const RegionOverlay: React.FC<RegionOverlayProps> = ({
   // Prevent keydown events from bubbling up that could delete the region
   const handleKeyDown = (e: React.KeyboardEvent) => {
     e.stopPropagation();
+    
+    // For arrow keys, we want to make sure they only control the textarea
+    // and don't affect page scrolling
+    if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+      e.nativeEvent.stopImmediatePropagation();
+    }
   };
 
   const handleDescriptionChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {

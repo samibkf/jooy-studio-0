@@ -18,6 +18,7 @@ const Sidebar = ({
 }: SidebarProps) => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [textHeight, setTextHeight] = useState<number>(80);
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
 
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>, field: keyof Region) => {
     if (!selectedRegion) return;
@@ -43,9 +44,24 @@ const Sidebar = ({
 
   // Prevent event propagation for keyboard events
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    // Stop propagation for all keyboard events to prevent backspace from deleting the region
-    // and prevent arrow keys from scrolling the page
+    // Stop event bubbling for all keyboard events
     e.stopPropagation();
+    
+    // For arrow keys, we want to make sure they only control the textarea
+    // and don't affect page scrolling
+    if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+      // Let the default behavior happen inside the textarea
+      // but prevent it from affecting the parent containers
+      e.nativeEvent.stopImmediatePropagation();
+    }
+  };
+
+  // Prevent mouse wheel events from propagating when cursor is in textarea
+  const handleWheel = (e: React.WheelEvent) => {
+    // Only stop propagation if the textarea is focused
+    if (document.activeElement === textareaRef.current) {
+      e.stopPropagation();
+    }
   };
 
   // Initialize textarea height when region changes
@@ -56,15 +72,31 @@ const Sidebar = ({
     }
   }, [selectedRegion]);
 
+  // Prevent the page from scrolling when arrow keys are pressed in the textarea
+  useEffect(() => {
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      if (document.activeElement === textareaRef.current && 
+          ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+        e.stopPropagation();
+      }
+    };
+
+    window.addEventListener('keydown', handleGlobalKeyDown, true);
+    return () => {
+      window.removeEventListener('keydown', handleGlobalKeyDown, true);
+    };
+  }, []);
+
   return (
     <div className="h-full flex flex-col bg-background border-l">
-      <ScrollArea className="flex-1">
+      <ScrollArea className="flex-1" ref={scrollAreaRef}>
         <div className="p-4 pb-20"> {/* Add bottom padding to prevent toolbar overlap */}
           <Textarea 
             ref={textareaRef}
             value={selectedRegion?.description || ''} 
             onChange={e => handleChange(e, 'description')}
             onKeyDown={handleKeyDown}
+            onWheel={handleWheel}
             placeholder="Add a description..." 
             className="h-auto min-h-[80px] w-full resize-none" 
           />

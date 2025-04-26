@@ -123,7 +123,10 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.key === 'Delete' || e.key === 'Backspace') && selectedRegionId) {
+      if ((e.key === 'Delete' || e.key === 'Backspace') && 
+          selectedRegionId && 
+          document.activeElement instanceof HTMLElement && 
+          !['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) {
         onRegionDelete(selectedRegionId);
         toast.success('Region deleted');
       }
