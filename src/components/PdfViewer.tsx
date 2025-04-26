@@ -1,4 +1,5 @@
-import React, { useState, useRef, useEffect } from 'react';
+
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import * as pdfjsLib from 'pdfjs-dist';
 import { PDFDocumentProxy } from 'pdfjs-dist';
 import { Region } from '@/types/regions';
@@ -46,12 +47,11 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
   const [selectionRect, setSelectionRect] = useState({ x: 0, y: 0, width: 0, height: 0 });
   const [selectionPoint, setSelectionPoint] = useState<{ x: number, y: number } | null>(null);
   const [isDoubleClickMode, setIsDoubleClickMode] = useState(false);
-  const [preventCreateRegion, setPreventCreateRegion] = useState(false);
-  const [isTemporarilyBlocked, setIsTemporarilyBlocked] = useState(false);
   const [isSelectionLocked, setIsSelectionLocked] = useState(false);
   
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const pendingRegionRef = useRef<Omit<Region, 'id'> | null>(null);
 
   const getNextRegionNumber = (pageNumber: number): number => {
     const pageRegions = regions.filter(region => region.page === pageNumber);
@@ -133,6 +133,14 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [selectedRegionId, onRegionDelete]);
+  
+  // Process any pending region creation outside render cycle
+  useEffect(() => {
+    if (pendingRegionRef.current) {
+      onRegionCreate(pendingRegionRef.current);
+      pendingRegionRef.current = null;
+    }
+  }, [onRegionCreate]);
 
   const handleMouseDown = (e: React.MouseEvent) => {
     if ((!isSelectionMode && !isDoubleClickMode) || !containerRef.current || isSelectionLocked) return;
@@ -147,7 +155,8 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
           const nextNumber = getNextRegionNumber(currentPage + 1);
           const regionName = `${currentPage + 1}_${nextNumber}`;
           
-          const newRegion: Omit<Region, 'id'> = {
+          // Store region for creation in the next cycle
+          pendingRegionRef.current = {
             page: currentPage + 1,
             x: prev.x,
             y: prev.y,
@@ -158,8 +167,7 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
             description: ''
           };
           
-          onRegionCreate(newRegion);
-          
+          // Lock selection temporarily
           setIsSelectionLocked(true);
           setTimeout(() => setIsSelectionLocked(false), 300);
         }
@@ -226,6 +234,7 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
       setIsSelecting(false);
       setIsDoubleClickMode(false);
       setIsSelectionLocked(false);
+      pendingRegionRef.current = null;
     }
   };
   
@@ -238,6 +247,7 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
       setIsSelecting(false);
       setIsDoubleClickMode(false);
       setIsSelectionLocked(false);
+      pendingRegionRef.current = null;
     }
   };
   
@@ -263,9 +273,11 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
   }, [selectionPoint]);
 
   const pageRegions = regions.filter(region => region.page === currentPage + 1);
-
+  
   useEffect(() => {
-    setPreventCreateRegion(false);
+    // Reset selection state when page changes
+    setIsSelectionLocked(false);
+    pendingRegionRef.current = null;
   }, [currentPage]);
 
   if (!file) {
