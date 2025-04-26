@@ -7,6 +7,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { ChevronLeft, ChevronRight, FileText, Pencil, Trash2 } from 'lucide-react';
 import { Document } from '@/types/documents';
 import { toast } from 'sonner';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 
 interface DocumentListProps {
   documents: Document[];
@@ -30,7 +31,7 @@ const DocumentList: React.FC<DocumentListProps> = ({
   const [isRenaming, setIsRenaming] = useState<string | null>(null);
   const [newName, setNewName] = useState("");
   const [documentToDelete, setDocumentToDelete] = useState<string | null>(null);
-  const [activeDocument, setActiveDocument] = useState<string | null>(null);
+  const [documentOptionsVisible, setDocumentOptionsVisible] = useState<string | null>(null);
 
   const handleRenameSubmit = (documentId: string) => {
     if (newName.trim()) {
@@ -49,9 +50,9 @@ const DocumentList: React.FC<DocumentListProps> = ({
     }
   };
 
-  const handleDocumentDoubleClick = (docId: string) => {
-    console.log("Double clicked document:", docId);
-    setActiveDocument(activeDocument === docId ? null : docId);
+  const toggleDocumentOptions = (docId: string) => {
+    console.log("Toggle document options for:", docId);
+    setDocumentOptionsVisible(prev => prev === docId ? null : docId);
   };
 
   return (
@@ -81,40 +82,15 @@ const DocumentList: React.FC<DocumentListProps> = ({
                 className={`p-3 rounded-md flex items-center justify-between group hover:bg-accent/50 ${
                   selectedDocumentId === doc.id ? 'bg-accent' : ''
                 }`}
-                onDoubleClick={(e) => {
-                  e.preventDefault();
-                  handleDocumentDoubleClick(doc.id);
-                }}
+                onClick={() => onDocumentSelect(doc.id)}
+                onDoubleClick={() => toggleDocumentOptions(doc.id)}
               >
-                {isRenaming === doc.id ? (
-                  <form
-                    onSubmit={(e) => {
-                      e.preventDefault();
-                      handleRenameSubmit(doc.id);
-                    }}
-                    className="flex-1 mr-2"
-                  >
-                    <Input
-                      value={newName}
-                      onChange={(e) => setNewName(e.target.value)}
-                      autoFocus
-                      onBlur={() => {
-                        setIsRenaming(null);
-                        setNewName("");
-                      }}
-                    />
-                  </form>
-                ) : (
-                  <button
-                    className="flex items-center gap-2 flex-1 text-left"
-                    onClick={() => onDocumentSelect(doc.id)}
-                  >
-                    <FileText className="h-4 w-4" />
-                    <span className="truncate">{doc.name}</span>
-                  </button>
-                )}
+                <div className="flex items-center gap-2 flex-1 text-left">
+                  <FileText className="h-4 w-4" />
+                  <span className="truncate">{doc.name}</span>
+                </div>
 
-                <div className={`flex gap-1 ${activeDocument === doc.id || selectedDocumentId === doc.id ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
+                <div className={`flex gap-1 ${documentOptionsVisible === doc.id || selectedDocumentId === doc.id ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
                   <Button
                     variant="ghost"
                     size="icon"
@@ -144,6 +120,30 @@ const DocumentList: React.FC<DocumentListProps> = ({
           </div>
         </ScrollArea>
 
+        {/* Dialog for renaming */}
+        <Dialog open={!!isRenaming} onOpenChange={(open) => {
+          if (!open) setIsRenaming(null);
+        }}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Rename document</DialogTitle>
+            </DialogHeader>
+            <div className="py-4">
+              <Input
+                value={newName}
+                onChange={(e) => setNewName(e.target.value)}
+                placeholder="Enter new name"
+                autoFocus
+              />
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsRenaming(null)}>Cancel</Button>
+              <Button onClick={() => isRenaming && handleRenameSubmit(isRenaming)}>Save</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Alert dialog for delete confirmation */}
         <AlertDialog open={!!documentToDelete} onOpenChange={() => setDocumentToDelete(null)}>
           <AlertDialogContent>
             <AlertDialogHeader>
