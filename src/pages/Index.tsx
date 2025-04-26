@@ -1,36 +1,72 @@
 import React, { useState, useRef } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import Header from '@/components/Header';
-import Sidebar from '@/components/Sidebar';
 import PdfViewer from '@/components/PdfViewer';
+import DocumentList from '@/components/DocumentList';
 import { Region, RegionMapping } from '@/types/regions';
+import { Document } from '@/types/documents';
 import { exportRegionMapping } from '@/utils/exportUtils';
 import { toast } from 'sonner';
-import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/components/ui/resizable';
-import { Button } from '@/components/ui/button';
-import { ChevronRight, ChevronLeft } from 'lucide-react';
+
 const Index = () => {
-  const [pdfFile, setPdfFile] = useState<File | null>(null);
+  const [documents, setDocuments] = useState<Document[]>([]);
+  const [currentDocument, setCurrentDocument] = useState<Document | null>(null);
   const [regions, setRegions] = useState<Region[]>([]);
   const [selectedRegionId, setSelectedRegionId] = useState<string | null>(null);
   const [currentSelectionType, setCurrentSelectionType] = useState<'area' | null>(null);
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(true);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
   const handleFileUpload = () => {
     fileInputRef.current?.click();
   };
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
+    
     const file = files[0];
     if (file.type !== 'application/pdf') {
       toast.error('Please select a PDF file');
       return;
     }
-    setPdfFile(file);
+
+    const newDocument: Document = {
+      id: uuidv4(),
+      name: file.name,
+      file: file
+    };
+
+    setDocuments(prev => [...prev, newDocument]);
+    setCurrentDocument(newDocument);
     setRegions([]);
     setSelectedRegionId(null);
+    toast.success('Document uploaded successfully');
   };
+
+  const handleDocumentDelete = (docId: string) => {
+    setDocuments(prev => prev.filter(doc => doc.id !== docId));
+    if (currentDocument?.id === docId) {
+      setCurrentDocument(null);
+      setRegions([]);
+      setSelectedRegionId(null);
+    }
+    toast.success('Document deleted');
+  };
+
+  const handleDocumentRename = (docId: string, newName: string) => {
+    if (!newName.trim()) {
+      toast.error('Document name cannot be empty');
+      return;
+    }
+
+    setDocuments(prev =>
+      prev.map(doc =>
+        doc.id === docId ? { ...doc, name: newName.trim() } : doc
+      )
+    );
+    toast.success('Document renamed');
+  };
+
   const handleRegionCreate = (regionData: Omit<Region, 'id'>) => {
     const newRegion: Region = {
       ...regionData,
@@ -40,9 +76,11 @@ const Index = () => {
     setSelectedRegionId(newRegion.id);
     toast.success('Region created');
   };
+
   const handleRegionUpdate = (updatedRegion: Region) => {
     setRegions(prev => prev.map(region => region.id === updatedRegion.id ? updatedRegion : region));
   };
+
   const handleRegionDelete = (regionId: string) => {
     setRegions(prev => prev.filter(region => region.id !== regionId));
     if (selectedRegionId === regionId) {
@@ -50,14 +88,17 @@ const Index = () => {
     }
     toast.success('Region deleted');
   };
+
   const handleRegionSelect = (regionId: string | null) => {
     setSelectedRegionId(regionId);
   };
+
   const handleToggleSelectionMode = (mode: 'area' | null) => {
     setCurrentSelectionType(mode);
   };
+
   const handleExport = () => {
-    if (!pdfFile) {
+    if (!currentDocument) {
       toast.error('No PDF document loaded');
       return;
     }
@@ -65,44 +106,57 @@ const Index = () => {
       toast.error('No regions defined');
       return;
     }
+
     const mapping: RegionMapping = {
-      documentName: pdfFile.name,
-      documentId: uuidv4(),
-      // Generate a unique ID for the document
+      documentName: currentDocument.name,
+      documentId: currentDocument.id,
       regions: regions
     };
+
     exportRegionMapping(mapping);
     toast.success('Data exported successfully');
   };
-  const toggleSidebar = () => {
-    setIsSidebarCollapsed(!isSidebarCollapsed);
-  };
-  const selectedRegion = regions.find(r => r.id === selectedRegionId) || null;
-  return <div className="flex flex-col h-screen">
-      <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="application/pdf" className="hidden" />
+
+  return (
+    <div className="flex flex-col h-screen">
+      <input
+        type="file"
+        ref={fileInputRef}
+        onChange={handleFileChange}
+        accept="application/pdf"
+        className="hidden"
+      />
       
-      <Header onUploadClick={handleFileUpload} onExport={handleExport} hasDocument={!!pdfFile} />
+      <Header
+        onUploadClick={handleFileUpload}
+        onExport={handleExport}
+        hasDocument={!!currentDocument}
+      />
       
-      <div className="flex-1 overflow-hidden">
-        <ResizablePanelGroup direction="horizontal" className="h-full relative">
-          <ResizablePanel defaultSize={75} minSize={30}>
-            <PdfViewer file={pdfFile} regions={regions} onRegionCreate={handleRegionCreate} onRegionUpdate={handleRegionUpdate} selectedRegionId={selectedRegionId} onRegionSelect={handleRegionSelect} onRegionDelete={handleRegionDelete} isSelectionMode={!!currentSelectionType} currentSelectionType={currentSelectionType} onCurrentSelectionTypeChange={handleToggleSelectionMode} />
-          </ResizablePanel>
-          
-          <ResizableHandle withHandle />
-          
-          {!isSidebarCollapsed && <ResizablePanel defaultSize={25} minSize={20} maxSize={40} className="relative">
-              <Button variant="ghost" size="icon" onClick={toggleSidebar} className="absolute -left-6 top-2 z-10 rounded-full bg-background shadow-md border mx-[27px]">
-                <ChevronRight />
-              </Button>
-              <Sidebar selectedRegion={selectedRegion} regions={regions} onRegionUpdate={handleRegionUpdate} onRegionDelete={handleRegionDelete} onRegionSelect={handleRegionSelect} />
-            </ResizablePanel>}
-          
-          {isSidebarCollapsed && <Button variant="ghost" size="icon" className="absolute right-2 top-2 z-10 rounded-full bg-background shadow-md border" onClick={toggleSidebar}>
-              <ChevronLeft />
-            </Button>}
-        </ResizablePanelGroup>
+      <div className="flex-1 relative">
+        <PdfViewer
+          file={currentDocument?.file || null}
+          regions={regions}
+          onRegionCreate={handleRegionCreate}
+          onRegionUpdate={handleRegionUpdate}
+          selectedRegionId={selectedRegionId}
+          onRegionSelect={handleRegionSelect}
+          onRegionDelete={handleRegionDelete}
+          isSelectionMode={!!currentSelectionType}
+          currentSelectionType={currentSelectionType}
+          onCurrentSelectionTypeChange={handleToggleSelectionMode}
+        />
+        
+        <DocumentList
+          documents={documents}
+          currentDocument={currentDocument}
+          onDocumentSelect={setCurrentDocument}
+          onDocumentDelete={handleDocumentDelete}
+          onDocumentRename={handleDocumentRename}
+        />
       </div>
-    </div>;
+    </div>
+  );
 };
+
 export default Index;
