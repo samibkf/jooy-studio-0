@@ -9,15 +9,14 @@ import { Document } from '@/types/documents';
 import { exportRegionMapping } from '@/utils/exportUtils';
 import { toast } from 'sonner';
 import DocumentList from '@/components/DocumentList';
-import { ResizablePanelGroup, ResizablePanel } from '@/components/ui/resizable';
 
 const Index = () => {
   const [documents, setDocuments] = useState<Document[]>([]);
   const [selectedDocumentId, setSelectedDocumentId] = useState<string | null>(null);
   const [selectedRegionId, setSelectedRegionId] = useState<string | null>(null);
   const [currentSelectionType, setCurrentSelectionType] = useState<'area' | null>(null);
-  const [isDocumentListCollapsed, setIsDocumentListCollapsed] = useState(true);
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(true);
+  const [isDocumentListCollapsed, setIsDocumentListCollapsed] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const selectedDocument = documents.find(doc => doc.id === selectedDocumentId);
@@ -143,6 +142,11 @@ const Index = () => {
     toast.success('Data exported successfully');
   };
 
+  // Toggle sidebar visibility
+  const toggleSidebar = () => {
+    setIsSidebarCollapsed(!isSidebarCollapsed);
+  };
+
   return (
     <div className="flex flex-col h-screen">
       <input
@@ -159,41 +163,51 @@ const Index = () => {
         hasDocument={!!selectedDocument}
       />
       
-      <div className="flex-1 overflow-hidden">
-        <ResizablePanelGroup direction="horizontal" className="h-full">
-          <DocumentList
-            documents={documents}
-            selectedDocumentId={selectedDocumentId}
-            onDocumentSelect={setSelectedDocumentId}
-            onDocumentRename={handleDocumentRename}
-            onDocumentDelete={handleDocumentDelete}
-            isCollapsed={isDocumentListCollapsed}
-            onCollapsedChange={setIsDocumentListCollapsed}
-          />
+      <div className="flex flex-1 overflow-hidden">
+        <DocumentList
+          documents={documents}
+          selectedDocumentId={selectedDocumentId}
+          onDocumentSelect={setSelectedDocumentId}
+          onDocumentRename={handleDocumentRename}
+          onDocumentDelete={handleDocumentDelete}
+          isCollapsed={isDocumentListCollapsed}
+          onCollapsedChange={setIsDocumentListCollapsed}
+        />
 
-          <ResizablePanel defaultSize={75} minSize={30}>
-            <PdfViewer
-              file={selectedDocument?.file || null}
-              regions={selectedDocument?.regions || []}
-              onRegionCreate={handleRegionCreate}
-              onRegionUpdate={handleRegionUpdate}
-              selectedRegionId={selectedRegionId}
-              onRegionSelect={setSelectedRegionId}
-              onRegionDelete={handleRegionDelete}
-              isSelectionMode={!!currentSelectionType}
-              currentSelectionType={currentSelectionType}
-              onCurrentSelectionTypeChange={setCurrentSelectionType}
-            />
-          </ResizablePanel>
-          
-          <Sidebar
-            selectedRegion={selectedDocument?.regions.find(r => r.id === selectedRegionId) || null}
+        <div className="flex-1 overflow-hidden relative">
+          <PdfViewer
+            file={selectedDocument?.file || null}
             regions={selectedDocument?.regions || []}
+            onRegionCreate={handleRegionCreate}
             onRegionUpdate={handleRegionUpdate}
-            onRegionDelete={handleRegionDelete}
+            selectedRegionId={selectedRegionId}
             onRegionSelect={setSelectedRegionId}
+            onRegionDelete={handleRegionDelete}
+            isSelectionMode={!!currentSelectionType}
+            currentSelectionType={currentSelectionType}
+            onCurrentSelectionTypeChange={setCurrentSelectionType}
           />
-        </ResizablePanelGroup>
+        </div>
+        
+        <div className={`transition-all duration-300 ${isSidebarCollapsed ? 'w-0 opacity-0 overflow-hidden' : 'w-[300px]'}`}>
+          <div className="relative h-full">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="absolute -left-12 top-2 z-10 rounded-full bg-background shadow-md border"
+              onClick={toggleSidebar}
+            >
+              {isSidebarCollapsed ? <ChevronLeft /> : <ChevronRight />}
+            </Button>
+            <Sidebar
+              selectedRegion={selectedDocument?.regions.find(r => r.id === selectedRegionId) || null}
+              regions={selectedDocument?.regions || []}
+              onRegionUpdate={handleRegionUpdate}
+              onRegionDelete={handleRegionDelete}
+              onRegionSelect={setSelectedRegionId}
+            />
+          </div>
+        </div>
       </div>
     </div>
   );
