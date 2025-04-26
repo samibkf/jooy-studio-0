@@ -44,23 +44,23 @@ const Sidebar = ({
 
   // Prevent event propagation for keyboard events
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    // Stop event bubbling for all keyboard events
+    // Completely stop propagation for all keyboard events
     e.stopPropagation();
     
-    // For arrow keys, we want to make sure they only control the textarea
-    // and don't affect page scrolling
+    // For arrow keys, use stronger prevention methods
     if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
-      // Let the default behavior happen inside the textarea
-      // but prevent it from affecting the parent containers
+      // This prevents the event from bubbling up completely
       e.nativeEvent.stopImmediatePropagation();
+      e.preventDefault(); // Prevent default browser behavior
     }
   };
 
   // Prevent mouse wheel events from propagating when cursor is in textarea
   const handleWheel = (e: React.WheelEvent) => {
-    // Only stop propagation if the textarea is focused
+    // Stop wheel events when textarea is focused
     if (document.activeElement === textareaRef.current) {
       e.stopPropagation();
+      e.preventDefault();
     }
   };
 
@@ -72,25 +72,32 @@ const Sidebar = ({
     }
   }, [selectedRegion]);
 
-  // Prevent the page from scrolling when arrow keys are pressed in the textarea
+  // Add a global keyboard event handler to ensure arrow keys don't scroll the page
   useEffect(() => {
-    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+    const preventArrowScroll = (e: KeyboardEvent) => {
       if (document.activeElement === textareaRef.current && 
-          ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+          ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'].includes(e.key)) {
+        // Complete prevention of event propagation
         e.stopPropagation();
+        // Stop default browser behavior for these keys when in textarea
+        if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+          e.preventDefault();
+        }
       }
     };
 
-    window.addEventListener('keydown', handleGlobalKeyDown, true);
+    // Using capture phase to intercept events before they reach other handlers
+    window.addEventListener('keydown', preventArrowScroll, { capture: true });
+    
     return () => {
-      window.removeEventListener('keydown', handleGlobalKeyDown, true);
+      window.removeEventListener('keydown', preventArrowScroll, { capture: true });
     };
   }, []);
 
   return (
     <div className="h-full flex flex-col bg-background border-l">
       <ScrollArea className="flex-1" ref={scrollAreaRef}>
-        <div className="p-4 pb-20"> {/* Add bottom padding to prevent toolbar overlap */}
+        <div className="p-4 pb-20">
           <Textarea 
             ref={textareaRef}
             value={selectedRegion?.description || ''} 
