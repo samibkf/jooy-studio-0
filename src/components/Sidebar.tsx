@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -49,44 +50,46 @@ const Sidebar = ({
           <p className="text-sm mt-2">Draw a region on the PDF to get started.</p>
         </div>
       ) : (
-        <ScrollArea className="flex-grow">
-          <div className="space-y-3 p-4">
-            {regions.map(region => (
-              <div 
-                key={region.id} 
-                className={`p-4 rounded-md border cursor-pointer transition-colors ${
-                  selectedRegion?.id === region.id ? 'border-primary bg-primary/5' : 'border-gray-200 hover:bg-gray-50'
-                }`} 
-                onClick={() => onRegionSelect(region.id)}
-              >
-                <div className="flex justify-between items-start">
-                  <div className="font-medium truncate">{region.name || 'Unnamed Region'}</div>
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 hover:opacity-100 focus:opacity-100" 
-                    onClick={e => {
-                      e.stopPropagation();
-                      handleDelete(region.id);
-                    }}
-                  >
-                    <X className="h-4 w-4" />
-                    <span className="sr-only">Delete</span>
-                  </Button>
+        <div className="flex-grow overflow-hidden">
+          <ScrollArea className="h-[calc(100vh-300px)]">
+            <div className="space-y-3 p-4">
+              {regions.map(region => (
+                <div 
+                  key={region.id} 
+                  className={`p-4 rounded-md border cursor-pointer transition-colors group ${
+                    selectedRegion?.id === region.id ? 'border-primary bg-primary/5' : 'border-gray-200 hover:bg-gray-50'
+                  }`} 
+                  onClick={() => onRegionSelect(region.id)}
+                >
+                  <div className="flex justify-between items-start">
+                    <div className="font-medium truncate">{region.name || 'Unnamed Region'}</div>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 hover:opacity-100 focus:opacity-100" 
+                      onClick={e => {
+                        e.stopPropagation();
+                        handleDelete(region.id);
+                      }}
+                    >
+                      <X className="h-4 w-4" />
+                      <span className="sr-only">Delete</span>
+                    </Button>
+                  </div>
+                  <div className="text-xs text-muted-foreground mt-1">
+                    Page {region.page}, {region.type}
+                  </div>
                 </div>
-                <div className="text-xs text-muted-foreground mt-1">
-                  Page {region.page}, {region.type}
-                </div>
-              </div>
-            ))}
-          </div>
-        </ScrollArea>
+              ))}
+            </div>
+          </ScrollArea>
+        </div>
       )}
       
       <Separator className="flex-none" />
       
       {selectedRegion && (
-        <div className="flex-none space-y-4 p-4">
+        <div className="flex-none space-y-4 p-4 max-h-[300px] overflow-y-auto">
           <h3 className="font-medium text-sm">Region Details</h3>
           
           <div className="space-y-2">

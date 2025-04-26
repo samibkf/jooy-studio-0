@@ -50,6 +50,7 @@ const DocumentList: React.FC<DocumentListProps> = ({
   };
 
   const handleDocumentDoubleClick = (docId: string) => {
+    console.log("Double clicked document:", docId);
     setActiveDocument(activeDocument === docId ? null : docId);
   };
 
@@ -80,7 +81,10 @@ const DocumentList: React.FC<DocumentListProps> = ({
                 className={`p-3 rounded-md flex items-center justify-between group hover:bg-accent/50 ${
                   selectedDocumentId === doc.id ? 'bg-accent' : ''
                 }`}
-                onDoubleClick={() => handleDocumentDoubleClick(doc.id)}
+                onDoubleClick={(e) => {
+                  e.preventDefault();
+                  handleDocumentDoubleClick(doc.id);
+                }}
               >
                 {isRenaming === doc.id ? (
                   <form
@@ -110,12 +114,13 @@ const DocumentList: React.FC<DocumentListProps> = ({
                   </button>
                 )}
 
-                <div className={`flex gap-1 transition-opacity ${activeDocument === doc.id ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
+                <div className={`flex gap-1 ${activeDocument === doc.id || selectedDocumentId === doc.id ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
                   <Button
                     variant="ghost"
                     size="icon"
                     className="h-8 w-8"
-                    onClick={() => {
+                    onClick={(e) => {
+                      e.stopPropagation();
                       setIsRenaming(doc.id);
                       setNewName(doc.name);
                     }}
@@ -126,7 +131,10 @@ const DocumentList: React.FC<DocumentListProps> = ({
                     variant="ghost"
                     size="icon"
                     className="h-8 w-8 text-destructive"
-                    onClick={() => setDocumentToDelete(doc.id)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setDocumentToDelete(doc.id);
+                    }}
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>

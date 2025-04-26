@@ -46,6 +46,7 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
   const [selectionRect, setSelectionRect] = useState({ x: 0, y: 0, width: 0, height: 0 });
   const [selectionPoint, setSelectionPoint] = useState<{ x: number, y: number } | null>(null);
   const [isDoubleClickMode, setIsDoubleClickMode] = useState(false);
+  const [regionCreated, setRegionCreated] = useState(false);
   
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -138,9 +139,11 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
 
+    setRegionCreated(false);
+    
     if (selectionPoint) {
       setSelectionRect(prev => {
-        if (prev.width > 10 && prev.height > 10) {
+        if (prev.width > 10 && prev.height > 10 && !regionCreated) {
           const nextNumber = getNextRegionNumber(currentPage + 1);
           const regionName = `${currentPage + 1}_${nextNumber}`;
           
@@ -156,6 +159,7 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
           };
           
           onRegionCreate(newRegion);
+          setRegionCreated(true);
           toast.success('Area region created');
         }
         return { x: 0, y: 0, width: 0, height: 0 };
@@ -248,6 +252,10 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
   }, [selectionPoint]);
 
   const pageRegions = regions.filter(region => region.page === currentPage + 1);
+
+  useEffect(() => {
+    setRegionCreated(false);
+  }, [currentPage]);
 
   if (!file) {
     return (
