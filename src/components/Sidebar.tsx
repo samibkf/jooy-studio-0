@@ -1,9 +1,6 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { toast } from 'sonner';
@@ -25,7 +22,7 @@ const Sidebar = ({
   onRegionDelete,
   onRegionSelect
 }: SidebarProps) => {
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>, field: keyof Region) => {
+  const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>, field: keyof Region) => {
     if (!selectedRegion) return;
     const updatedRegion = {
       ...selectedRegion,
@@ -39,7 +36,8 @@ const Sidebar = ({
     toast.success('Region deleted');
   };
 
-  return <div className="h-full flex flex-col bg-background border-l">
+  return (
+    <div className="h-full flex flex-col bg-background border-l">
       <div className="flex-none p-4 border-b">
         <h2 className="font-semibold text-base">Regions</h2>
       </div>
@@ -76,9 +74,6 @@ const Sidebar = ({
                       <span className="sr-only">Delete</span>
                     </Button>
                   </div>
-                  <div className="text-xs text-muted-foreground mt-1">
-                    Page {region.page}, {region.type}
-                  </div>
                 </div>
               ))}
             </div>
@@ -86,43 +81,21 @@ const Sidebar = ({
         </div>
       )}
       
-      <Separator className="flex-none" />
-      
       {selectedRegion && (
-        <div className="flex-none space-y-4 p-4 max-h-[300px] overflow-y-auto">
-          <h3 className="font-medium text-sm">Region Details</h3>
-          
+        <div className="flex-none space-y-4 p-4">
           <div className="space-y-2">
-            <Label htmlFor="region-name" className="text-sm">Name</Label>
-            <Input 
-              id="region-name" 
-              value={selectedRegion.name} 
-              onChange={e => handleChange(e, 'name')} 
-              placeholder="Region name" 
-              className="h-8" 
-            />
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="description" className="text-sm">Description</Label>
             <Textarea 
-              id="description" 
               value={selectedRegion.description} 
               onChange={e => handleChange(e, 'description')} 
-              placeholder="Optional description" 
+              placeholder="Add a description..." 
               className="resize-none" 
               rows={3} 
             />
           </div>
-          
-          <div className="text-xs text-muted-foreground bg-muted/50 p-2 rounded">
-            <div>Page: {selectedRegion.page}</div>
-            <div>Position: {Math.round(selectedRegion.x)}, {Math.round(selectedRegion.y)}</div>
-            <div>Size: {Math.round(selectedRegion.width)} × {Math.round(selectedRegion.height)}</div>
-          </div>
         </div>
       )}
-    </div>;
+    </div>
+  );
 };
 
 export default Sidebar;
