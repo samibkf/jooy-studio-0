@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
@@ -12,6 +11,8 @@ import { exportRegionMapping } from '@/utils/exportUtils';
 import { toast } from 'sonner';
 import DocumentList from '@/components/DocumentList';
 import { useDocumentState } from '@/hooks/useDocumentState';
+import { ProtectedRoute } from '@/components/ProtectedRoute';
+import { useAuth } from '@/contexts/AuthProvider';
 
 const Index = () => {
   const [documents, setDocuments] = useState<Document[]>([]);
@@ -32,10 +33,10 @@ const Index = () => {
 
   const selectedDocument = documents.find(doc => doc.id === selectedDocumentId);
   
-  // Ensure regions are properly synchronized with documents
+  const { authState, signOut } = useAuth();
+
   useEffect(() => {
     if (selectedDocumentId && selectedDocument) {
-      // Update cache with the current document's regions
       setRegionsCache(prev => ({
         ...prev,
         [selectedDocumentId]: [...selectedDocument.regions]
@@ -71,7 +72,6 @@ const Index = () => {
     setIsDocumentListCollapsed(false);
     toast.success('Document added successfully');
     
-    // Initialize empty regions array in the cache for this new document
     setRegionsCache(prev => ({
       ...prev,
       [newDocumentId]: []
@@ -81,7 +81,6 @@ const Index = () => {
   const handleDocumentSelect = (documentId: string) => {
     if (selectedDocumentId === documentId) return;
     
-    // Save current document's regions before switching
     if (selectedDocumentId && selectedDocument) {
       setDocuments(prev => 
         prev.map(doc => 
@@ -107,7 +106,6 @@ const Index = () => {
   const handleDocumentDelete = (documentId: string) => {
     setDocuments(prev => prev.filter(doc => doc.id !== documentId));
     
-    // Clean up the regions cache
     setRegionsCache(prev => {
       const newCache = { ...prev };
       delete newCache[documentId];
@@ -128,7 +126,6 @@ const Index = () => {
       id: uuidv4()
     };
 
-    // Update both the documents state and the regions cache
     setDocuments(prev =>
       prev.map(doc =>
         doc.id === selectedDocumentId
@@ -221,72 +218,76 @@ const Index = () => {
   };
 
   return (
-    <div className="flex flex-col h-screen">
-      <input
-        type="file"
-        ref={fileInputRef}
-        onChange={handleFileChange}
-        accept="application/pdf"
-        className="hidden"
-      />
-      
-      <Header
-        onUploadClick={handleFileUpload}
-        onExport={handleExport}
-        hasDocument={!!selectedDocument}
-      />
-      
-      <div className="flex flex-1 overflow-hidden">
-        <DocumentList
-          documents={documents}
-          selectedDocumentId={selectedDocumentId}
-          onDocumentSelect={handleDocumentSelect}
-          onDocumentRename={handleDocumentRename}
-          onDocumentDelete={handleDocumentDelete}
-          isCollapsed={isDocumentListCollapsed}
-          onCollapsedChange={setIsDocumentListCollapsed}
+    <ProtectedRoute>
+      <div className="flex flex-col h-screen">
+        <input
+          type="file"
+          ref={fileInputRef}
+          onChange={handleFileChange}
+          accept="application/pdf"
+          className="hidden"
         />
-
-        <div className="flex-1 overflow-hidden relative">
-          <PdfViewer
-            file={selectedDocument?.file || null}
-            regions={selectedDocument?.regions || []}
-            onRegionCreate={handleRegionCreate}
-            onRegionUpdate={handleRegionUpdate}
-            selectedRegionId={selectedRegionId}
-            onRegionSelect={setSelectedRegionId}
-            onRegionDelete={handleRegionDelete}
-            isSelectionMode={!!currentSelectionType}
-            currentSelectionType={currentSelectionType}
-            onCurrentSelectionTypeChange={setCurrentSelectionType}
-          />
-        </div>
         
-        <div className="relative">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="fixed z-20 top-20 bg-background shadow-md border rounded-full"
-            style={{ right: isSidebarCollapsed ? '16px' : '310px' }}
-            onClick={toggleSidebar}
-          >
-            {isSidebarCollapsed ? <ChevronLeft /> : <ChevronRight />}
-          </Button>
+        <Header
+          onUploadClick={handleFileUpload}
+          onExport={handleExport}
+          hasDocument={!!selectedDocument}
+          user={authState.profile}
+          onSignOut={signOut}
+        />
+        
+        <div className="flex flex-1 overflow-hidden">
+          <DocumentList
+            documents={documents}
+            selectedDocumentId={selectedDocumentId}
+            onDocumentSelect={handleDocumentSelect}
+            onDocumentRename={handleDocumentRename}
+            onDocumentDelete={handleDocumentDelete}
+            isCollapsed={isDocumentListCollapsed}
+            onCollapsedChange={setIsDocumentListCollapsed}
+          />
+
+          <div className="flex-1 overflow-hidden relative">
+            <PdfViewer
+              file={selectedDocument?.file || null}
+              regions={selectedDocument?.regions || []}
+              onRegionCreate={handleRegionCreate}
+              onRegionUpdate={handleRegionUpdate}
+              selectedRegionId={selectedRegionId}
+              onRegionSelect={setSelectedRegionId}
+              onRegionDelete={handleRegionDelete}
+              isSelectionMode={!!currentSelectionType}
+              currentSelectionType={currentSelectionType}
+              onCurrentSelectionTypeChange={setCurrentSelectionType}
+            />
+          </div>
           
-          <div className={`transition-all duration-300 ${isSidebarCollapsed ? 'w-0 opacity-0 overflow-hidden' : 'w-[300px]'}`}>
-            <div className="h-full">
-              <Sidebar
-                selectedRegion={selectedDocument?.regions.find(r => r.id === selectedRegionId) || null}
-                regions={selectedDocument?.regions || []}
-                onRegionUpdate={handleRegionUpdate}
-                onRegionDelete={handleRegionDelete}
-                onRegionSelect={setSelectedRegionId}
-              />
+          <div className="relative">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="fixed z-20 top-20 bg-background shadow-md border rounded-full"
+              style={{ right: isSidebarCollapsed ? '16px' : '310px' }}
+              onClick={toggleSidebar}
+            >
+              {isSidebarCollapsed ? <ChevronLeft /> : <ChevronRight />}
+            </Button>
+            
+            <div className={`transition-all duration-300 ${isSidebarCollapsed ? 'w-0 opacity-0 overflow-hidden' : 'w-[300px]'}`}>
+              <div className="h-full">
+                <Sidebar
+                  selectedRegion={selectedDocument?.regions.find(r => r.id === selectedRegionId) || null}
+                  regions={selectedDocument?.regions || []}
+                  onRegionUpdate={handleRegionUpdate}
+                  onRegionDelete={handleRegionDelete}
+                  onRegionSelect={setSelectedRegionId}
+                />
+              </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
+    </ProtectedRoute>
   );
 };
 
