@@ -50,7 +50,7 @@ const Sidebar = ({
           <p className="text-sm mt-2">Draw a region on the PDF to get started.</p>
         </div>
       ) : (
-        <div className="flex-none overflow-hidden" style={{ maxHeight: 'calc(100vh - 300px)' }}>
+        <div className="flex-1 overflow-hidden">
           <ScrollArea className="h-full">
             <div className="space-y-3 p-4">
               {regions.map(region => (

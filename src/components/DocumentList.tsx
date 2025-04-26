@@ -50,11 +50,6 @@ const DocumentList: React.FC<DocumentListProps> = ({
     }
   };
 
-  const toggleDocumentOptions = (docId: string) => {
-    console.log("Toggle document options for:", docId);
-    setDocumentOptionsVisible(prev => prev === docId ? null : docId);
-  };
-
   return (
     <div className="relative">
       {/* Fixed toggle button that's always visible */}
@@ -83,14 +78,19 @@ const DocumentList: React.FC<DocumentListProps> = ({
                   selectedDocumentId === doc.id ? 'bg-accent' : ''
                 }`}
                 onClick={() => onDocumentSelect(doc.id)}
-                onDoubleClick={() => toggleDocumentOptions(doc.id)}
               >
                 <div className="flex items-center gap-2 flex-1 text-left">
-                  <FileText className="h-4 w-4" />
+                  <FileText 
+                    className="h-4 w-4 cursor-pointer hover:text-primary" 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setDocumentOptionsVisible(prev => prev === doc.id ? null : doc.id);
+                    }}
+                  />
                   <span className="truncate">{doc.name}</span>
                 </div>
 
-                <div className={`flex gap-1 ${documentOptionsVisible === doc.id || selectedDocumentId === doc.id ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
+                <div className={`flex gap-1 ${documentOptionsVisible === doc.id ? 'opacity-100' : 'opacity-0'}`}>
                   <Button
                     variant="ghost"
                     size="icon"
@@ -99,6 +99,7 @@ const DocumentList: React.FC<DocumentListProps> = ({
                       e.stopPropagation();
                       setIsRenaming(doc.id);
                       setNewName(doc.name);
+                      setDocumentOptionsVisible(null);
                     }}
                   >
                     <Pencil className="h-4 w-4" />
@@ -110,6 +111,7 @@ const DocumentList: React.FC<DocumentListProps> = ({
                     onClick={(e) => {
                       e.stopPropagation();
                       setDocumentToDelete(doc.id);
+                      setDocumentOptionsVisible(null);
                     }}
                   >
                     <Trash2 className="h-4 w-4" />
