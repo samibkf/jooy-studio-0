@@ -89,6 +89,7 @@ export const useDocumentManagement = () => {
 
   return {
     documents,
+    setDocuments,
     selectedDocumentId,
     handleFileUpload,
     handleDocumentSelect,

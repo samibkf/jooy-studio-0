@@ -7,6 +7,7 @@ import { Document } from '@/types/documents';
 
 export const useRegionManagement = (
   selectedDocumentId: string | null,
+  documents: Document[],
   setDocuments: (fn: (prev: Document[]) => Document[]) => void,
   regionsCache: Record<string, Region[]>,
   setRegionsCache: (fn: (prev: Record<string, Region[]>) => Record<string, Region[]>) => void

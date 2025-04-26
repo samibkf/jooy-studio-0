@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Header from '@/components/Header';
@@ -17,21 +17,22 @@ const Index = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const {
-    currentSelectionType,
-    setCurrentSelectionType,
-    regionsCache,
-    setRegionsCache,
-    resetStates
-  } = useDocumentState(selectedDocumentId);
-
-  const {
     documents,
+    setDocuments,
     selectedDocumentId,
     handleFileUpload: documentUpload,
     handleDocumentSelect: documentSelect,
     handleDocumentRename,
     handleDocumentDelete: documentDelete
   } = useDocumentManagement();
+
+  const {
+    currentSelectionType,
+    setCurrentSelectionType,
+    regionsCache,
+    setRegionsCache,
+    resetStates
+  } = useDocumentState(selectedDocumentId);
 
   const selectedDocument = documents.find(doc => doc.id === selectedDocumentId);
 
@@ -41,9 +42,8 @@ const Index = () => {
     handleRegionCreate,
     handleRegionUpdate,
     handleRegionDelete
-  } = useRegionManagement(selectedDocumentId, setDocuments, regionsCache, setRegionsCache);
+  } = useRegionManagement(selectedDocumentId, documents, setDocuments, regionsCache, setRegionsCache);
   
-  // Ensure regions are properly synchronized with documents
   useEffect(() => {
     if (selectedDocumentId && selectedDocument) {
       setRegionsCache(prev => ({
@@ -51,7 +51,7 @@ const Index = () => {
         [selectedDocumentId]: [...selectedDocument.regions]
       }));
     }
-  }, [selectedDocumentId, selectedDocument]);
+  }, [selectedDocumentId, selectedDocument, setRegionsCache]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
