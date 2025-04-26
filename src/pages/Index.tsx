@@ -1,4 +1,3 @@
-
 import React, { useState, useRef } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
@@ -17,8 +16,8 @@ const Index = () => {
   const [selectedDocumentId, setSelectedDocumentId] = useState<string | null>(null);
   const [selectedRegionId, setSelectedRegionId] = useState<string | null>(null);
   const [currentSelectionType, setCurrentSelectionType] = useState<'area' | null>(null);
-  const [isDocumentListCollapsed, setIsDocumentListCollapsed] = useState(false);
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [isDocumentListCollapsed, setIsDocumentListCollapsed] = useState(true);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(true);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const selectedDocument = documents.find(doc => doc.id === selectedDocumentId);

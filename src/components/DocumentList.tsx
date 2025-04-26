@@ -50,7 +50,7 @@ const DocumentList: React.FC<DocumentListProps> = ({
 
   return (
     <div className="relative">
-      {/* Fixed toggle button that's always visible regardless of documents or sidebar state */}
+      {/* Fixed toggle button that's always visible */}
       <Button
         variant="ghost"
         size="icon"
