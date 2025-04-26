@@ -48,7 +48,7 @@ const Sidebar = ({
           <p className="text-sm mt-2">Draw a region on the PDF to get started.</p>
         </div>
       ) : (
-        <div className="flex-1 overflow-hidden">
+        <div className="flex-1 min-h-0"> {/* Add min-h-0 to enable flex child scrolling */}
           <ScrollArea className="h-full">
             <div className="space-y-3 p-4">
               {regions.map(region => (
@@ -82,7 +82,7 @@ const Sidebar = ({
       )}
       
       {selectedRegion && (
-        <div className="flex-none space-y-4 p-4">
+        <div className="flex-none border-t p-4">
           <div className="space-y-2">
             <Textarea 
               value={selectedRegion.description} 
