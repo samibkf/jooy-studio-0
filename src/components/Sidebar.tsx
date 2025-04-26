@@ -34,14 +34,14 @@ const Sidebar = ({
   return (
     <div className="h-full w-full flex flex-col bg-background border-l">
       {selectedRegion ? (
-        <div className="h-full flex flex-col p-4 flex-1 overflow-hidden">
+        <div className="p-4 flex flex-col h-full">
           <Textarea 
             ref={textareaRef}
             value={selectedRegion.description || ''} 
             onChange={e => handleChange(e, 'description')}
             onKeyDown={handleKeyDown}
             placeholder="Add a description..." 
-            className="flex-1 w-full resize-none overflow-y-auto"
+            className="h-[calc(100%-20px)] w-full resize-none"
           />
         </div>
       ) : (
