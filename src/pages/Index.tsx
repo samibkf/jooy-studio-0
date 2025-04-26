@@ -1,4 +1,5 @@
-import React, { useState, useRef } from 'react';
+
+import React, { useState, useRef, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -24,10 +25,23 @@ const Index = () => {
     setSelectedRegionId,
     currentSelectionType,
     setCurrentSelectionType,
+    regionsCache,
+    setRegionsCache,
     resetStates
   } = useDocumentState(selectedDocumentId);
 
   const selectedDocument = documents.find(doc => doc.id === selectedDocumentId);
+  
+  // Ensure regions are properly synchronized with documents
+  useEffect(() => {
+    if (selectedDocumentId && selectedDocument) {
+      // Update cache with the current document's regions
+      setRegionsCache(prev => ({
+        ...prev,
+        [selectedDocumentId]: [...selectedDocument.regions]
+      }));
+    }
+  }, [selectedDocumentId, selectedDocument]);
 
   const handleFileUpload = () => {
     fileInputRef.current?.click();
@@ -43,21 +57,41 @@ const Index = () => {
       return;
     }
 
+    const newDocumentId = uuidv4();
     const newDocument: Document = {
-      id: uuidv4(),
+      id: newDocumentId,
       name: file.name,
       file,
       regions: []
     };
 
     setDocuments(prev => [...prev, newDocument]);
-    setSelectedDocumentId(newDocument.id);
+    setSelectedDocumentId(newDocumentId);
     resetStates();
     setIsDocumentListCollapsed(false);
     toast.success('Document added successfully');
+    
+    // Initialize empty regions array in the cache for this new document
+    setRegionsCache(prev => ({
+      ...prev,
+      [newDocumentId]: []
+    }));
   };
 
   const handleDocumentSelect = (documentId: string) => {
+    if (selectedDocumentId === documentId) return;
+    
+    // Save current document's regions before switching
+    if (selectedDocumentId && selectedDocument) {
+      setDocuments(prev => 
+        prev.map(doc => 
+          doc.id === selectedDocumentId 
+            ? { ...doc, regions: regionsCache[selectedDocumentId] || [] } 
+            : doc
+        )
+      );
+    }
+    
     setSelectedDocumentId(documentId);
     resetStates();
   };
@@ -72,6 +106,14 @@ const Index = () => {
 
   const handleDocumentDelete = (documentId: string) => {
     setDocuments(prev => prev.filter(doc => doc.id !== documentId));
+    
+    // Clean up the regions cache
+    setRegionsCache(prev => {
+      const newCache = { ...prev };
+      delete newCache[documentId];
+      return newCache;
+    });
+    
     if (selectedDocumentId === documentId) {
       setSelectedDocumentId(null);
       setSelectedRegionId(null);
@@ -86,6 +128,7 @@ const Index = () => {
       id: uuidv4()
     };
 
+    // Update both the documents state and the regions cache
     setDocuments(prev =>
       prev.map(doc =>
         doc.id === selectedDocumentId
@@ -93,6 +136,12 @@ const Index = () => {
           : doc
       )
     );
+    
+    setRegionsCache(prev => ({
+      ...prev,
+      [selectedDocumentId]: [...(prev[selectedDocumentId] || []), newRegion]
+    }));
+    
     setSelectedRegionId(newRegion.id);
     toast.success('Region created');
   };
@@ -112,6 +161,13 @@ const Index = () => {
           : doc
       )
     );
+    
+    setRegionsCache(prev => ({
+      ...prev,
+      [selectedDocumentId]: (prev[selectedDocumentId] || []).map(region =>
+        region.id === updatedRegion.id ? updatedRegion : region
+      )
+    }));
   };
 
   const handleRegionDelete = (regionId: string) => {
@@ -127,6 +183,11 @@ const Index = () => {
           : doc
       )
     );
+    
+    setRegionsCache(prev => ({
+      ...prev,
+      [selectedDocumentId]: (prev[selectedDocumentId] || []).filter(region => region.id !== regionId)
+    }));
 
     if (selectedRegionId === regionId) {
       setSelectedRegionId(null);
