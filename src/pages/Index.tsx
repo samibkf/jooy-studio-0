@@ -1,4 +1,3 @@
-
 import React, { useState, useRef } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
@@ -144,7 +143,6 @@ const Index = () => {
     toast.success('Data exported successfully');
   };
 
-  // Toggle sidebar visibility
   const toggleSidebar = () => {
     setIsSidebarCollapsed(!isSidebarCollapsed);
   };
@@ -191,16 +189,16 @@ const Index = () => {
           />
         </div>
         
-        <div className={`transition-all duration-300 ${isSidebarCollapsed ? 'w-0 opacity-0 overflow-hidden' : 'w-[300px]'}`}>
-          <div className="relative h-full">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="absolute -left-12 top-2 z-10 rounded-full bg-background shadow-md border"
-              onClick={toggleSidebar}
-            >
-              {isSidebarCollapsed ? <ChevronLeft /> : <ChevronRight />}
-            </Button>
+        <div className={`transition-all duration-300 relative ${isSidebarCollapsed ? 'w-0 opacity-0 overflow-hidden' : 'w-[300px]'}`}>
+          <Button
+            variant="ghost"
+            size="icon"
+            className={`absolute top-2 z-10 rounded-full bg-background shadow-md border ${isSidebarCollapsed ? 'left-0' : '-left-12'}`}
+            onClick={toggleSidebar}
+          >
+            {isSidebarCollapsed ? <ChevronRight /> : <ChevronLeft />}
+          </Button>
+          <div className="h-full">
             <Sidebar
               selectedRegion={selectedDocument?.regions.find(r => r.id === selectedRegionId) || null}
               regions={selectedDocument?.regions || []}
