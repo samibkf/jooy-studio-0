@@ -24,7 +24,7 @@ const RegionOverlay: React.FC<RegionOverlayProps> = ({
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [resizing, setResizing] = useState<string | null>(null);
-  const [localDescription, setLocalDescription] = useState(region.description || '');
+  const [localDescription, setLocalDescription] = useState<string>('');
   const overlayRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   

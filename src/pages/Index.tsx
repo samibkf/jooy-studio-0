@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
@@ -41,49 +40,84 @@ const Index = () => {
     if (!authState.user) return;
     
     const loadDocuments = async () => {
-      const { data: dbDocuments, error } = await supabase
-        .from('documents')
-        .select('*')
-        .eq('user_id', authState.user.id);
+      try {
+        const { data: dbDocuments, error } = await supabase
+          .from('documents')
+          .select('*')
+          .eq('user_id', authState.user.id);
 
-      if (error) {
+        if (error) {
+          toast.error('Failed to load documents');
+          return;
+        }
+
+        const documentsWithRegions = await Promise.all(
+          dbDocuments.map(async (doc) => {
+            try {
+              const { data: regions, error: regionsError } = await supabase
+                .from('document_regions')
+                .select('*')
+                .eq('document_id', doc.id);
+
+              if (regionsError) {
+                toast.error(`Failed to load regions for document ${doc.name}`);
+                return null;
+              }
+
+              const { data: fileData } = await supabase.storage
+                .from('pdfs')
+                .createSignedUrl(`${authState.user.id}/${doc.id}.pdf`, 3600);
+
+              if (fileData?.signedUrl) {
+                try {
+                  const response = await fetch(fileData.signedUrl);
+                  if (!response.ok) {
+                    throw new Error(`Failed to fetch PDF: ${response.status}`);
+                  }
+                  const blob = await response.blob();
+                  const file = new File([blob], doc.name, { type: 'application/pdf' });
+
+                  return {
+                    ...doc,
+                    file,
+                    regions: (regions || []).map(r => ({
+                      id: r.id,
+                      page: r.page,
+                      x: r.x,
+                      y: r.y,
+                      width: r.width,
+                      height: r.height,
+                      type: r.type,
+                      name: r.name,
+                      description: r.description
+                    }))
+                  };
+                } catch (fetchError) {
+                  console.error('Error fetching PDF file:', fetchError);
+                  toast.error(`Failed to fetch PDF for ${doc.name}`);
+                  return null;
+                }
+              }
+              return null;
+            } catch (docError) {
+              console.error('Error processing document:', docError);
+              return null;
+            }
+          })
+        );
+
+        const validDocuments = documentsWithRegions.filter(Boolean) as Document[];
+        setDocuments(validDocuments);
+        
+        const newCache: Record<string, Region[]> = {};
+        validDocuments.forEach(doc => {
+          newCache[doc.id] = doc.regions;
+        });
+        setRegionsCache(newCache);
+      } catch (loadError) {
+        console.error('Error loading documents:', loadError);
         toast.error('Failed to load documents');
-        return;
       }
-
-      const documentsWithRegions = await Promise.all(
-        dbDocuments.map(async (doc) => {
-          const { data: regions, error: regionsError } = await supabase
-            .from('document_regions')
-            .select('*')
-            .eq('document_id', doc.id);
-
-          if (regionsError) {
-            toast.error(`Failed to load regions for document ${doc.name}`);
-            return null;
-          }
-
-          const { data: fileData } = await supabase.storage
-            .from('pdfs')
-            .createSignedUrl(`${authState.user.id}/${doc.id}.pdf`, 3600);
-
-          if (fileData?.signedUrl) {
-            const response = await fetch(fileData.signedUrl);
-            const blob = await response.blob();
-            const file = new File([blob], doc.name, { type: 'application/pdf' });
-
-            return {
-              ...doc,
-              file,
-              regions: regions || []
-            };
-          }
-          return null;
-        })
-      );
-
-      const validDocuments = documentsWithRegions.filter(Boolean) as Document[];
-      setDocuments(validDocuments);
     };
 
     loadDocuments();
@@ -229,7 +263,7 @@ const Index = () => {
           height: newRegion.height,
           type: newRegion.type,
           name: newRegion.name,
-          description: newRegion.description
+          description: newRegion.description || null
         });
 
       if (error) throw error;
@@ -261,7 +295,6 @@ const Index = () => {
     try {
       console.log('Updating region:', updatedRegion);
       
-      // First update the local state for immediate UI feedback
       setDocuments(prev =>
         prev.map(doc =>
           doc.id === selectedDocumentId
@@ -282,18 +315,21 @@ const Index = () => {
         )
       }));
 
-      // Then send the update to Supabase
+      const { 
+        page, x, y, width, height, type, name, description 
+      } = updatedRegion;
+
       const { error } = await supabase
         .from('document_regions')
         .update({
-          page: updatedRegion.page,
-          x: updatedRegion.x,
-          y: updatedRegion.y,
-          width: updatedRegion.width,
-          height: updatedRegion.height,
-          type: updatedRegion.type,
-          name: updatedRegion.name,
-          description: updatedRegion.description
+          page,
+          x,
+          y,
+          width,
+          height,
+          type,
+          name,
+          description
         })
         .eq('id', updatedRegion.id)
         .eq('user_id', authState.user.id);
@@ -302,26 +338,35 @@ const Index = () => {
         console.error('Supabase error updating region:', error);
         toast.error('Failed to update region');
         
-        // If Supabase update fails, we should revert our local state change
-        // But we need the original region data to do that properly
-        // For now, we'll just reload the document to get fresh data
         const { data: freshRegions, error: regionsError } = await supabase
           .from('document_regions')
           .select('*')
           .eq('document_id', selectedDocumentId);
           
         if (!regionsError && freshRegions) {
+          const typedRegions: Region[] = freshRegions.map(r => ({
+            id: r.id,
+            page: r.page,
+            x: r.x,
+            y: r.y,
+            width: r.width,
+            height: r.height,
+            type: r.type,
+            name: r.name,
+            description: r.description
+          }));
+
           setDocuments(prev =>
             prev.map(doc =>
               doc.id === selectedDocumentId
-                ? { ...doc, regions: freshRegions }
+                ? { ...doc, regions: typedRegions }
                 : doc
             )
           );
           
           setRegionsCache(prev => ({
             ...prev,
-            [selectedDocumentId]: freshRegions
+            [selectedDocumentId]: typedRegions
           }));
         }
       }

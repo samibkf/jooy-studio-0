@@ -6,9 +6,12 @@ export interface Region {
   y: number;
   width: number;
   height: number;
-  type: 'area';
+  type: string;  // Changed from 'area' to string to match DB
   name: string;
-  description: string;
+  description: string | null;  // Added null to match DB
+  created_at?: string;         // Added optional field from DB
+  document_id?: string;        // Added optional field from DB
+  user_id?: string;            // Added optional field from DB
 }
 
 export interface RegionMapping {

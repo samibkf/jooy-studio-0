@@ -16,10 +16,11 @@ const Sidebar = ({
   onRegionUpdate
 }: SidebarProps) => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const [localDescription, setLocalDescription] = useState('');
+  const [localDescription, setLocalDescription] = useState<string>('');
   
   // Update local description when selected region changes
   useEffect(() => {
+    // Handle null description gracefully
     setLocalDescription(selectedRegion?.description || '');
   }, [selectedRegion?.id, selectedRegion?.description]);
 
