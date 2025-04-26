@@ -46,7 +46,6 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
   const [selectionRect, setSelectionRect] = useState({ x: 0, y: 0, width: 0, height: 0 });
   const [selectionPoint, setSelectionPoint] = useState<{ x: number, y: number } | null>(null);
   const [isDoubleClickMode, setIsDoubleClickMode] = useState(false);
-  const [regionCreated, setRegionCreated] = useState(false);
   const [preventCreateRegion, setPreventCreateRegion] = useState(false);
   
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -142,7 +141,7 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
     
     if (selectionPoint) {
       setSelectionRect(prev => {
-        if (prev.width > 10 && prev.height > 10 && !regionCreated && !preventCreateRegion) {
+        if (prev.width > 10 && prev.height > 10 && !preventCreateRegion) {
           const nextNumber = getNextRegionNumber(currentPage + 1);
           const regionName = `${currentPage + 1}_${nextNumber}`;
           
@@ -158,9 +157,8 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
           };
           
           onRegionCreate(newRegion);
-          setRegionCreated(true);
           setPreventCreateRegion(true);
-          setTimeout(() => setPreventCreateRegion(false), 500); // Prevent rapid creation
+          setTimeout(() => setPreventCreateRegion(false), 300);
         }
         return { x: 0, y: 0, width: 0, height: 0 };
       });
@@ -220,11 +218,9 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
     if (currentPage < totalPages - 1) {
       setCurrentPage(prev => prev + 1);
       window.getSelection()?.removeAllRanges();
-      // Reset all selection state when changing pages
       setSelectionPoint(null);
       setSelectionRect({ x: 0, y: 0, width: 0, height: 0 });
       setIsSelecting(false);
-      setRegionCreated(false);
       setPreventCreateRegion(false);
       setIsDoubleClickMode(false);
     }
@@ -234,11 +230,9 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
     if (currentPage > 0) {
       setCurrentPage(prev => prev - 1);
       window.getSelection()?.removeAllRanges();
-      // Reset all selection state when changing pages
       setSelectionPoint(null);
       setSelectionRect({ x: 0, y: 0, width: 0, height: 0 });
       setIsSelecting(false);
-      setRegionCreated(false);
       setPreventCreateRegion(false);
       setIsDoubleClickMode(false);
     }
@@ -268,12 +262,7 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
   const pageRegions = regions.filter(region => region.page === currentPage + 1);
 
   useEffect(() => {
-    setRegionCreated(false);
     setPreventCreateRegion(false);
-    setIsSelecting(false);
-    setSelectionPoint(null);
-    setSelectionRect({ x: 0, y: 0, width: 0, height: 0 });
-    setIsDoubleClickMode(false);
   }, [currentPage]);
 
   if (!file) {

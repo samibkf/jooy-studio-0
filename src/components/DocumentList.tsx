@@ -84,43 +84,44 @@ const DocumentList: React.FC<DocumentListProps> = ({
                 }`}
                 onClick={() => onDocumentSelect(doc.id)}
               >
-                <div className="flex items-center gap-2 flex-1 text-left">
+                <div className="flex items-center gap-2 flex-1 text-left relative">
                   <FileText 
                     className="h-4 w-4 cursor-pointer hover:text-primary" 
                     onClick={(e) => handleFileIconClick(e, doc.id)}
                   />
                   <span className="truncate">{doc.name}</span>
-                </div>
 
-                {documentOptionsVisible === doc.id && (
-                  <div className="flex gap-1">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setIsRenaming(doc.id);
-                        setNewName(doc.name);
-                        setDocumentOptionsVisible(null);
-                      }}
-                    >
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 text-destructive"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setDocumentToDelete(doc.id);
-                        setDocumentOptionsVisible(null);
-                      }}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                )}
+                  {/* Options popup in absolute position */}
+                  {documentOptionsVisible === doc.id && (
+                    <div className="absolute top-0 left-6 bg-background shadow-md rounded-md border z-20 flex space-x-1 p-1">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setIsRenaming(doc.id);
+                          setNewName(doc.name);
+                          setDocumentOptionsVisible(null);
+                        }}
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-destructive"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setDocumentToDelete(doc.id);
+                          setDocumentOptionsVisible(null);
+                        }}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  )}
+                </div>
               </div>
             ))}
           </div>
