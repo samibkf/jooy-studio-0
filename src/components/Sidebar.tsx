@@ -42,16 +42,18 @@ const Sidebar = ({
     }
   };
 
-  // Prevent event propagation for keyboard events
+  // Handle keyboard events to prevent propagation but allow textarea functionality
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    // Completely stop propagation for all keyboard events
+    // Only stop propagation but don't prevent default for arrow keys in the textarea
+    // This allows the arrow keys to work within the textarea
     e.stopPropagation();
     
-    // For arrow keys, use stronger prevention methods
+    // For arrow keys, use stronger prevention methods if they would scroll the page
     if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
-      // This prevents the event from bubbling up completely
+      // This prevents the event from bubbling up
       e.nativeEvent.stopImmediatePropagation();
-      e.preventDefault(); // Prevent default browser behavior
+      
+      // Don't call preventDefault here as it would block arrow key functionality in textarea
     }
   };
 
@@ -60,7 +62,6 @@ const Sidebar = ({
     // Stop wheel events when textarea is focused
     if (document.activeElement === textareaRef.current) {
       e.stopPropagation();
-      e.preventDefault();
     }
   };
 
@@ -72,25 +73,30 @@ const Sidebar = ({
     }
   }, [selectedRegion]);
 
-  // Add a global keyboard event handler to ensure arrow keys don't scroll the page
+  // Add a global keyboard event handler to manage arrow keys behavior
   useEffect(() => {
-    const preventArrowScroll = (e: KeyboardEvent) => {
+    const preventArrowScrollPage = (e: KeyboardEvent) => {
       if (document.activeElement === textareaRef.current && 
           ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'].includes(e.key)) {
-        // Complete prevention of event propagation
-        e.stopPropagation();
-        // Stop default browser behavior for these keys when in textarea
-        if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+        
+        // Only prevent default browser scrolling behavior on page level
+        // while still allowing the textarea to handle the keys internally
+        if ((e.key === 'ArrowUp' || e.key === 'ArrowDown') && 
+            (textareaRef.current.selectionStart === textareaRef.current.value.length ||
+             textareaRef.current.selectionStart === 0)) {
           e.preventDefault();
         }
+        
+        // Always stop propagation to prevent other handlers from interfering
+        e.stopPropagation();
       }
     };
 
     // Using capture phase to intercept events before they reach other handlers
-    window.addEventListener('keydown', preventArrowScroll, { capture: true });
+    window.addEventListener('keydown', preventArrowScrollPage, { capture: true });
     
     return () => {
-      window.removeEventListener('keydown', preventArrowScroll, { capture: true });
+      window.removeEventListener('keydown', preventArrowScrollPage, { capture: true });
     };
   }, []);
 

@@ -38,14 +38,13 @@ const RegionOverlay: React.FC<RegionOverlayProps> = ({
     e.stopPropagation();
   };
 
-  // Complete keyboard event isolation for textarea
+  // Allow keyboard navigation in textarea while preventing page events
   const handleKeyDown = (e: React.KeyboardEvent) => {
     e.stopPropagation();
     
-    // For arrow keys, use stronger prevention methods
+    // For arrow keys, only stop propagation but allow default behavior within textarea
     if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
       e.nativeEvent.stopImmediatePropagation();
-      e.preventDefault(); // Prevent default browser behavior
     }
   };
 
@@ -57,25 +56,27 @@ const RegionOverlay: React.FC<RegionOverlayProps> = ({
     });
   };
 
-  // Add a global keyboard event handler to prevent arrow scroll in popover textarea
+  // Add a global keyboard event handler for textarea
   useEffect(() => {
-    const preventArrowScroll = (e: KeyboardEvent) => {
+    const manageTextareaKeyEvents = (e: KeyboardEvent) => {
       if (document.activeElement === textareaRef.current && 
           ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'].includes(e.key)) {
-        // Complete prevention of event propagation
+        // Stop propagation to prevent page scrolling
         e.stopPropagation();
-        // Stop default browser behavior for these keys when in textarea
-        if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+        
+        // Only prevent default at the edge of textarea content to allow internal navigation
+        if ((e.key === 'ArrowUp' || e.key === 'ArrowDown') && 
+            (textareaRef.current.selectionStart === textareaRef.current.value.length ||
+             textareaRef.current.selectionStart === 0)) {
           e.preventDefault();
         }
       }
     };
 
-    // Using capture phase to intercept events before they reach other handlers
-    window.addEventListener('keydown', preventArrowScroll, { capture: true });
+    window.addEventListener('keydown', manageTextareaKeyEvents, { capture: true });
     
     return () => {
-      window.removeEventListener('keydown', preventArrowScroll, { capture: true });
+      window.removeEventListener('keydown', manageTextareaKeyEvents, { capture: true });
     };
   }, []);
 
@@ -237,7 +238,7 @@ const RegionOverlay: React.FC<RegionOverlayProps> = ({
                   />
                 </Button>
               </PopoverTrigger>
-              <PopoverContent side="top" className="w-80" onClick={handleTextAreaInteraction}>
+              <PopoverContent side="top" className="w-80 max-h-[300px] overflow-auto" onClick={handleTextAreaInteraction}>
                 <div className="space-y-2">
                   <h4 className="font-medium">Region Description</h4>
                   <Textarea
@@ -248,7 +249,8 @@ const RegionOverlay: React.FC<RegionOverlayProps> = ({
                     onMouseDown={handleTextAreaInteraction}
                     onDoubleClick={handleTextAreaInteraction}
                     onKeyDown={handleKeyDown}
-                    rows={3}
+                    rows={5}
+                    className="min-h-[100px]"
                   />
                 </div>
               </PopoverContent>
