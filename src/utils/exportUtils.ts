@@ -2,8 +2,17 @@
 import { RegionMapping } from '@/types/regions';
 
 export const exportRegionMapping = (mapping: RegionMapping): void => {
+  // Create a sorted copy of the regions array
+  const sortedRegions = [...mapping.regions].sort((a, b) => a.page - b.page);
+  
+  // Create the mapping with sorted regions
+  const sortedMapping = {
+    ...mapping,
+    regions: sortedRegions
+  };
+
   // Create a JSON blob
-  const jsonString = JSON.stringify(mapping, null, 2);
+  const jsonString = JSON.stringify(sortedMapping, null, 2);
   const blob = new Blob([jsonString], { type: 'application/json' });
   
   // Create download link
@@ -20,3 +29,4 @@ export const exportRegionMapping = (mapping: RegionMapping): void => {
   document.body.removeChild(link);
   URL.revokeObjectURL(url);
 };
+
