@@ -8,8 +8,7 @@ export const exportRegionMapping = (mapping: RegionMapping): void => {
     description: region.description
       .split('\n')
       .filter(para => para.trim()) // Remove empty paragraphs
-      .map((para, index) => `paragraph ${index + 1}: ${para.trim()}`)
-      .join('\n')
+      .map(para => para.trim())
   }));
 
   // Create a sorted copy of the regions array
