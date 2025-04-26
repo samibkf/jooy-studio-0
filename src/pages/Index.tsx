@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
@@ -258,23 +259,9 @@ const Index = () => {
     if (!selectedDocumentId || !authState.user) return;
 
     try {
-      const { error } = await supabase
-        .from('document_regions')
-        .update({
-          page: updatedRegion.page,
-          x: updatedRegion.x,
-          y: updatedRegion.y,
-          width: updatedRegion.width,
-          height: updatedRegion.height,
-          type: updatedRegion.type,
-          name: updatedRegion.name,
-          description: updatedRegion.description
-        })
-        .eq('id', updatedRegion.id)
-        .eq('user_id', authState.user.id);
-
-      if (error) throw error;
-
+      console.log('Updating region:', updatedRegion);
+      
+      // First update the local state for immediate UI feedback
       setDocuments(prev =>
         prev.map(doc =>
           doc.id === selectedDocumentId
@@ -294,6 +281,50 @@ const Index = () => {
           region.id === updatedRegion.id ? updatedRegion : region
         )
       }));
+
+      // Then send the update to Supabase
+      const { error } = await supabase
+        .from('document_regions')
+        .update({
+          page: updatedRegion.page,
+          x: updatedRegion.x,
+          y: updatedRegion.y,
+          width: updatedRegion.width,
+          height: updatedRegion.height,
+          type: updatedRegion.type,
+          name: updatedRegion.name,
+          description: updatedRegion.description
+        })
+        .eq('id', updatedRegion.id)
+        .eq('user_id', authState.user.id);
+
+      if (error) {
+        console.error('Supabase error updating region:', error);
+        toast.error('Failed to update region');
+        
+        // If Supabase update fails, we should revert our local state change
+        // But we need the original region data to do that properly
+        // For now, we'll just reload the document to get fresh data
+        const { data: freshRegions, error: regionsError } = await supabase
+          .from('document_regions')
+          .select('*')
+          .eq('document_id', selectedDocumentId);
+          
+        if (!regionsError && freshRegions) {
+          setDocuments(prev =>
+            prev.map(doc =>
+              doc.id === selectedDocumentId
+                ? { ...doc, regions: freshRegions }
+                : doc
+            )
+          );
+          
+          setRegionsCache(prev => ({
+            ...prev,
+            [selectedDocumentId]: freshRegions
+          }));
+        }
+      }
     } catch (error) {
       console.error('Error updating region:', error);
       toast.error('Failed to update region');

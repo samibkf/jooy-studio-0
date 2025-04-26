@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { Region } from '@/types/regions';
 import { Textarea } from '@/components/ui/textarea';
@@ -23,8 +24,14 @@ const RegionOverlay: React.FC<RegionOverlayProps> = ({
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [resizing, setResizing] = useState<string | null>(null);
+  const [localDescription, setLocalDescription] = useState(region.description || '');
   const overlayRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  
+  // Update local description when region changes
+  useEffect(() => {
+    setLocalDescription(region.description || '');
+  }, [region.id, region.description]);
   
   const scaledStyle = {
     left: region.x * scale,
@@ -50,10 +57,17 @@ const RegionOverlay: React.FC<RegionOverlayProps> = ({
 
   const handleDescriptionChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     e.stopPropagation();
-    onUpdate({
-      ...region,
-      description: e.target.value
-    });
+    setLocalDescription(e.target.value);
+  };
+  
+  const handleDescriptionBlur = () => {
+    // Only update if the description has actually changed
+    if (localDescription !== region.description) {
+      onUpdate({
+        ...region,
+        description: localDescription
+      });
+    }
   };
 
   // Add a global keyboard event handler for textarea
@@ -242,8 +256,9 @@ const RegionOverlay: React.FC<RegionOverlayProps> = ({
                     <Textarea
                       ref={textareaRef}
                       placeholder="Add a description..."
-                      value={region.description}
+                      value={localDescription}
                       onChange={handleDescriptionChange}
+                      onBlur={handleDescriptionBlur}
                       onMouseDown={handleTextAreaInteraction}
                       onDoubleClick={handleTextAreaInteraction}
                       onKeyDown={handleKeyDown}

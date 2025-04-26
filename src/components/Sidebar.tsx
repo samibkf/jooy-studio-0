@@ -1,5 +1,5 @@
 
-import React, { useRef } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { Textarea } from '@/components/ui/textarea';
 import { Region } from '@/types/regions';
 
@@ -16,14 +16,27 @@ const Sidebar = ({
   onRegionUpdate
 }: SidebarProps) => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const [localDescription, setLocalDescription] = useState('');
+  
+  // Update local description when selected region changes
+  useEffect(() => {
+    setLocalDescription(selectedRegion?.description || '');
+  }, [selectedRegion?.id, selectedRegion?.description]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>, field: keyof Region) => {
+  const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setLocalDescription(e.target.value);
+  };
+  
+  const handleBlur = () => {
     if (!selectedRegion) return;
-    const updatedRegion = {
-      ...selectedRegion,
-      [field]: e.target.value
-    };
-    onRegionUpdate(updatedRegion);
+    
+    // Only update if the description has actually changed
+    if (localDescription !== selectedRegion.description) {
+      onRegionUpdate({
+        ...selectedRegion,
+        description: localDescription
+      });
+    }
   };
 
   // Prevent keyboard events from interfering with page scrolling
@@ -37,8 +50,9 @@ const Sidebar = ({
         <div className="flex flex-col flex-1 p-4 h-full">
           <Textarea 
             ref={textareaRef}
-            value={selectedRegion.description || ''} 
-            onChange={e => handleChange(e, 'description')}
+            value={localDescription} 
+            onChange={handleChange}
+            onBlur={handleBlur}
             onKeyDown={handleKeyDown}
             placeholder="Add a description..." 
             className="flex-1 w-full min-h-0"
