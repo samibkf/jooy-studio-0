@@ -193,7 +193,7 @@ const Index = () => {
           <Button
             variant="ghost"
             size="icon"
-            className={`fixed z-10 rounded-full bg-background shadow-md border ${isSidebarCollapsed ? 'right-2' : 'right-[310px]'} top-20`}
+            className={`fixed z-10 top-20 bg-background shadow-md border rounded-full ${isSidebarCollapsed ? 'right-2' : 'right-[310px]'}`}
             onClick={toggleSidebar}
           >
             {isSidebarCollapsed ? <ChevronLeft /> : <ChevronRight />}

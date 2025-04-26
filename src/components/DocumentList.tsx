@@ -50,18 +50,19 @@ const DocumentList: React.FC<DocumentListProps> = ({
 
   return (
     <div className="relative">
-      {/* Fixed toggle button that's always visible */}
+      {/* Fixed toggle button that's always visible regardless of documents or sidebar state */}
       <Button
         variant="ghost"
         size="icon"
-        className={`fixed z-10 top-20 ${isCollapsed ? 'left-2' : 'left-[250px]'} bg-background shadow-md border rounded-full`}
+        className="fixed z-20 top-20 bg-background shadow-md border rounded-full"
+        style={{ left: isCollapsed ? '16px' : '250px' }}
         onClick={() => onCollapsedChange(!isCollapsed)}
       >
         {isCollapsed ? <ChevronRight /> : <ChevronLeft />}
       </Button>
 
+      {/* Document list sidebar content */}
       <div className={`w-[250px] h-full bg-background border-r transition-all duration-300 ease-in-out ${isCollapsed ? '-translate-x-full' : 'translate-x-0'} fixed top-16 left-0 z-10`}>
-        {/* Rest of DocumentList content */}
         <div className="p-4 border-b">
           <h2 className="font-semibold">Documents</h2>
         </div>
