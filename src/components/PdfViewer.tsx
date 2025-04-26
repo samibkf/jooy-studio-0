@@ -47,6 +47,7 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
   const [selectionPoint, setSelectionPoint] = useState<{ x: number, y: number } | null>(null);
   const [isDoubleClickMode, setIsDoubleClickMode] = useState(false);
   const [preventCreateRegion, setPreventCreateRegion] = useState(false);
+  const [isTemporarilyBlocked, setIsTemporarilyBlocked] = useState(false);
   
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -133,7 +134,7 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
   }, [selectedRegionId, onRegionDelete]);
 
   const handleMouseDown = (e: React.MouseEvent) => {
-    if ((!isSelectionMode && !isDoubleClickMode) || !containerRef.current || preventCreateRegion) return;
+    if ((!isSelectionMode && !isDoubleClickMode) || !containerRef.current || isTemporarilyBlocked) return;
     
     const rect = containerRef.current.getBoundingClientRect();
     const x = e.clientX - rect.left;
@@ -141,7 +142,7 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
     
     if (selectionPoint) {
       setSelectionRect(prev => {
-        if (prev.width > 10 && prev.height > 10 && !preventCreateRegion) {
+        if (prev.width > 10 && prev.height > 10) {
           const nextNumber = getNextRegionNumber(currentPage + 1);
           const regionName = `${currentPage + 1}_${nextNumber}`;
           
@@ -157,8 +158,8 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
           };
           
           onRegionCreate(newRegion);
-          setPreventCreateRegion(true);
-          setTimeout(() => setPreventCreateRegion(false), 300);
+          setIsTemporarilyBlocked(true);
+          setTimeout(() => setIsTemporarilyBlocked(false), 300);
         }
         return { x: 0, y: 0, width: 0, height: 0 };
       });
