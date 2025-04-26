@@ -13,6 +13,7 @@ import DocumentList from '@/components/DocumentList';
 import { useDocumentState } from '@/hooks/useDocumentState';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { useAuth } from '@/contexts/AuthProvider';
+import { supabase } from '@/integrations/supabase/client';
 
 const Index = () => {
   const [documents, setDocuments] = useState<Document[]>([]);
@@ -36,21 +37,64 @@ const Index = () => {
   const { authState, signOut } = useAuth();
 
   useEffect(() => {
-    if (selectedDocumentId && selectedDocument) {
-      setRegionsCache(prev => ({
-        ...prev,
-        [selectedDocumentId]: [...selectedDocument.regions]
-      }));
-    }
-  }, [selectedDocumentId, selectedDocument]);
+    if (!authState.user) return;
+    
+    const loadDocuments = async () => {
+      const { data: dbDocuments, error } = await supabase
+        .from('documents')
+        .select('*')
+        .eq('user_id', authState.user.id);
+
+      if (error) {
+        toast.error('Failed to load documents');
+        return;
+      }
+
+      const documentsWithRegions = await Promise.all(
+        dbDocuments.map(async (doc) => {
+          const { data: regions, error: regionsError } = await supabase
+            .from('document_regions')
+            .select('*')
+            .eq('document_id', doc.id);
+
+          if (regionsError) {
+            toast.error(`Failed to load regions for document ${doc.name}`);
+            return null;
+          }
+
+          const { data: fileData } = await supabase.storage
+            .from('pdfs')
+            .createSignedUrl(`${authState.user.id}/${doc.id}.pdf`, 3600);
+
+          if (fileData?.signedUrl) {
+            const response = await fetch(fileData.signedUrl);
+            const blob = await response.blob();
+            const file = new File([blob], doc.name, { type: 'application/pdf' });
+
+            return {
+              ...doc,
+              file,
+              regions: regions || []
+            };
+          }
+          return null;
+        })
+      );
+
+      const validDocuments = documentsWithRegions.filter(Boolean) as Document[];
+      setDocuments(validDocuments);
+    };
+
+    loadDocuments();
+  }, [authState.user]);
 
   const handleFileUpload = () => {
     fileInputRef.current?.click();
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
-    if (!files || files.length === 0) return;
+    if (!files || files.length === 0 || !authState.user) return;
     
     const file = files[0];
     if (file.type !== 'application/pdf') {
@@ -58,24 +102,45 @@ const Index = () => {
       return;
     }
 
-    const newDocumentId = uuidv4();
-    const newDocument: Document = {
-      id: newDocumentId,
-      name: file.name,
-      file,
-      regions: []
-    };
+    try {
+      const documentId = uuidv4();
+      const { error: uploadError } = await supabase.storage
+        .from('pdfs')
+        .upload(`${authState.user.id}/${documentId}.pdf`, file);
 
-    setDocuments(prev => [...prev, newDocument]);
-    setSelectedDocumentId(newDocumentId);
-    resetStates();
-    setIsDocumentListCollapsed(false);
-    toast.success('Document added successfully');
-    
-    setRegionsCache(prev => ({
-      ...prev,
-      [newDocumentId]: []
-    }));
+      if (uploadError) throw uploadError;
+
+      const { error: dbError } = await supabase
+        .from('documents')
+        .insert({
+          id: documentId,
+          name: file.name,
+          user_id: authState.user.id
+        });
+
+      if (dbError) throw dbError;
+
+      const newDocument: Document = {
+        id: documentId,
+        name: file.name,
+        file,
+        regions: []
+      };
+
+      setDocuments(prev => [...prev, newDocument]);
+      setSelectedDocumentId(documentId);
+      resetStates();
+      setIsDocumentListCollapsed(false);
+      toast.success('Document added successfully');
+      
+      setRegionsCache(prev => ({
+        ...prev,
+        [documentId]: []
+      }));
+    } catch (error) {
+      console.error('Error uploading document:', error);
+      toast.error('Failed to upload document');
+    }
   };
 
   const handleDocumentSelect = (documentId: string) => {
@@ -103,93 +168,176 @@ const Index = () => {
     );
   };
 
-  const handleDocumentDelete = (documentId: string) => {
-    setDocuments(prev => prev.filter(doc => doc.id !== documentId));
-    
-    setRegionsCache(prev => {
-      const newCache = { ...prev };
-      delete newCache[documentId];
-      return newCache;
-    });
-    
-    if (selectedDocumentId === documentId) {
-      setSelectedDocumentId(null);
-      setSelectedRegionId(null);
+  const handleDocumentDelete = async (documentId: string) => {
+    if (!authState.user) return;
+
+    try {
+      const { error: storageError } = await supabase.storage
+        .from('pdfs')
+        .remove([`${authState.user.id}/${documentId}.pdf`]);
+
+      if (storageError) throw storageError;
+
+      const { error: dbError } = await supabase
+        .from('documents')
+        .delete()
+        .eq('id', documentId)
+        .eq('user_id', authState.user.id);
+
+      if (dbError) throw dbError;
+
+      setDocuments(prev => prev.filter(doc => doc.id !== documentId));
+      
+      setRegionsCache(prev => {
+        const newCache = { ...prev };
+        delete newCache[documentId];
+        return newCache;
+      });
+      
+      if (selectedDocumentId === documentId) {
+        setSelectedDocumentId(null);
+        setSelectedRegionId(null);
+      }
+
+      toast.success('Document deleted successfully');
+    } catch (error) {
+      console.error('Error deleting document:', error);
+      toast.error('Failed to delete document');
     }
   };
 
-  const handleRegionCreate = (regionData: Omit<Region, 'id'>) => {
-    if (!selectedDocumentId) return;
+  const handleRegionCreate = async (regionData: Omit<Region, 'id'>) => {
+    if (!selectedDocumentId || !authState.user) return;
 
     const newRegion: Region = {
       ...regionData,
       id: uuidv4()
     };
 
-    setDocuments(prev =>
-      prev.map(doc =>
-        doc.id === selectedDocumentId
-          ? { ...doc, regions: [...doc.regions, newRegion] }
-          : doc
-      )
-    );
-    
-    setRegionsCache(prev => ({
-      ...prev,
-      [selectedDocumentId]: [...(prev[selectedDocumentId] || []), newRegion]
-    }));
-    
-    setSelectedRegionId(newRegion.id);
-    toast.success('Region created');
-  };
+    try {
+      const { error } = await supabase
+        .from('document_regions')
+        .insert({
+          id: newRegion.id,
+          document_id: selectedDocumentId,
+          user_id: authState.user.id,
+          page: newRegion.page,
+          x: newRegion.x,
+          y: newRegion.y,
+          width: newRegion.width,
+          height: newRegion.height,
+          type: newRegion.type,
+          name: newRegion.name,
+          description: newRegion.description
+        });
 
-  const handleRegionUpdate = (updatedRegion: Region) => {
-    if (!selectedDocumentId) return;
+      if (error) throw error;
 
-    setDocuments(prev =>
-      prev.map(doc =>
-        doc.id === selectedDocumentId
-          ? {
-              ...doc,
-              regions: doc.regions.map(region =>
-                region.id === updatedRegion.id ? updatedRegion : region
-              )
-            }
-          : doc
-      )
-    );
-    
-    setRegionsCache(prev => ({
-      ...prev,
-      [selectedDocumentId]: (prev[selectedDocumentId] || []).map(region =>
-        region.id === updatedRegion.id ? updatedRegion : region
-      )
-    }));
-  };
-
-  const handleRegionDelete = (regionId: string) => {
-    if (!selectedDocumentId) return;
-
-    setDocuments(prev =>
-      prev.map(doc =>
-        doc.id === selectedDocumentId
-          ? {
-              ...doc,
-              regions: doc.regions.filter(region => region.id !== regionId)
-            }
-          : doc
-      )
-    );
-    
-    setRegionsCache(prev => ({
-      ...prev,
-      [selectedDocumentId]: (prev[selectedDocumentId] || []).filter(region => region.id !== regionId)
-    }));
-
-    if (selectedRegionId === regionId) {
-      setSelectedRegionId(null);
+      setDocuments(prev =>
+        prev.map(doc =>
+          doc.id === selectedDocumentId
+            ? { ...doc, regions: [...doc.regions, newRegion] }
+            : doc
+        )
+      );
+      
+      setRegionsCache(prev => ({
+        ...prev,
+        [selectedDocumentId]: [...(prev[selectedDocumentId] || []), newRegion]
+      }));
+      
+      setSelectedRegionId(newRegion.id);
+      toast.success('Region created');
+    } catch (error) {
+      console.error('Error creating region:', error);
+      toast.error('Failed to create region');
     }
-    toast.success('Region deleted');
+  };
+
+  const handleRegionUpdate = async (updatedRegion: Region) => {
+    if (!selectedDocumentId || !authState.user) return;
+
+    try {
+      const { error } = await supabase
+        .from('document_regions')
+        .update({
+          page: updatedRegion.page,
+          x: updatedRegion.x,
+          y: updatedRegion.y,
+          width: updatedRegion.width,
+          height: updatedRegion.height,
+          type: updatedRegion.type,
+          name: updatedRegion.name,
+          description: updatedRegion.description
+        })
+        .eq('id', updatedRegion.id)
+        .eq('user_id', authState.user.id);
+
+      if (error) throw error;
+
+      setDocuments(prev =>
+        prev.map(doc =>
+          doc.id === selectedDocumentId
+            ? {
+                ...doc,
+                regions: doc.regions.map(region =>
+                  region.id === updatedRegion.id ? updatedRegion : region
+                )
+              }
+            : doc
+        )
+      );
+      
+      setRegionsCache(prev => ({
+        ...prev,
+        [selectedDocumentId]: (prev[selectedDocumentId] || []).map(region =>
+          region.id === updatedRegion.id ? updatedRegion : region
+        )
+      }));
+    } catch (error) {
+      console.error('Error updating region:', error);
+      toast.error('Failed to update region');
+    }
+  };
+
+  const handleRegionDelete = async (regionId: string) => {
+    if (!selectedDocumentId || !authState.user) return;
+
+    try {
+      const { error } = await supabase
+        .from('document_regions')
+        .delete()
+        .eq('id', regionId)
+        .eq('user_id', authState.user.id);
+
+      if (error) throw error;
+
+      setDocuments(prev =>
+        prev.map(doc =>
+          doc.id === selectedDocumentId
+            ? {
+                ...doc,
+                regions: doc.regions.filter(region => region.id !== regionId)
+              }
+            : doc
+        )
+      );
+      
+      setRegionsCache(prev => ({
+        ...prev,
+        [selectedDocumentId]: (prev[selectedDocumentId] || []).filter(
+          region => region.id !== regionId
+        )
+      }));
+
+      if (selectedRegionId === regionId) {
+        setSelectedRegionId(null);
+      }
+      toast.success('Region deleted');
+    } catch (error) {
+      console.error('Error deleting region:', error);
+      toast.error('Failed to delete region');
+    }
   };
 
   const handleExport = () => {

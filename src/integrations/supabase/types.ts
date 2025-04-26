@@ -9,6 +9,59 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      document_regions: {
+        Row: {
+          created_at: string
+          description: string | null
+          document_id: string
+          height: number
+          id: string
+          name: string
+          page: number
+          type: string
+          user_id: string
+          width: number
+          x: number
+          y: number
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          document_id: string
+          height: number
+          id?: string
+          name: string
+          page: number
+          type: string
+          user_id: string
+          width: number
+          x: number
+          y: number
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          document_id?: string
+          height?: number
+          id?: string
+          name?: string
+          page?: number
+          type?: string
+          user_id?: string
+          width?: number
+          x?: number
+          y?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_regions_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       documents: {
         Row: {
           created_at: string
