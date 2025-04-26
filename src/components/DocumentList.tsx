@@ -50,6 +50,11 @@ const DocumentList: React.FC<DocumentListProps> = ({
     }
   };
 
+  const handleFileIconClick = (e: React.MouseEvent, docId: string) => {
+    e.stopPropagation();
+    setDocumentOptionsVisible(prev => prev === docId ? null : docId);
+  };
+
   return (
     <div className="relative">
       {/* Fixed toggle button that's always visible */}
@@ -82,10 +87,7 @@ const DocumentList: React.FC<DocumentListProps> = ({
                 <div className="flex items-center gap-2 flex-1 text-left">
                   <FileText 
                     className="h-4 w-4 cursor-pointer hover:text-primary" 
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setDocumentOptionsVisible(prev => prev === doc.id ? null : doc.id);
-                    }}
+                    onClick={(e) => handleFileIconClick(e, doc.id)}
                   />
                   <span className="truncate">{doc.name}</span>
                 </div>
