@@ -2,8 +2,18 @@
 import { RegionMapping } from '@/types/regions';
 
 export const exportRegionMapping = (mapping: RegionMapping): void => {
+  // Create a copy of regions and process their descriptions
+  const processedRegions = mapping.regions.map(region => ({
+    ...region,
+    description: region.description
+      .split('\n')
+      .filter(para => para.trim()) // Remove empty paragraphs
+      .map((para, index) => `paragraph ${index + 1}: ${para.trim()}`)
+      .join('\n')
+  }));
+
   // Create a sorted copy of the regions array
-  const sortedRegions = [...mapping.regions].sort((a, b) => a.page - b.page);
+  const sortedRegions = [...processedRegions].sort((a, b) => a.page - b.page);
   
   // Create the mapping with sorted regions
   const sortedMapping = {
