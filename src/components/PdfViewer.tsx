@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import * as pdfjsLib from 'pdfjs-dist';
 import { PDFDocumentProxy } from 'pdfjs-dist';
@@ -48,6 +49,7 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
   const [isDoubleClickMode, setIsDoubleClickMode] = useState(false);
   const [preventCreateRegion, setPreventCreateRegion] = useState(false);
   const [isTemporarilyBlocked, setIsTemporarilyBlocked] = useState(false);
+  const [creationTimeoutId, setCreationTimeoutId] = useState<number | null>(null);
   
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -136,6 +138,44 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [selectedRegionId, onRegionDelete]);
 
+  // Clear the timeout when component unmounts
+  useEffect(() => {
+    return () => {
+      if (creationTimeoutId !== null) {
+        window.clearTimeout(creationTimeoutId);
+      }
+    };
+  }, [creationTimeoutId]);
+
+  const createRegion = (rect: { x: number, y: number, width: number, height: number }) => {
+    if (rect.width > 10 && rect.height > 10) {
+      const nextNumber = getNextRegionNumber(currentPage + 1);
+      const regionName = `${currentPage + 1}_${nextNumber}`;
+      
+      const newRegion: Omit<Region, 'id'> = {
+        page: currentPage + 1,
+        x: rect.x,
+        y: rect.y,
+        width: rect.width,
+        height: rect.height,
+        type: 'area',
+        name: regionName,
+        description: ''
+      };
+      
+      // Create region
+      onRegionCreate(newRegion);
+      
+      // Block further region creation temporarily
+      setIsTemporarilyBlocked(true);
+      const timeoutId = window.setTimeout(() => {
+        setIsTemporarilyBlocked(false);
+      }, 500);
+      
+      setCreationTimeoutId(timeoutId);
+    }
+  };
+
   const handleMouseDown = (e: React.MouseEvent) => {
     if ((!isSelectionMode && !isDoubleClickMode) || !containerRef.current || isTemporarilyBlocked) return;
     
@@ -144,31 +184,21 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
     const y = e.clientY - rect.top;
     
     if (selectionPoint) {
-      setSelectionRect(prev => {
-        if (prev.width > 10 && prev.height > 10) {
-          const nextNumber = getNextRegionNumber(currentPage + 1);
-          const regionName = `${currentPage + 1}_${nextNumber}`;
-          
-          const newRegion: Omit<Region, 'id'> = {
-            page: currentPage + 1,
-            x: prev.x,
-            y: prev.y,
-            width: prev.width,
-            height: prev.height,
-            type: 'area',
-            name: regionName,
-            description: ''
-          };
-          
-          onRegionCreate(newRegion);
-          setIsTemporarilyBlocked(true);
-          setTimeout(() => setIsTemporarilyBlocked(false), 300);
-        }
-        return { x: 0, y: 0, width: 0, height: 0 };
-      });
+      const currentRect = {
+        x: selectionRect.x,
+        y: selectionRect.y,
+        width: selectionRect.width,
+        height: selectionRect.height
+      };
+      
+      // Reset selection
+      setSelectionRect({ x: 0, y: 0, width: 0, height: 0 });
       setSelectionPoint(null);
       setIsSelecting(false);
       setIsDoubleClickMode(false);
+      
+      // Create region outside of the render flow
+      createRegion(currentRect);
     } else {
       setSelectionPoint({ x, y });
       setSelectionRect({ x, y, width: 0, height: 0 });
@@ -177,7 +207,7 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
   };
 
   const handleDoubleClick = (e: React.MouseEvent) => {
-    if (!containerRef.current) return;
+    if (!containerRef.current || isTemporarilyBlocked) return;
     
     if (isSelectionMode) {
       setIsDoubleClickMode(false);
