@@ -7,6 +7,7 @@ export interface DocumentData {
   file: File;
   regions: Region[];
   user_id?: string; // Adding user_id property
+  fileAvailable?: boolean; // Adding fileAvailable property
 }
 
 // Keep the Document type as an alias for backward compatibility
