@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Region } from '@/types/regions';
 import { Textarea } from '@/components/ui/textarea';
@@ -28,7 +27,6 @@ const RegionOverlay: React.FC<RegionOverlayProps> = ({
   const overlayRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   
-  // Update local description when region changes
   useEffect(() => {
     setLocalDescription(region.description || '');
   }, [region.id, region.description]);
@@ -40,16 +38,13 @@ const RegionOverlay: React.FC<RegionOverlayProps> = ({
     height: region.height * scale,
   };
 
-  // Stop propagation for any textarea interaction
   const handleTextAreaInteraction = (e: React.MouseEvent | React.KeyboardEvent) => {
     e.stopPropagation();
   };
 
-  // Allow keyboard navigation in textarea while preventing page events
   const handleKeyDown = (e: React.KeyboardEvent) => {
     e.stopPropagation();
     
-    // For arrow keys, only stop propagation but allow default behavior within textarea
     if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
       e.nativeEvent.stopImmediatePropagation();
     }
@@ -61,21 +56,18 @@ const RegionOverlay: React.FC<RegionOverlayProps> = ({
   };
   
   const handleDescriptionBlur = () => {
-    // Only update if the description has actually changed
     if (localDescription !== (region.description || '')) {
       onUpdate({
         ...region,
-        description: localDescription || null // Send null for empty strings
+        description: localDescription || null
       });
     }
   };
 
-  // Add a global keyboard event handler for textarea
   useEffect(() => {
     const manageTextareaKeyEvents = (e: KeyboardEvent) => {
       if (document.activeElement === textareaRef.current && 
           ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'].includes(e.key)) {
-        // Stop propagation to prevent page scrolling
         e.stopPropagation();
       }
     };
@@ -199,7 +191,7 @@ const RegionOverlay: React.FC<RegionOverlayProps> = ({
     setResizing(null);
   };
   
-  React.useEffect(() => {
+  useEffect(() => {
     if (isDragging || resizing) {
       window.addEventListener('mousemove', handleMouseMove as any);
       window.addEventListener('mouseup', handleMouseUp);
@@ -211,18 +203,13 @@ const RegionOverlay: React.FC<RegionOverlayProps> = ({
     };
   }, [isDragging, resizing]);
   
-  // Calculate a unique position for each note icon based on region ID
-  // to prevent overlaps when multiple regions are selected
   const getNotePosition = () => {
-    // Extract numeric part from region.id or name to create a unique offset
     const idMatch = region.id.match(/\d+/g);
     const nameMatch = region.name.match(/\d+/g);
     const numericPart = idMatch ? parseInt(idMatch[0], 10) : 
                        nameMatch ? parseInt(nameMatch[0], 10) : 0;
     
-    // Calculate an offset based on the region's numeric identifier
-    // This will create a diagonal pattern for the note buttons
-    const offset = (numericPart % 10) * 10; // 0, 10, 20, 30... pixels offset
+    const offset = (numericPart % 10) * 10;
     
     return {
       right: offset,
@@ -250,8 +237,7 @@ const RegionOverlay: React.FC<RegionOverlayProps> = ({
           <div className="resize-handle sw" data-direction="sw" />
           
           <div 
-            className="absolute flex items-center gap-2"
-            style={getNotePosition()}
+            className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2 flex items-center gap-2"
           >
             <Popover>
               <PopoverTrigger asChild>
@@ -292,11 +278,20 @@ const RegionOverlay: React.FC<RegionOverlayProps> = ({
               </PopoverContent>
             </Popover>
           </div>
+          
+          <div 
+            className="absolute bottom-0 left-1/2 transform -translate-x-1/2 bg-black bg-opacity-50 text-white text-xs px-1 truncate text-center w-full"
+          >
+            {region.name || 'Unnamed Region'}
+          </div>
         </>
       )}
-      <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white text-xs px-1 truncate">
-        {region.name || 'Unnamed Region'}
-      </div>
+      
+      {!isSelected && (
+        <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white text-xs px-1 truncate">
+          {region.name || 'Unnamed Region'}
+        </div>
+      )}
     </div>
   );
 };
