@@ -1,5 +1,5 @@
 
-export type RegionType = 'header' | 'footer' | 'body' | 'table' | 'image' | 'signature';
+export type RegionType = 'header' | 'footer' | 'body' | 'table' | 'image' | 'signature' | 'area';
 
 export interface Region {
   id: string;

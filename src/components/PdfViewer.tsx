@@ -1,8 +1,7 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import * as pdfjsLib from 'pdfjs-dist';
 import { PDFDocumentProxy } from 'pdfjs-dist';
-import { Region } from '@/types/regions';
+import { Region, RegionType } from '@/types/regions';
 import RegionOverlay from './RegionOverlay';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
@@ -16,14 +15,14 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.j
 interface PdfViewerProps {
   file: File | null;
   regions: Region[];
-  onRegionCreate: (region: Omit<Region, 'id'>) => void;
+  onRegionCreate: (region: Region) => void;
   onRegionUpdate: (region: Region) => void;
   selectedRegionId: string | null;
   onRegionSelect: (regionId: string | null) => void;
   onRegionDelete: (regionId: string) => void;
   isSelectionMode: boolean;
-  currentSelectionType: 'area' | null;
-  onCurrentSelectionTypeChange: (type: 'area' | null) => void;
+  currentSelectionType: RegionType | null;
+  onCurrentSelectionTypeChange: (type: RegionType | null) => void;
 }
 
 const PdfViewer: React.FC<PdfViewerProps> = ({
@@ -138,7 +137,6 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [selectedRegionId, onRegionDelete]);
 
-  // Clear the timeout when component unmounts
   useEffect(() => {
     return () => {
       if (creationTimeoutId !== null) {
@@ -152,21 +150,20 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
       const nextNumber = getNextRegionNumber(currentPage + 1);
       const regionName = `${currentPage + 1}_${nextNumber}`;
       
-      const newRegion: Omit<Region, 'id'> = {
+      const newRegion: Region = {
+        id: Math.random().toString(36).substring(7),
         page: currentPage + 1,
         x: rect.x,
         y: rect.y,
         width: rect.width,
         height: rect.height,
-        type: 'area',
+        type: currentSelectionType || 'area',
         name: regionName,
-        description: ''
+        description: null
       };
       
-      // Create region
       onRegionCreate(newRegion);
       
-      // Block further region creation temporarily
       setIsTemporarilyBlocked(true);
       const timeoutId = window.setTimeout(() => {
         setIsTemporarilyBlocked(false);
@@ -191,13 +188,11 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
         height: selectionRect.height
       };
       
-      // Reset selection
       setSelectionRect({ x: 0, y: 0, width: 0, height: 0 });
       setSelectionPoint(null);
       setIsSelecting(false);
       setIsDoubleClickMode(false);
       
-      // Create region outside of the render flow
       createRegion(currentRect);
     } else {
       setSelectionPoint({ x, y });
