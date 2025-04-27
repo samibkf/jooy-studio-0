@@ -1,5 +1,4 @@
-
-import { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthProvider';
 import { Profile } from '@/types/auth';
@@ -441,6 +440,70 @@ const Admin = () => {
     initStorage();
   };
 
+  const handleDocumentRename = async (documentId: string, newName: string) => {
+    try {
+      console.log('Attempting to rename document:', documentId, 'to:', newName);
+      
+      const { error: updateError } = await supabase
+        .from('documents')
+        .update({ name: newName })
+        .eq('id', documentId);
+
+      if (updateError) {
+        console.error('Error renaming document:', updateError);
+        toast.error('Failed to rename document');
+        return;
+      }
+
+      // The real-time subscription will handle the UI update
+      toast.success('Document renamed successfully');
+    } catch (error) {
+      console.error('Error in handleDocumentRename:', error);
+      toast.error('Failed to rename document');
+    }
+  };
+
+  const handleDocumentDelete = async (documentId: string) => {
+    try {
+      console.log('Attempting to delete document:', documentId);
+      const documentToDelete = userDocuments.find(doc => doc.id === documentId);
+      
+      if (!documentToDelete?.user_id) {
+        console.error('Document user_id not found');
+        toast.error('Failed to delete document: User ID not found');
+        return;
+      }
+
+      // First try to delete from storage
+      const { error: storageError } = await supabase.storage
+        .from('pdfs')
+        .remove([`${documentToDelete.user_id}/${documentId}.pdf`]);
+
+      if (storageError) {
+        console.error('Error deleting file from storage:', storageError);
+        // Continue with database deletion even if storage deletion fails
+      }
+
+      // Then delete from database
+      const { error: dbError } = await supabase
+        .from('documents')
+        .delete()
+        .eq('id', documentId);
+
+      if (dbError) {
+        console.error('Error deleting document from database:', dbError);
+        toast.error('Failed to delete document');
+        return;
+      }
+
+      // The real-time subscription will handle the UI update
+      toast.success('Document deleted successfully');
+    } catch (error) {
+      console.error('Error in handleDocumentDelete:', error);
+      toast.error('Failed to delete document');
+    }
+  };
+
   const filteredUsers = users.filter(user => 
     user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
     (user.full_name && user.full_name.toLowerCase().includes(searchTerm.toLowerCase()))
@@ -639,7 +702,21 @@ const Admin = () => {
                 <TableBody>
                   {userDocuments.map((document) => (
                     <TableRow key={document.id}>
-                      <TableCell>{document.name}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center space-x-2">
+                          <input
+                            type="text"
+                            defaultValue={document.name}
+                            onBlur={(e) => {
+                              const newName = e.target.value.trim();
+                              if (newName && newName !== document.name) {
+                                handleDocumentRename(document.id, newName);
+                              }
+                            }}
+                            className="px-2 py-1 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          />
+                        </div>
+                      </TableCell>
                       <TableCell>{document.regions.length}</TableCell>
                       <TableCell>
                         <span className={`px-2 py-1 rounded text-xs ${document.fileAvailable ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
@@ -667,6 +744,14 @@ const Admin = () => {
                             title={document.regions.length === 0 ? "No regions to export" : "Export regions"}
                           >
                             Export
+                          </Button>
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => handleDocumentDelete(document.id)}
+                            title="Delete document"
+                          >
+                            Delete
                           </Button>
                         </div>
                       </TableCell>
