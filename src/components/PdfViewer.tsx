@@ -49,6 +49,8 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
   const [preventCreateRegion, setPreventCreateRegion] = useState(false);
   const [isTemporarilyBlocked, setIsTemporarilyBlocked] = useState(false);
   const [creationTimeoutId, setCreationTimeoutId] = useState<number | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
   
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -75,6 +77,13 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
     
     const loadPdf = async () => {
       try {
+        setIsLoading(true);
+        setLoadError(null);
+        
+        if (file.size === 0) {
+          throw new Error("The PDF file is empty (0 bytes)");
+        }
+        
         const fileArrayBuffer = await file.arrayBuffer();
         const loadingTask = pdfjsLib.getDocument({ data: fileArrayBuffer });
         const pdfDocument = await loadingTask.promise;
@@ -86,7 +95,17 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
         toast.success(`PDF loaded with ${pdfDocument.numPages} pages`);
       } catch (error) {
         console.error('Error loading PDF:', error);
-        toast.error('Failed to load PDF');
+        let errorMessage = "Failed to load PDF";
+        
+        if (error instanceof Error) {
+          errorMessage += `: ${error.message}`;
+        }
+        
+        setLoadError(errorMessage);
+        toast.error(errorMessage);
+        setPdf(null);
+      } finally {
+        setIsLoading(false);
       }
     };
     
@@ -302,6 +321,43 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
           <p className="text-muted-foreground">
             Please upload a PDF document to get started
           </p>
+        </div>
+      </div>
+    );
+  }
+  
+  if (isLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center h-[calc(100vh-72px)] bg-muted">
+        <div className="text-center p-10">
+          <h2 className="text-2xl font-bold mb-2">Loading PDF...</h2>
+          <p className="text-muted-foreground">
+            Please wait while the document is being loaded
+          </p>
+        </div>
+      </div>
+    );
+  }
+  
+  if (loadError || !pdf) {
+    return (
+      <div className="flex flex-col items-center justify-center h-[calc(100vh-72px)] bg-muted">
+        <div className="text-center p-10">
+          <h2 className="text-2xl font-bold mb-2 text-red-600">Error Loading PDF</h2>
+          <p className="text-muted-foreground mb-4">
+            {loadError || "There was a problem loading the PDF document"}
+          </p>
+          <p className="text-sm text-muted-foreground mb-6">
+            Make sure the file is a valid PDF and not empty or corrupted.
+          </p>
+          <Button 
+            variant="outline" 
+            onClick={() => {
+              document.getElementById('file-upload')?.click()
+            }}
+          >
+            Upload Another PDF
+          </Button>
         </div>
       </div>
     );

@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthProvider';
@@ -22,6 +23,18 @@ const Index = () => {
     const file = event.target.files?.[0];
     if (!file) return;
 
+    // Verify the file has content
+    if (file.size === 0) {
+      toast.error("The PDF file is empty (0 bytes). Please upload a valid PDF.");
+      return;
+    }
+
+    // Check if it's a PDF
+    if (file.type !== 'application/pdf') {
+      toast.error("Please upload a PDF document");
+      return;
+    }
+
     const newDocument: Document = {
       id: Math.random().toString(36).substring(7),
       name: file.name,
@@ -32,6 +45,7 @@ const Index = () => {
     };
 
     setSelectedDocument(newDocument);
+    toast.success(`${file.name} uploaded successfully`);
   };
 
   const handleDocumentSelect = (document: Document) => {
