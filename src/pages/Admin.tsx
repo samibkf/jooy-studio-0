@@ -13,7 +13,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from '@/components/ui/button';
-import { Download, LogOut, Search, User } from 'lucide-react';
+import { Download, LogOut, Search, User, RefreshCw } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { exportRegionMapping } from '@/utils/exportUtils';
 import { toast } from 'sonner';
@@ -22,6 +22,7 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
+  CardFooter,
 } from "@/components/ui/card";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 
@@ -35,23 +36,29 @@ const Admin = () => {
   const [loading, setLoading] = useState(true);
   const [loadingDocuments, setLoadingDocuments] = useState(false);
   const [storageInitialized, setStorageInitialized] = useState(false);
+  const [initializingStorage, setInitializingStorage] = useState(false);
+
+  const initStorage = async () => {
+    try {
+      setInitializingStorage(true);
+      const initialized = await initializeStorage();
+      console.log('Storage initialization result:', initialized);
+      setStorageInitialized(initialized);
+      if (!initialized) {
+        toast.error('Failed to configure PDF storage. Some features may not work.');
+      } else {
+        toast.success('PDF storage configured successfully.');
+      }
+    } catch (error) {
+      console.error('Error during storage initialization:', error);
+      setStorageInitialized(false);
+      toast.error('Failed to configure PDF storage');
+    } finally {
+      setInitializingStorage(false);
+    }
+  };
 
   useEffect(() => {
-    const initStorage = async () => {
-      try {
-        const initialized = await initializeStorage();
-        console.log('Storage initialization result:', initialized);
-        setStorageInitialized(initialized);
-        if (!initialized) {
-          toast.error('Failed to configure PDF storage. Some features may not work.');
-        }
-      } catch (error) {
-        console.error('Error during storage initialization:', error);
-        setStorageInitialized(false);
-        toast.error('Failed to configure PDF storage');
-      }
-    };
-    
     initStorage();
   }, []);
 
@@ -328,6 +335,10 @@ const Admin = () => {
     }
   };
 
+  const handleRetryStorage = () => {
+    initStorage();
+  };
+
   const filteredUsers = users.filter(user => 
     user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
     (user.full_name && user.full_name.toLowerCase().includes(searchTerm.toLowerCase()))
@@ -358,8 +369,21 @@ const Admin = () => {
                 PDF Storage Not Configured
               </AlertTitle>
               <AlertDescription className="text-amber-600">
-                The PDF storage system is not properly configured. Document downloads may not work correctly. 
-                Please contact your system administrator.
+                The PDF storage system is not properly configured. Document downloads may not work correctly.
+                {initializingStorage ? (
+                  <span className="block mt-1">Configuring storage...</span>
+                ) : (
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="ml-2 mt-1 bg-amber-50"
+                    onClick={handleRetryStorage}
+                    disabled={initializingStorage}
+                  >
+                    <RefreshCw className={`h-3 w-3 mr-1 ${initializingStorage ? 'animate-spin' : ''}`} />
+                    Retry Configuration
+                  </Button>
+                )}
               </AlertDescription>
             </Alert>
           )}
@@ -446,6 +470,7 @@ const Admin = () => {
                             size="sm"
                             onClick={() => handleDownload(document)}
                             title={storageInitialized ? "Download document" : "PDF storage not configured"}
+                            disabled={!storageInitialized}
                           >
                             <Download className="h-4 w-4" />
                           </Button>

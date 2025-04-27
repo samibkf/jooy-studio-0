@@ -14,59 +14,71 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
 // Initialize storage buckets
 export const initializeStorage = async () => {
   try {
-    // Check if the pdfs bucket exists
-    const { data: buckets, error: bucketError } = await supabase.storage.listBuckets();
+    console.log('Starting storage initialization check');
     
-    if (bucketError) {
-      console.error('Error listing buckets:', bucketError);
+    // First check if we can access the storage service at all
+    try {
+      const { data, error } = await supabase.storage.getBucket('pdfs');
+      
+      if (!error && data) {
+        console.log('pdfs bucket exists and is accessible');
+        return true;
+      }
+      
+      if (error && error.message !== 'The resource was not found') {
+        console.error('Error checking bucket existence:', error);
+        return false;
+      }
+      
+      console.log('pdfs bucket does not exist, attempting to create it');
+    } catch (accessError) {
+      console.error('Initial storage access check failed:', accessError);
       return false;
     }
     
-    const pdfsBucketExists = buckets?.some(bucket => bucket.name === 'pdfs');
-    
-    if (!pdfsBucketExists) {
-      console.log('Creating pdfs bucket...');
-      // Try to create the bucket with specific options
-      const { error: createError } = await supabase.storage.createBucket('pdfs', {
+    // Try to create the bucket
+    try {
+      const { data, error } = await supabase.storage.createBucket('pdfs', {
         public: true,
         fileSizeLimit: 10485760, // 10MB
         allowedMimeTypes: ['application/pdf']
       });
       
-      if (createError) {
-        // If it fails with the options, try a simpler approach
-        console.log('First attempt failed, trying without options');
-        const { error: fallbackError } = await supabase.storage.createBucket('pdfs');
+      if (error) {
+        console.error('Failed to create pdfs bucket with options:', error);
         
-        if (fallbackError) {
-          console.error('Error creating pdfs bucket:', fallbackError);
+        // Try a simplified approach without options
+        const { error: simpleError } = await supabase.storage.createBucket('pdfs');
+        
+        if (simpleError) {
+          console.error('Also failed to create simple bucket:', simpleError);
           return false;
         }
       }
       
       console.log('pdfs bucket created successfully');
       
-      // Instead of trying to use a stored procedure that doesn't exist,
-      // we'll use SQL to make the bucket public via the API
+      // Try to update the bucket to be public
       try {
-        // Update bucket to be public
         const { error: updateError } = await supabase.storage.updateBucket('pdfs', {
           public: true
         });
         
         if (updateError) {
           console.error('Error making bucket public:', updateError);
+          // Continue anyway, as the bucket may still work
         } else {
           console.log('Storage bucket set to public successfully');
         }
       } catch (policyError) {
         console.log('Policy update failed:', policyError);
+        // Continue anyway, as the bucket may still work
       }
       
       return true;
-    } else {
-      console.log('pdfs bucket already exists');
-      return true;
+    } catch (createError) {
+      console.error('Error creating bucket:', createError);
+      return false;
     }
   } catch (error) {
     console.error('Error initializing storage:', error);
