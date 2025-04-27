@@ -104,6 +104,8 @@ const Index = () => {
     document.body.removeChild(linkElement);
   };
 
+  const selectedRegion = selectedDocument?.regions.find(region => region.id === selectedRegionId) || null;
+
   return (
     <div className="flex flex-col h-screen">
       <Header
@@ -127,14 +129,11 @@ const Index = () => {
 
       <div className="flex flex-1 overflow-hidden">
         <Sidebar
-          onRegionSelect={handleRegionSelect}
-          selectedRegionId={selectedRegionId}
+          selectedRegion={selectedRegion}
           regions={selectedDocument?.regions || []}
-          onRegionTypeSelect={handleRegionTypeSelect}
-          isSelectionMode={isSelectionMode}
-          setIsSelectionMode={setIsSelectionMode}
-          currentSelectionType={currentSelectionType}
-          setCurrentSelectionType={setCurrentSelectionType}
+          onRegionUpdate={handleRegionUpdate}
+          onRegionDelete={handleRegionDelete}
+          onRegionSelect={handleRegionSelect}
         />
 
         <div className="flex-1 flex flex-col overflow-hidden">
