@@ -11,33 +11,33 @@ export const initializeStorage = async () => {
   try {
     console.log('Checking PDF storage initialization');
     
-    // First check if the pdfs bucket exists
-    const { data: buckets, error: bucketsError } = await supabase.storage.listBuckets();
+    // First check if the pdfs bucket exists directly with a specific bucket check
+    const { data: bucket, error: bucketError } = await supabase.storage.getBucket('pdfs');
     
-    if (bucketsError) {
-      console.error('Error accessing storage buckets:', bucketsError);
-      // Log more specific error details to help debug
-      if (bucketsError.message) console.error('Error message:', bucketsError.message);
+    if (bucketError) {
+      console.error('Error checking pdfs bucket:', bucketError);
+      if (bucketError.message) console.error('Bucket error message:', bucketError.message);
+      
+      // Check if the error is because the bucket doesn't exist
+      if (bucketError.message && bucketError.message.includes('does not exist')) {
+        console.error('PDF storage bucket does not exist. It should have been created by the SQL migration.');
+        return false;
+      }
+      
       return false;
     }
     
-    if (!buckets || buckets.length === 0) {
-      console.error('No storage buckets found');
+    if (!bucket) {
+      console.error('PDF storage bucket not found unexpectedly');
       return false;
     }
     
-    // Check if pdfs bucket exists
-    const pdfsBucket = buckets?.find(b => b.name === 'pdfs');
-    
-    if (!pdfsBucket) {
-      console.log('PDF storage bucket not found. Please create it manually in the Supabase dashboard.');
-      return false;
-    }
+    console.log('PDF bucket found:', bucket.name);
     
     // Bucket exists, now check if we can list its contents
     // This is a good test to see if we have proper access
     try {
-      console.log('PDF bucket found, checking access permissions...');
+      console.log('Checking access permissions for PDF bucket...');
       const { data: fileList, error: listError } = await supabase.storage
         .from('pdfs')
         .list();
