@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthProvider';
@@ -33,7 +32,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 
 const Admin = () => {
@@ -56,7 +54,7 @@ const Admin = () => {
       console.log('Storage initialization result:', initialized);
       setStorageInitialized(initialized);
       if (!initialized) {
-        toast.error('PDF storage bucket not found or could not be created');
+        toast.error('PDF storage bucket is not properly configured');
         setShowStorageHelp(true);
       } else {
         toast.success('PDF storage configured successfully');
@@ -125,7 +123,6 @@ const Admin = () => {
       console.log('Fetching documents for user:', userId);
       setLoadingDocuments(true);
       
-      // First check if the user has any documents
       const { data: documents, error } = await supabase
         .from('documents')
         .select('*')
@@ -145,7 +142,6 @@ const Admin = () => {
         return;
       }
 
-      // Fetch regions for each document
       const docsWithRegions = await Promise.all(documents.map(async (doc) => {
         const { data: regions, error: regionsError } = await supabase
           .from('document_regions')
@@ -159,20 +155,17 @@ const Admin = () => {
         return {
           ...doc,
           regions: regions || [],
-          file: null as File | null,  // Explicitly type as File | null
-          fileAvailable: false,       // Add default fileAvailable property
+          file: null as File | null,
+          fileAvailable: false,
           user_id: doc.user_id
-        } as DocumentData;  // Explicitly cast to DocumentData
+        } as DocumentData;
       }));
 
       console.log('Documents with regions:', docsWithRegions);
       
-      // Set documents even without files so the user sees something
       setUserDocuments(docsWithRegions);
     
-      // Try to get signed URLs for each document regardless of storage initialization
       try {
-        // First force a storage check/initialization
         const storageReady = await initializeStorage();
         setStorageInitialized(storageReady);
         
@@ -181,10 +174,8 @@ const Admin = () => {
           return;
         }
         
-        // Now try to update each document with its file if available
         const updatedDocs = await Promise.all(docsWithRegions.map(async (doc) => {
           try {
-            // First check if the file exists
             const { data: fileList, error: listError } = await supabase.storage
               .from('pdfs')
               .list(userId);
@@ -201,7 +192,6 @@ const Admin = () => {
               return doc;
             }
             
-            // Return an updated document with fileAvailable set to true
             return {
               ...doc,
               fileAvailable: true
@@ -249,7 +239,6 @@ const Admin = () => {
   };
 
   const handleDownload = async (doc: DocumentData) => {
-    // Force a storage check/initialization before attempting download
     const storageReady = await initializeStorage();
     setStorageInitialized(storageReady);
     
@@ -262,7 +251,6 @@ const Admin = () => {
     try {
       console.log(`Attempting admin download for document: ${doc.id} from user ${doc.user_id}`);
       
-      // Try to get a signed URL for the document
       const { data: fileData, error: urlError } = await supabase.storage
         .from('pdfs')
         .createSignedUrl(`${doc.user_id}/${doc.id}.pdf`, 3600);
@@ -273,7 +261,6 @@ const Admin = () => {
         return;
       }
 
-      // Attempt to download the file using the signed URL
       const response = await fetch(fileData.signedUrl);
       
       if (!response.ok) {
@@ -341,10 +328,10 @@ const Admin = () => {
           {!storageInitialized && (
             <Alert className="mt-4 border-amber-500 bg-amber-50">
               <AlertTitle className="font-semibold text-amber-700">
-                PDF Storage Not Configured
+                PDF Storage Configuration Issue
               </AlertTitle>
               <AlertDescription className="text-amber-700">
-                <p className="mb-2">The PDF storage bucket "pdfs" needs to be created in the Supabase dashboard.</p>
+                <p className="mb-2">The PDF storage bucket "pdfs" exists but there might be permission issues.</p>
                 <div className="flex items-center space-x-2 mt-2">
                   {initializingStorage ? (
                     <span className="block">Checking storage status...</span>
@@ -391,19 +378,32 @@ const Admin = () => {
             <ol className="list-decimal pl-5 space-y-2">
               <li>Go to your Supabase project dashboard.</li>
               <li>Navigate to "Storage" in the left sidebar.</li>
-              <li>Click on "Create bucket".</li>
-              <li>Name the bucket <code className="bg-gray-100 px-1 py-0.5 rounded">pdfs</code> (exactly as written, lowercase).</li>
-              <li>Enable RLS (Row Level Security).</li>
-              <li>Click "Create bucket".</li>
-              <li>After creating the bucket, click on it and go to the "Policies" tab.</li>
-              <li>Add policies to allow users to upload, download, and manage their files.</li>
+              <li>Verify that the bucket <code className="bg-gray-100 px-1 py-0.5 rounded">pdfs</code> exists (it should since we created it).</li>
+              <li>Click on the bucket and go to the "Policies" tab.</li>
+              <li>Add the following policies:</li>
+              <ul className="list-disc pl-5 mt-1 space-y-1">
+                <li>
+                  <strong>SELECT policy:</strong> Allow authenticated users to view files
+                  <br />
+                  <code className="bg-gray-100 px-1 py-0.5 rounded text-xs">
+                    (auth.role() = 'authenticated')
+                  </code>
+                </li>
+                <li>
+                  <strong>INSERT policy:</strong> Allow authenticated users to upload files
+                  <br />
+                  <code className="bg-gray-100 px-1 py-0.5 rounded text-xs">
+                    (auth.role() = 'authenticated')
+                  </code>
+                </li>
+              </ul>
               <li>Return to this page and click "Check Again".</li>
             </ol>
             <Alert className="bg-blue-50 border-blue-200 text-blue-800">
-              <AlertTitle>Note:</AlertTitle>
+              <AlertTitle>Important:</AlertTitle>
               <AlertDescription>
-                If you've already created the bucket but still see this message, try refreshing the page or checking 
-                your browser's console for errors. The bucket name must be exactly "pdfs" (lowercase).
+                Make sure your storage bucket has RLS (Row Level Security) policies that allow authenticated users to access files. 
+                Without proper policies, you'll get "violates row-level security policy" errors when trying to access files.
               </AlertDescription>
             </Alert>
           </div>

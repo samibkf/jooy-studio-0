@@ -11,11 +11,15 @@ export const initializeStorage = async () => {
   try {
     console.log('Checking PDF storage initialization');
     
-    // First check if we can access existing buckets
+    // First check if the pdfs bucket exists without touching RLS
     const { data: buckets, error: bucketsError } = await supabase.storage.listBuckets();
     
     if (bucketsError) {
       console.error('Error accessing storage buckets:', bucketsError);
+      // Log more specific error details to help debug
+      if (bucketsError.message) console.error('Error message:', bucketsError.message);
+      if (bucketsError.status) console.error('Error status:', bucketsError.status);
+      if (bucketsError.details) console.error('Error details:', bucketsError.details);
       return false;
     }
     
@@ -23,10 +27,29 @@ export const initializeStorage = async () => {
     const pdfsBucket = buckets?.find(b => b.name === 'pdfs');
     
     if (pdfsBucket) {
-      console.log('PDF storage bucket exists and is accessible');
-      return true;
+      // Bucket exists, now check if we can list its contents
+      // This is a good test to see if we have proper access
+      try {
+        const { data: fileList, error: listError } = await supabase.storage
+          .from('pdfs')
+          .list();
+          
+        if (listError) {
+          console.error('Bucket exists but cannot list contents:', listError);
+          // Log more specific error details
+          if (listError.message) console.error('List error message:', listError.message);
+          if (listError.status) console.error('List error status:', listError.status);
+          return false;
+        }
+        
+        console.log('PDF storage bucket exists and is accessible, file count:', fileList?.length || 0);
+        return true;
+      } catch (listError) {
+        console.error('Error while trying to list bucket contents:', listError);
+        return false;
+      }
     } else {
-      console.log('PDF storage bucket not found');
+      console.log('PDF storage bucket not found. Please create it manually in the Supabase dashboard.');
       return false;
     }
   } catch (error) {
