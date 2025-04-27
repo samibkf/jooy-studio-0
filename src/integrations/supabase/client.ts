@@ -26,28 +26,46 @@ export const initializeStorage = async () => {
     
     if (!pdfsBucketExists) {
       console.log('Creating pdfs bucket...');
+      // Try to create the bucket with specific options
       const { error: createError } = await supabase.storage.createBucket('pdfs', {
         public: true,
         fileSizeLimit: 10485760, // 10MB
+        allowedMimeTypes: ['application/pdf']
       });
       
       if (createError) {
-        console.error('Error creating pdfs bucket:', createError);
-        return false;
-      }
-      
-      // Set up bucket policies
-      const { error: policyError } = await supabase.storage.from('pdfs').createSignedUploadUrl('test.pdf');
-      if (policyError && policyError.message !== 'The resource was not found') {
-        console.error('Error setting up bucket policies:', policyError);
+        // If it fails with the options, try a simpler approach
+        console.log('First attempt failed, trying without options');
+        const { error: fallbackError } = await supabase.storage.createBucket('pdfs');
+        
+        if (fallbackError) {
+          console.error('Error creating pdfs bucket:', fallbackError);
+          return false;
+        }
       }
       
       console.log('pdfs bucket created successfully');
+      
+      // Now try to set policies for the bucket to make it public
+      try {
+        // Set up bucket policies to allow all operations
+        const { data: publicPolicy } = await supabase.rpc('create_storage_policy', {
+          bucket_name: 'pdfs',
+          policy_name: 'public_access',
+          definition: 'true',
+          operation: 'ALL'
+        });
+        console.log('Storage policy created:', publicPolicy);
+      } catch (policyError) {
+        // Policy creation may fail if not allowed, but we can still proceed
+        console.log('Policy creation skipped, may need manual setup:', policyError);
+      }
+      
+      return true;
     } else {
       console.log('pdfs bucket already exists');
+      return true;
     }
-    
-    return true;
   } catch (error) {
     console.error('Error initializing storage:', error);
     return false;

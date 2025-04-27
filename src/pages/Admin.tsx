@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthProvider';
@@ -23,6 +24,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 
 const Admin = () => {
   const { authState, signOut } = useAuth();
@@ -37,8 +39,18 @@ const Admin = () => {
 
   useEffect(() => {
     const initStorage = async () => {
-      const initialized = await initializeStorage();
-      setStorageInitialized(initialized);
+      try {
+        const initialized = await initializeStorage();
+        console.log('Storage initialization result:', initialized);
+        setStorageInitialized(initialized);
+        if (!initialized) {
+          toast.error('Failed to configure PDF storage. Some features may not work.');
+        }
+      } catch (error) {
+        console.error('Error during storage initialization:', error);
+        setStorageInitialized(false);
+        toast.error('Failed to configure PDF storage');
+      }
     };
     
     initStorage();
@@ -141,13 +153,23 @@ const Admin = () => {
       
       // If storage is not initialized, don't try to fetch files
       if (!storageInitialized) {
-        toast.error('PDF storage is not configured');
+        console.log('Storage not initialized, skipping file fetching');
         setLoadingDocuments(false);
         return;
       }
       
       // Try to get signed URLs for each document
       try {
+        // Check if the pdfs bucket exists
+        const { data: buckets, error: bucketError } = await supabase.storage.listBuckets();
+        
+        if (bucketError || !buckets?.some(bucket => bucket.name === 'pdfs')) {
+          console.error('pdfs bucket does not exist:', bucketError);
+          toast.error('PDF storage is not properly configured');
+          setLoadingDocuments(false);
+          return;
+        }
+        
         // Now try to update each document with its file if available
         const updatedDocs = await Promise.all(docsWithRegions.map(async (doc) => {
           try {
@@ -249,9 +271,9 @@ const Admin = () => {
       return;
     }
     
-    if (!doc.file) {
+    if (!doc.file && doc.user_id) {
       try {
-        console.log(`Attempting direct download for document: ${doc.id}`);
+        console.log(`Attempting direct download for document: ${doc.id} from user ${doc.user_id}`);
         
         // Try to get a signed URL directly
         const { data: fileData, error: urlError } = await supabase.storage
@@ -332,9 +354,15 @@ const Admin = () => {
             Logged in as: {authState.profile?.email} (Role: {authState.profile?.role})
           </p>
           {!storageInitialized && (
-            <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded text-yellow-700 text-sm">
-              Warning: PDF storage is not properly configured.
-            </div>
+            <Alert variant="warning" className="mt-2">
+              <AlertTitle className="font-semibold text-amber-600">
+                PDF Storage Not Configured
+              </AlertTitle>
+              <AlertDescription className="text-amber-600">
+                The PDF storage system is not properly configured. Document downloads may not work correctly. 
+                Please contact your system administrator.
+              </AlertDescription>
+            </Alert>
           )}
         </CardContent>
       </Card>
