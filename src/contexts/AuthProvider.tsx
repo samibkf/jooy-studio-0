@@ -34,6 +34,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
               .eq('id', session.user.id)
               .single();
             
+            console.log('Profile loaded:', profile);
             setAuthState(prev => ({ ...prev, profile }));
           }, 0);
         } else {
@@ -52,8 +53,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           .select('*')
           .eq('id', session.user.id)
           .single()
-          .then(({ data: profile }) => {
-            setAuthState(prev => ({ ...prev, profile }));
+          .then(({ data: profile, error }) => {
+            if (error) {
+              console.error('Error fetching profile:', error);
+            } else {
+              console.log('Initial profile loaded:', profile);
+              setAuthState(prev => ({ ...prev, profile }));
+            }
           });
       }
     });

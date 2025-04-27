@@ -6,7 +6,7 @@ import Header from '@/components/Header';
 import Sidebar from '@/components/Sidebar';
 import PdfViewer from '@/components/PdfViewer';
 import { Region } from '@/types/regions';
-import { Document } from '@/types/documents';
+import { DocumentData } from '@/types/documents';
 import { exportRegionMapping } from '@/utils/exportUtils';
 import { toast } from 'sonner';
 import DocumentList from '@/components/DocumentList';
@@ -17,7 +17,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 
 const Index = () => {
-  const [documents, setDocuments] = useState<Document[]>([]);
+  const [documents, setDocuments] = useState<DocumentData[]>([]);
   const [selectedDocumentId, setSelectedDocumentId] = useState<string | null>(null);
   const [isDocumentListCollapsed, setIsDocumentListCollapsed] = useState(true);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(true);
@@ -41,8 +41,11 @@ const Index = () => {
 
   useEffect(() => {
     if (authState.profile?.role === 'admin') {
+      console.log('Admin user detected, redirecting to admin page');
       navigate('/admin');
       return;
+    } else {
+      console.log('Regular user detected:', authState.profile);
     }
 
     if (!authState.user) return;
@@ -129,7 +132,7 @@ const Index = () => {
           })
         );
 
-        const validDocuments = documentsWithRegions.filter(Boolean) as Document[];
+        const validDocuments = documentsWithRegions.filter(Boolean) as DocumentData[];
         setDocuments(validDocuments);
         
         const newCache: Record<string, Region[]> = {};
@@ -180,7 +183,7 @@ const Index = () => {
 
       if (dbError) throw dbError;
 
-      const newDocument: Document = {
+      const newDocument: DocumentData = {
         id: documentId,
         name: file.name,
         file,
