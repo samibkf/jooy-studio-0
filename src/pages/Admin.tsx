@@ -51,6 +51,15 @@ const Admin = () => {
   useEffect(() => {
     if (!selectedUser) return;
 
+    // Clean up any previous subscription
+    const cleanupSubscription = supabase.getChannels().forEach(channel => {
+      if (channel.topic.includes('documents-changes')) {
+        supabase.removeChannel(channel);
+      }
+    });
+
+    console.log(`Setting up real-time subscription for user: ${selectedUser.id}`);
+    
     const channel = supabase
       .channel('documents-changes')
       .on(
@@ -62,24 +71,30 @@ const Admin = () => {
           filter: `user_id=eq.${selectedUser.id}`
         },
         (payload) => {
-          console.log('Document change payload:', payload);
+          console.log('Document change detected:', payload);
           
           switch(payload.eventType) {
             case 'DELETE':
+              console.log('Document deleted:', payload.old.id);
               setUserDocuments(prev => 
                 prev.filter(doc => doc.id !== payload.old.id)
               );
               break;
             case 'UPDATE':
+              console.log('Document updated:', payload.new);
               setUserDocuments(prev => 
                 prev.map(doc => 
                   doc.id === payload.new.id 
-                    ? { ...doc, ...payload.new } 
+                    ? { 
+                        ...doc,
+                        name: payload.new.name // Ensure name updates are applied
+                      } 
                     : doc
                 )
               );
               break;
             case 'INSERT':
+              console.log('Document inserted:', payload.new);
               setUserDocuments(prev => [
                 ...prev, 
                 { 
@@ -95,9 +110,12 @@ const Admin = () => {
           }
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log('Subscription status:', status);
+      });
 
     return () => {
+      console.log('Cleaning up document subscription');
       supabase.removeChannel(channel);
     };
   }, [selectedUser]);
@@ -178,6 +196,7 @@ const Admin = () => {
       console.log('Fetching documents for user:', userId);
       setLoadingDocuments(true);
       
+      // Get the latest documents from the database
       const { data: documents, error } = await supabase
         .from('documents')
         .select('*')
@@ -229,6 +248,7 @@ const Admin = () => {
           return;
         }
         
+        // Check which files actually exist in storage
         const updatedDocs = await Promise.all(docsWithRegions.map(async (doc) => {
           try {
             const { data: fileList, error: listError } = await supabase.storage
