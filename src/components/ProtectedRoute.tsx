@@ -19,11 +19,11 @@ export const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
     
     // Wait for profile to be loaded before making routing decisions
     if (authState.session !== undefined) {
-      // Give a bit more time for profile to load
+      // Allow a bit of time for auth state to settle and profile to load
       const timer = setTimeout(() => {
         setIsLoading(false);
         console.log('ProtectedRoute - Finished loading, profile:', authState.profile);
-      }, 1000); // Increased delay to ensure profile is loaded
+      }, 500);
       
       return () => clearTimeout(timer);
     }

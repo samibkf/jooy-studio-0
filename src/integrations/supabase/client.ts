@@ -5,10 +5,17 @@ import type { Database } from './types';
 const SUPABASE_URL = "https://bohxienpthilrfwktokd.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJvaHhpZW5wdGhpbHJmd2t0b2tkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDU2OTc3OTcsImV4cCI6MjA2MTI3Mzc5N30.4UO_pFmDauRz6Km5wTr3VHM95_GwyWKc1-pxGO1mImg";
 
-export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+    detectSessionInUrl: true
+  }
+});
 
 export const createBucket = async () => {
   try {
+    console.log('Checking if "pdfs" storage bucket exists...');
     // Check if bucket already exists
     const { data: existingBucket, error: checkError } = await supabase.storage.getBucket('pdfs');
     
@@ -70,17 +77,15 @@ export const initializeStorage = async () => {
     
     console.log('PDF bucket found:', bucket.name);
     
-    // Bucket exists, now check if we can list its contents
-    // This is a good test to see if we have proper access
+    // Test file listing to verify RLS permissions
     try {
-      console.log('Checking access permissions for PDF bucket...');
+      console.log('Testing storage bucket access permissions...');
       const { data: fileList, error: listError } = await supabase.storage
         .from('pdfs')
         .list();
         
       if (listError) {
         console.error('Bucket exists but cannot list contents:', listError);
-        // Log more specific error details
         if (listError.message) console.error('List error message:', listError.message);
         return false;
       }
