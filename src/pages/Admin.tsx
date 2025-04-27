@@ -55,7 +55,7 @@ const Admin = () => {
       console.log('Storage initialization result:', initialized);
       setStorageInitialized(initialized);
       if (!initialized) {
-        toast.error('PDF storage bucket not found');
+        toast.error('PDF storage bucket not found or could not be created');
         setShowStorageHelp(true);
       } else {
         toast.success('PDF storage configured successfully');
@@ -167,94 +167,54 @@ const Admin = () => {
       
       // Set documents even without files so the user sees something
       setUserDocuments(docsWithRegions);
+    
+    // Try to get signed URLs for each document regardless of storage initialization
+    try {
+      // First force a storage check/initialization
+      const storageReady = await initializeStorage();
+      setStorageInitialized(storageReady);
       
-      // If storage is not initialized, don't try to fetch files
-      if (!storageInitialized) {
-        console.log('Storage not initialized, skipping file fetching');
+      if (!storageReady) {
+        console.log('Storage initialization failed, skipping file fetching');
         setLoadingDocuments(false);
         return;
       }
       
-      // Try to get signed URLs for each document
-      try {
-        // Check if the pdfs bucket exists
-        const { data: buckets, error: bucketError } = await supabase.storage.listBuckets();
-        
-        if (bucketError || !buckets?.some(bucket => bucket.name === 'pdfs')) {
-          console.error('pdfs bucket does not exist:', bucketError);
-          toast.error('PDF storage is not properly configured');
-          setLoadingDocuments(false);
-          return;
-        }
-        
-        // Now try to update each document with its file if available
-        const updatedDocs = await Promise.all(docsWithRegions.map(async (doc) => {
-          try {
-            // First check if the file exists
-            const { data: fileList, error: listError } = await supabase.storage
-              .from('pdfs')
-              .list(userId);
-              
-            if (listError) {
-              console.error('Error listing files:', listError);
-              return doc;
-            }
+      // Now try to update each document with its file if available
+      const updatedDocs = await Promise.all(docsWithRegions.map(async (doc) => {
+        try {
+          // First check if the file exists
+          const { data: fileList, error: listError } = await supabase.storage
+            .from('pdfs')
+            .list(userId);
             
-            const fileExists = fileList?.some(file => file.name === `${doc.id}.pdf`);
-            
-            if (!fileExists) {
-              console.log(`File ${doc.id}.pdf does not exist for user ${doc.user_id}`);
-              return doc;
-            }
-            
-            // File exists, try to get a signed URL
-            const { data: fileData, error: urlError } = await supabase.storage
-              .from('pdfs')
-              .createSignedUrl(`${userId}/${doc.id}.pdf`, 3600);
-
-            if (urlError) {
-              console.error('Error creating signed URL:', urlError);
-              return doc;
-            }
-
-            console.log('Signed URL created for document:', doc.id);
-
-            if (fileData?.signedUrl) {
-              try {
-                const response = await fetch(fileData.signedUrl);
-                if (!response.ok) {
-                  console.error(`Failed to fetch PDF: ${response.status} ${response.statusText}`);
-                  return doc;
-                }
-                const blob = await response.blob();
-                const file = new File([blob], doc.name, { type: 'application/pdf' });
-                
-                return {
-                  ...doc,
-                  file
-                };
-              } catch (fetchError) {
-                console.error('Error fetching PDF from signed URL:', fetchError);
-                return doc;
-              }
-            }
-            return doc;
-          } catch (fileError) {
-            console.error('Error processing document:', doc.id, fileError);
+          if (listError) {
+            console.error('Error listing files:', listError);
             return doc;
           }
-        }));
+          
+          const fileExists = fileList?.some(file => file.name === `${doc.id}.pdf`);
+          
+          if (!fileExists) {
+            console.log(`File ${doc.id}.pdf does not exist for user ${doc.user_id}`);
+            return doc;
+          }
+          
+          return {
+            ...doc,
+            fileAvailable: true
+          };
+        } catch (fileError) {
+          console.error('Error processing document:', doc.id, fileError);
+          return doc;
+        }
+      }));
 
-        console.log('Processed documents with files:', updatedDocs.filter(d => d.file).length);
-        setUserDocuments(updatedDocs);
-      } catch (storageError) {
-        console.error('Error accessing storage:', storageError);
-        toast.error('Could not access document storage');
-      }
-    } catch (error) {
-      console.error('Error fetching user documents:', error);
-      toast.error('Failed to load user documents');
-      setUserDocuments([]);
+      console.log('Processed documents with files available:', updatedDocs.filter(d => d.fileAvailable).length);
+      setUserDocuments(updatedDocs);
+    } catch (storageError) {
+      console.error('Error accessing storage:', storageError);
+      toast.error('Could not access document storage');
     } finally {
       setLoadingDocuments(false);
     }
@@ -283,12 +243,19 @@ const Admin = () => {
   };
 
   const handleDownload = async (doc: DocumentData) => {
-    if (!storageInitialized) {
+    // Force a storage check/initialization before attempting download
+    const storageReady = await initializeStorage();
+    setStorageInitialized(storageReady);
+    
+    if (!storageReady) {
       toast.error('PDF storage is not configured properly');
+      setShowStorageHelp(true);
       return;
     }
     
     try {
+      console.log(`Attempting admin download for document: ${doc.id} from user ${doc.user_id}`);
+      
       // Try to get a signed URL for the document
       const { data: fileData, error: urlError } = await supabase.storage
         .from('pdfs')

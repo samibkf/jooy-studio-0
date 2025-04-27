@@ -25,10 +25,22 @@ export const initializeStorage = async () => {
     if (pdfsBucket) {
       console.log('PDF storage bucket exists and is accessible');
       return true;
+    } else {
+      // Try to create the bucket if it doesn't exist
+      console.log('PDF storage bucket not found, attempting to create it');
+      const { data, error } = await supabase.storage.createBucket('pdfs', {
+        public: false,
+        fileSizeLimit: 10485760, // 10MB
+      });
+      
+      if (error) {
+        console.error('Error creating PDF storage bucket:', error);
+        return false;
+      }
+      
+      console.log('PDF storage bucket created successfully');
+      return true;
     }
-    
-    console.log('PDF storage bucket not found or not accessible');
-    return false;
   } catch (error) {
     console.error('Unexpected error during PDF storage initialization:', error);
     return false;
