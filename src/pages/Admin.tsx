@@ -18,6 +18,12 @@ import { Download, LogOut, Search, User } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { exportRegionMapping } from '@/utils/exportUtils';
 import { toast } from 'sonner';
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 
 const Admin = () => {
   const { authState, signOut } = useAuth();
@@ -80,6 +86,7 @@ const Admin = () => {
       console.log('Fetching documents for user:', userId);
       setLoadingDocuments(true);
       
+      // First check if the user has any documents
       const { data: documents, error } = await supabase
         .from('documents')
         .select('*')
@@ -112,76 +119,101 @@ const Admin = () => {
         
         return {
           ...doc,
-          regions: regions || []
+          regions: regions || [],
+          file: null // Initialize with null, we'll try to load it below
         };
       }));
 
       console.log('Documents with regions:', docsWithRegions);
       
-      // Process documents to get signed URLs
-      const transformedDocuments = await Promise.all(docsWithRegions.map(async (doc) => {
-        try {
-          const { data: fileData, error: urlError } = await supabase.storage
-            .from('pdfs')
-            .createSignedUrl(`${doc.user_id}/${doc.id}.pdf`, 3600);
+      // Set documents even without files so the user sees something
+      setUserDocuments(docsWithRegions);
+      
+      // Try to get signed URLs for each document
+      try {
+        // Check if the pdfs bucket exists
+        const { data: buckets, error: bucketError } = await supabase.storage.listBuckets();
+        
+        if (bucketError) {
+          console.error('Error listing buckets:', bucketError);
+          toast.error('Could not access storage buckets');
+          setLoadingDocuments(false);
+          return;
+        }
+        
+        const pdfsBucketExists = buckets?.some(bucket => bucket.name === 'pdfs');
+        
+        if (!pdfsBucketExists) {
+          console.error('pdfs bucket does not exist');
+          toast.error('PDF storage is not configured');
+          setLoadingDocuments(false);
+          return;
+        }
+        
+        // Now try to update each document with its file if available
+        const updatedDocs = await Promise.all(docsWithRegions.map(async (doc) => {
+          try {
+            // First check if the file exists
+            const { data: fileList, error: listError } = await supabase.storage
+              .from('pdfs')
+              .list(`${doc.user_id}`);
+              
+            if (listError) {
+              console.error('Error listing files:', listError);
+              return doc;
+            }
+            
+            const fileExists = fileList?.some(file => file.name === `${doc.id}.pdf`);
+            
+            if (!fileExists) {
+              console.log(`File ${doc.id}.pdf does not exist for user ${doc.user_id}`);
+              return doc;
+            }
+            
+            // File exists, try to get a signed URL
+            const { data: fileData, error: urlError } = await supabase.storage
+              .from('pdfs')
+              .createSignedUrl(`${doc.user_id}/${doc.id}.pdf`, 3600);
 
-          if (urlError) {
-            console.error('Error creating signed URL:', urlError);
-            return null;
-          }
+            if (urlError) {
+              console.error('Error creating signed URL:', urlError);
+              return doc;
+            }
 
-          console.log('Signed URL created for document:', doc.id, fileData?.signedUrl);
+            console.log('Signed URL created for document:', doc.id, fileData?.signedUrl);
 
-          if (fileData?.signedUrl) {
-            try {
-              const response = await fetch(fileData.signedUrl);
-              if (!response.ok) {
-                console.error(`Failed to fetch PDF: ${response.status} ${response.statusText}`);
-                // Return document without file but with other info so we can still show it
+            if (fileData?.signedUrl) {
+              try {
+                const response = await fetch(fileData.signedUrl);
+                if (!response.ok) {
+                  console.error(`Failed to fetch PDF: ${response.status} ${response.statusText}`);
+                  return doc;
+                }
+                const blob = await response.blob();
+                const file = new File([blob], doc.name, { type: 'application/pdf' });
+                
                 return {
                   ...doc,
-                  file: null,
-                  regions: doc.regions || []
+                  file
                 };
+              } catch (fetchError) {
+                console.error('Error fetching PDF from signed URL:', fetchError);
+                return doc;
               }
-              const blob = await response.blob();
-              const file = new File([blob], doc.name, { type: 'application/pdf' });
-              
-              return {
-                ...doc,
-                file,
-                regions: doc.regions || []
-              };
-            } catch (fetchError) {
-              console.error('Error fetching PDF from signed URL:', fetchError);
-              // Return document without file but with other info
-              return {
-                ...doc,
-                file: null,
-                regions: doc.regions || []
-              };
             }
+            return doc;
+          } catch (fileError) {
+            console.error('Error processing document:', doc.id, fileError);
+            return doc;
           }
-          // Return document without file but with other info
-          return {
-            ...doc,
-            file: null,
-            regions: doc.regions || []
-          };
-        } catch (fileError) {
-          console.error('Error processing document:', doc.id, fileError);
-          // Return document without file but with other info
-          return {
-            ...doc,
-            file: null,
-            regions: doc.regions || []
-          };
-        }
-      }));
+        }));
 
-      const validDocuments = transformedDocuments.filter(Boolean) as DocumentData[];
-      console.log('Processed documents:', validDocuments.length);
-      setUserDocuments(validDocuments);
+        console.log('Processed documents:', updatedDocs.length);
+        setUserDocuments(updatedDocs);
+      } catch (storageError) {
+        console.error('Error accessing storage:', storageError);
+        toast.error('Could not access document storage');
+      }
     } catch (error) {
       console.error('Error fetching user documents:', error);
       toast.error('Failed to load user documents');
@@ -239,6 +271,7 @@ const Admin = () => {
   const handleSignOut = async () => {
     try {
       await signOut();
+      toast.success('Signed out successfully');
       navigate('/auth');
     } catch (error) {
       console.error('Error signing out:', error);
@@ -253,23 +286,26 @@ const Admin = () => {
 
   return (
     <div className="container mx-auto py-8">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Admin Dashboard</h1>
-        <Button 
-          variant="outline"
-          size="sm" 
-          className="flex items-center gap-2"
-          onClick={handleSignOut}
-        >
-          <LogOut className="h-4 w-4" />
-          Sign Out
-        </Button>
-      </div>
+      <Card className="mb-6">
+        <CardHeader className="flex flex-row items-center justify-between pb-2">
+          <CardTitle className="text-2xl font-bold">Admin Dashboard</CardTitle>
+          <Button 
+            variant="destructive"
+            size="sm" 
+            className="flex items-center gap-2"
+            onClick={handleSignOut}
+          >
+            <LogOut className="h-4 w-4" />
+            Sign Out
+          </Button>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-muted-foreground">
+            Logged in as: {authState.profile?.email} (Role: {authState.profile?.role})
+          </p>
+        </CardContent>
+      </Card>
       
-      <p className="text-sm text-muted-foreground mb-4">
-        Logged in as: {authState.profile?.email} (Role: {authState.profile?.role})
-      </p>
-
       <div className="flex items-center gap-4 mb-6">
         <Search className="h-5 w-5 text-muted-foreground" />
         <Input
