@@ -7,23 +7,59 @@ const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiO
 
 export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
 
+export const createBucket = async () => {
+  try {
+    // Check if bucket already exists
+    const { data: existingBucket, error: checkError } = await supabase.storage.getBucket('pdfs');
+    
+    if (checkError) {
+      // If error is not "bucket not found", it's a different error
+      if (!checkError.message.includes('not found')) {
+        console.error('Error checking bucket:', checkError);
+        return false;
+      }
+      
+      console.log('Bucket does not exist, creating it now...');
+      // Create the bucket if it doesn't exist
+      const { data: bucketData, error: createError } = await supabase.storage.createBucket('pdfs', {
+        public: true, // Make bucket public
+        fileSizeLimit: 10485760, // 10MB file size limit
+      });
+      
+      if (createError) {
+        console.error('Error creating bucket:', createError);
+        return false;
+      }
+      
+      console.log('Bucket created successfully:', bucketData);
+      return true;
+    }
+    
+    console.log('Bucket already exists:', existingBucket);
+    return true;
+  } catch (error) {
+    console.error('Unexpected error during bucket creation:', error);
+    return false;
+  }
+};
+
 export const initializeStorage = async () => {
   try {
     console.log('Checking PDF storage initialization');
     
-    // First check if the pdfs bucket exists directly with a specific bucket check
+    // First ensure the bucket exists
+    const bucketCreated = await createBucket();
+    if (!bucketCreated) {
+      console.error('Failed to ensure PDF bucket exists');
+      return false;
+    }
+    
+    // Now check if we can access the bucket
     const { data: bucket, error: bucketError } = await supabase.storage.getBucket('pdfs');
     
     if (bucketError) {
       console.error('Error checking pdfs bucket:', bucketError);
       if (bucketError.message) console.error('Bucket error message:', bucketError.message);
-      
-      // Check if the error is because the bucket doesn't exist
-      if (bucketError.message && bucketError.message.includes('does not exist')) {
-        console.error('PDF storage bucket does not exist. It should have been created by the SQL migration.');
-        return false;
-      }
-      
       return false;
     }
     
