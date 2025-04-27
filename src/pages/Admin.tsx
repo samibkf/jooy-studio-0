@@ -1,3 +1,4 @@
+
 import { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthProvider';
@@ -47,16 +48,19 @@ const Admin = () => {
   const [userDocuments, setUserDocuments] = useState<DocumentData[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingDocuments, setLoadingDocuments] = useState(false);
+  const [refreshingDocuments, setRefreshingDocuments] = useState(false);
   const [storageInitialized, setStorageInitialized] = useState(false);
   const [initializingStorage, setInitializingStorage] = useState(false);
   const [showStorageHelp, setShowStorageHelp] = useState(false);
 
   const cleanupChannels = useCallback(() => {
-    supabase.getChannels().forEach(channel => {
+    const channels = supabase.getChannels();
+    for (const channel of channels) {
       if (channel.topic.includes('documents-changes')) {
+        console.log(`Removing existing channel: ${channel.topic}`);
         supabase.removeChannel(channel);
       }
-    });
+    }
   }, []);
 
   useEffect(() => {
@@ -81,18 +85,27 @@ const Admin = () => {
           switch(payload.eventType) {
             case 'DELETE':
               console.log('Document deleted:', payload.old.id);
+              // Immediately remove the document from the UI
               setUserDocuments(prev => 
                 prev.filter(doc => doc.id !== payload.old.id)
               );
               break;
+              
             case 'UPDATE':
               console.log('Document updated:', payload.new);
               try {
-                const { data: fileList } = await supabase.storage
+                // Check if the file exists in storage
+                const { data: fileList, error: listError } = await supabase.storage
                   .from('pdfs')
                   .list(selectedUser.id);
                 
+                if (listError) {
+                  console.error('Error checking file existence:', listError);
+                  return;
+                }
+                
                 const fileExists = fileList?.some(file => file.name === `${payload.new.id}.pdf`);
+                console.log(`File exists check for ${payload.new.id}.pdf:`, fileExists);
                 
                 setUserDocuments(prev => 
                   prev.map(doc => 
@@ -109,14 +122,22 @@ const Admin = () => {
                 console.error('Error checking file existence:', error);
               }
               break;
+              
             case 'INSERT':
               console.log('Document inserted:', payload.new);
               try {
-                const { data: fileList } = await supabase.storage
+                // Check if the file exists in storage
+                const { data: fileList, error: listError } = await supabase.storage
                   .from('pdfs')
                   .list(selectedUser.id);
                 
+                if (listError) {
+                  console.error('Error checking file existence:', listError);
+                  return;
+                }
+                
                 const fileExists = fileList?.some(file => file.name === `${payload.new.id}.pdf`);
+                console.log(`File exists check for ${payload.new.id}.pdf:`, fileExists);
                 
                 setUserDocuments(prev => [
                   ...prev,
@@ -222,6 +243,32 @@ const Admin = () => {
       console.log('Fetching documents for user:', userId);
       setLoadingDocuments(true);
       
+      // First check if storage is initialized
+      const storageReady = await initializeStorage();
+      setStorageInitialized(storageReady);
+      
+      if (!storageReady) {
+        console.log('Storage initialization failed, skipping file fetching');
+        setLoadingDocuments(false);
+        toast.error('Cannot fetch documents: PDF storage is not properly configured');
+        return;
+      }
+
+      // Get list of files in storage first to check which documents are actually available
+      const { data: fileList, error: listError } = await supabase.storage
+        .from('pdfs')
+        .list(userId);
+      
+      if (listError) {
+        console.error('Error listing files:', listError);
+        setLoadingDocuments(false);
+        toast.error('Failed to check available files');
+        return;
+      }
+
+      console.log(`Files found in storage for user ${userId}:`, fileList);
+      
+      // Now fetch documents from the database
       const { data: documents, error } = await supabase
         .from('documents')
         .select('*')
@@ -229,30 +276,15 @@ const Admin = () => {
 
       if (error) {
         console.error('Error fetching documents:', error);
-        throw error;
+        setLoadingDocuments(false);
+        toast.error('Failed to fetch documents');
+        return;
       }
       
       if (!documents || documents.length === 0) {
         setUserDocuments([]);
         toast.info('No documents found for this user');
         setLoadingDocuments(false);
-        return;
-      }
-
-      const storageReady = await initializeStorage();
-      setStorageInitialized(storageReady);
-      
-      if (!storageReady) {
-        console.log('Storage initialization failed, skipping file fetching');
-        return;
-      }
-
-      const { data: fileList, error: listError } = await supabase.storage
-        .from('pdfs')
-        .list(userId);
-        
-      if (listError) {
-        console.error('Error listing files:', listError);
         return;
       }
 
@@ -266,18 +298,22 @@ const Admin = () => {
           console.error('Error fetching regions for document:', doc.id, regionsError);
         }
 
+        // Check if the file exists in storage
         const fileExists = fileList?.some(file => file.name === `${doc.id}.pdf`);
+        console.log(`File exists check for ${doc.id}.pdf:`, fileExists);
         
         return {
           ...doc,
           regions: regions || [],
-          file: null as File | null,
+          file: null as unknown as File,
           fileAvailable: fileExists,
           user_id: doc.user_id
         } as DocumentData;
       }));
 
-      console.log('Processed documents with files available:', docsWithRegions.filter(d => d.fileAvailable).length);
+      const availableFileCount = docsWithRegions.filter(d => d.fileAvailable).length;
+      console.log(`Processed ${docsWithRegions.length} documents, ${availableFileCount} files available`);
+      
       setUserDocuments(docsWithRegions);
     } catch (error) {
       console.error('Error in fetchUserDocuments:', error);
@@ -341,7 +377,20 @@ const Admin = () => {
       
       if (!response.ok) {
         console.error(`Download failed: ${response.status} ${response.statusText}`);
-        toast.error('Failed to download document');
+        
+        if (response.status === 404) {
+          // Update the document status in the UI to show that the file is not available
+          setUserDocuments(prev => 
+            prev.map(d => 
+              d.id === doc.id 
+                ? { ...d, fileAvailable: false } 
+                : d
+            )
+          );
+          toast.error('File not found in storage');
+        } else {
+          toast.error('Failed to download document');
+        }
         return;
       }
 
@@ -359,6 +408,21 @@ const Admin = () => {
     } catch (error) {
       console.error('Error downloading document:', error);
       toast.error('An unexpected error occurred while downloading the document');
+    }
+  };
+
+  const handleRefreshDocuments = async () => {
+    if (!selectedUser) return;
+    
+    setRefreshingDocuments(true);
+    try {
+      await fetchUserDocuments(selectedUser.id);
+      toast.success('Document list refreshed');
+    } catch (error) {
+      console.error('Error refreshing documents:', error);
+      toast.error('Failed to refresh documents');
+    } finally {
+      setRefreshingDocuments(false);
     }
   };
 
@@ -542,10 +606,24 @@ const Admin = () => {
         </div>
 
         <div>
-          <h2 className="text-xl font-semibold mb-4">
-            {selectedUser ? `${selectedUser.full_name || selectedUser.email}'s Documents` : 'Select a User'}
-          </h2>
-          {loadingDocuments ? (
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xl font-semibold">
+              {selectedUser ? `${selectedUser.full_name || selectedUser.email}'s Documents` : 'Select a User'}
+            </h2>
+            {selectedUser && (
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={handleRefreshDocuments}
+                disabled={refreshingDocuments || loadingDocuments}
+                className="flex items-center gap-1"
+              >
+                <RefreshCw className={`h-4 w-4 ${refreshingDocuments ? 'animate-spin' : ''}`} />
+                {refreshingDocuments ? 'Refreshing...' : 'Refresh'}
+              </Button>
+            )}
+          </div>
+          {loadingDocuments || refreshingDocuments ? (
             <p>Loading documents...</p>
           ) : selectedUser ? (
             userDocuments.length > 0 ? (
@@ -554,6 +632,7 @@ const Admin = () => {
                   <TableRow>
                     <TableHead>Document</TableHead>
                     <TableHead>Regions</TableHead>
+                    <TableHead>Status</TableHead>
                     <TableHead>Actions</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -563,13 +642,20 @@ const Admin = () => {
                       <TableCell>{document.name}</TableCell>
                       <TableCell>{document.regions.length}</TableCell>
                       <TableCell>
+                        <span className={`px-2 py-1 rounded text-xs ${document.fileAvailable ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                          {document.fileAvailable ? 'Available' : 'Unavailable'}
+                        </span>
+                      </TableCell>
+                      <TableCell>
                         <div className="flex items-center gap-2">
                           <Button
                             variant="outline"
                             size="sm"
                             onClick={() => handleDownload(document)}
-                            title={storageInitialized ? "Download document" : "PDF storage not configured"}
-                            disabled={!storageInitialized}
+                            disabled={!document.fileAvailable || !storageInitialized}
+                            title={!storageInitialized ? "PDF storage not configured" : 
+                                  !document.fileAvailable ? "File not available" : 
+                                  "Download document"}
                           >
                             <Download className="h-4 w-4" />
                           </Button>
@@ -577,6 +663,8 @@ const Admin = () => {
                             variant="outline"
                             size="sm"
                             onClick={() => handleExport(document)}
+                            disabled={document.regions.length === 0}
+                            title={document.regions.length === 0 ? "No regions to export" : "Export regions"}
                           >
                             Export
                           </Button>
