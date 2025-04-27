@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthProvider';
@@ -82,11 +83,13 @@ const Admin = () => {
               setUserDocuments(prev => [
                 ...prev, 
                 { 
-                  ...payload.new, 
+                  id: payload.new.id,
+                  name: payload.new.name,
+                  user_id: payload.new.user_id,
                   regions: [], 
-                  file: null, 
+                  file: null as unknown as File, 
                   fileAvailable: false 
-                }
+                } as DocumentData
               ]);
               break;
           }
