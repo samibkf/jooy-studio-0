@@ -68,7 +68,6 @@ const Admin = () => {
 
       if (error) throw error;
 
-      // Transform the data to match our DocumentData type
       const transformedDocuments = await Promise.all((documents || []).map(async (doc) => {
         const { data: fileData } = await supabase.storage
           .from('pdfs')
@@ -100,29 +99,29 @@ const Admin = () => {
     fetchUserDocuments(user.id);
   };
 
-  const handleExport = (document: DocumentData) => {
-    if (document.regions.length === 0) {
+  const handleExport = (doc: DocumentData) => {
+    if (doc.regions.length === 0) {
       toast.error('No regions defined in this document');
       return;
     }
 
     const mapping = {
-      documentName: document.name,
-      documentId: document.id,
-      regions: document.regions
+      documentName: doc.name,
+      documentId: doc.id,
+      regions: doc.regions
     };
 
     exportRegionMapping(mapping);
     toast.success('Data exported successfully');
   };
 
-  const handleDownload = async (document: DocumentData) => {
+  const handleDownload = async (doc: DocumentData) => {
     try {
-      const blob = await document.file.slice().arrayBuffer();
+      const blob = await doc.file.slice().arrayBuffer();
       const url = window.URL.createObjectURL(new Blob([blob]));
       const link = document.createElement('a');
       link.href = url;
-      link.setAttribute('download', document.name);
+      link.setAttribute('download', doc.name);
       document.body.appendChild(link);
       link.click();
       link.remove();
