@@ -9,7 +9,7 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
 
 export const initializeStorage = async () => {
   try {
-    console.log('Starting PDF storage initialization check');
+    console.log('Checking PDF storage initialization');
     
     // First check if we can access existing buckets
     const { data: buckets, error: bucketsError } = await supabase.storage.listBuckets();
@@ -26,26 +26,11 @@ export const initializeStorage = async () => {
       console.log('PDF storage bucket exists and is accessible');
       return true;
     } else {
-      // Try to create the bucket if it doesn't exist
-      console.log('PDF storage bucket not found, attempting to create it');
-      const { data, error } = await supabase.storage.createBucket('pdfs', {
-        public: false,
-        fileSizeLimit: 10485760, // 10MB
-      });
-      
-      if (error) {
-        console.error('Error creating PDF storage bucket:', error);
-        return false;
-      }
-      
-      console.log('PDF storage bucket created successfully');
-      return true;
+      console.log('PDF storage bucket not found');
+      return false;
     }
   } catch (error) {
     console.error('Unexpected error during PDF storage initialization:', error);
     return false;
   }
 };
-
-// Import the supabase client like this:
-// import { supabase } from "@/integrations/supabase/client";
