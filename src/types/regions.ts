@@ -1,6 +1,4 @@
 
-export type RegionType = 'header' | 'footer' | 'body' | 'table' | 'image' | 'signature' | 'area';
-
 export interface Region {
   id: string;
   page: number;
@@ -8,7 +6,7 @@ export interface Region {
   y: number;
   width: number;
   height: number;
-  type: RegionType;  // Updated to use the RegionType type
+  type: string;  // Changed from 'area' to string to match DB
   name: string;
   description: string | null;  // Added null to match DB
   created_at?: string;         // Added optional field from DB

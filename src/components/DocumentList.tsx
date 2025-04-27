@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,47 +10,32 @@ import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 
 interface DocumentListProps {
-  onDocumentSelect: (document: Document) => void;
+  documents: Document[];
+  selectedDocumentId: string | null;
+  onDocumentSelect: (documentId: string) => void;
+  onDocumentRename: (documentId: string, newName: string) => void;
+  onDocumentDelete: (documentId: string) => void;
+  isCollapsed: boolean;
+  onCollapsedChange: (collapsed: boolean) => void;
 }
 
 const DocumentList: React.FC<DocumentListProps> = ({
-  onDocumentSelect
+  documents,
+  selectedDocumentId,
+  onDocumentSelect,
+  onDocumentRename,
+  onDocumentDelete,
+  isCollapsed,
+  onCollapsedChange,
 }) => {
-  const [documents, setDocuments] = useState<Document[]>([]);
   const [isRenaming, setIsRenaming] = useState<string | null>(null);
   const [newName, setNewName] = useState("");
   const [documentToDelete, setDocumentToDelete] = useState<string | null>(null);
   const [documentOptionsVisible, setDocumentOptionsVisible] = useState<string | null>(null);
-  const [isCollapsed, setIsCollapsed] = useState(false);
-
-  // Mock data for demonstration
-  useEffect(() => {
-    // In a real app, this would fetch documents from an API or database
-    setDocuments([
-      {
-        id: '1',
-        name: 'Sample Document 1.pdf',
-        file: new File([], 'Sample Document 1.pdf'),
-        regions: [],
-        created_at: new Date().toISOString(),
-        user_id: 'user1',
-      },
-      {
-        id: '2',
-        name: 'Sample Document 2.pdf',
-        file: new File([], 'Sample Document 2.pdf'),
-        regions: [],
-        created_at: new Date().toISOString(),
-        user_id: 'user1',
-      },
-    ]);
-  }, []);
 
   const handleRenameSubmit = (documentId: string) => {
     if (newName.trim()) {
-      setDocuments(prev => 
-        prev.map(doc => doc.id === documentId ? { ...doc, name: newName.trim() } : doc)
-      );
+      onDocumentRename(documentId, newName.trim());
       setIsRenaming(null);
       setNewName("");
       toast.success('Document renamed');
@@ -59,7 +44,7 @@ const DocumentList: React.FC<DocumentListProps> = ({
 
   const handleDeleteConfirm = () => {
     if (documentToDelete) {
-      setDocuments(prev => prev.filter(doc => doc.id !== documentToDelete));
+      onDocumentDelete(documentToDelete);
       setDocumentToDelete(null);
       toast.success('Document deleted');
     }
@@ -78,7 +63,7 @@ const DocumentList: React.FC<DocumentListProps> = ({
         size="icon"
         className="fixed z-20 top-20 bg-background shadow-md border rounded-full"
         style={{ left: isCollapsed ? '16px' : '250px' }}
-        onClick={() => setIsCollapsed(!isCollapsed)}
+        onClick={() => onCollapsedChange(!isCollapsed)}
       >
         {isCollapsed ? <ChevronRight /> : <ChevronLeft />}
       </Button>
@@ -94,8 +79,10 @@ const DocumentList: React.FC<DocumentListProps> = ({
             {documents.map((doc) => (
               <div
                 key={doc.id}
-                className="p-3 rounded-md flex items-center justify-between group hover:bg-accent/50"
-                onClick={() => onDocumentSelect(doc)}
+                className={`p-3 rounded-md flex items-center justify-between group hover:bg-accent/50 ${
+                  selectedDocumentId === doc.id ? 'bg-accent' : ''
+                }`}
+                onClick={() => onDocumentSelect(doc.id)}
               >
                 <div className="flex items-center gap-2 flex-1 text-left relative">
                   <FileText 
