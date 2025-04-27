@@ -62,10 +62,10 @@ const RegionOverlay: React.FC<RegionOverlayProps> = ({
   
   const handleDescriptionBlur = () => {
     // Only update if the description has actually changed
-    if (localDescription !== region.description) {
+    if (localDescription !== (region.description || '')) {
       onUpdate({
         ...region,
-        description: localDescription
+        description: localDescription || null // Send null for empty strings
       });
     }
   };

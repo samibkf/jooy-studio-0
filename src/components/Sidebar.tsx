@@ -32,10 +32,10 @@ const Sidebar = ({
     if (!selectedRegion) return;
     
     // Only update if the description has actually changed
-    if (localDescription !== selectedRegion.description) {
+    if (localDescription !== (selectedRegion.description || '')) {
       onRegionUpdate({
         ...selectedRegion,
-        description: localDescription
+        description: localDescription || null // Send null for empty strings
       });
     }
   };

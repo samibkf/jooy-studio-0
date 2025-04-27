@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
@@ -20,6 +21,7 @@ const Index = () => {
   const [selectedDocumentId, setSelectedDocumentId] = useState<string | null>(null);
   const [isDocumentListCollapsed, setIsDocumentListCollapsed] = useState(true);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const {
@@ -40,17 +42,21 @@ const Index = () => {
     if (!authState.user) return;
     
     const loadDocuments = async () => {
+      setIsLoading(true);
       try {
+        console.log("Loading documents for user:", authState.user.id);
         const { data: dbDocuments, error } = await supabase
           .from('documents')
           .select('*')
           .eq('user_id', authState.user.id);
 
         if (error) {
-          toast.error('Failed to load documents');
+          console.error("Error loading documents:", error);
+          toast.error('Failed to load documents: ' + error.message);
           return;
         }
 
+        console.log("Documents loaded:", dbDocuments);
         const documentsWithRegions = await Promise.all(
           dbDocuments.map(async (doc) => {
             try {
@@ -60,13 +66,21 @@ const Index = () => {
                 .eq('document_id', doc.id);
 
               if (regionsError) {
+                console.error(`Error loading regions for document ${doc.name}:`, regionsError);
                 toast.error(`Failed to load regions for document ${doc.name}`);
                 return null;
               }
 
-              const { data: fileData } = await supabase.storage
+              console.log(`Regions for document ${doc.id}:`, regions);
+              const { data: fileData, error: fileError } = await supabase.storage
                 .from('pdfs')
                 .createSignedUrl(`${authState.user.id}/${doc.id}.pdf`, 3600);
+
+              if (fileError) {
+                console.error(`Error getting signed URL for document ${doc.name}:`, fileError);
+                toast.error(`Failed to access PDF for ${doc.name}`);
+                return null;
+              }
 
               if (fileData?.signedUrl) {
                 try {
@@ -89,7 +103,10 @@ const Index = () => {
                       height: r.height,
                       type: r.type,
                       name: r.name,
-                      description: r.description
+                      description: r.description,
+                      document_id: r.document_id,
+                      user_id: r.user_id,
+                      created_at: r.created_at
                     }))
                   };
                 } catch (fetchError) {
@@ -117,6 +134,8 @@ const Index = () => {
       } catch (loadError) {
         console.error('Error loading documents:', loadError);
         toast.error('Failed to load documents');
+      } finally {
+        setIsLoading(false);
       }
     };
 
@@ -246,10 +265,28 @@ const Index = () => {
 
     const newRegion: Region = {
       ...regionData,
-      id: uuidv4()
+      id: uuidv4(),
+      description: regionData.description || null // Ensure null for empty descriptions
     };
 
     try {
+      // Update UI first for immediate feedback
+      setRegionsCache(prev => ({
+        ...prev,
+        [selectedDocumentId]: [...(prev[selectedDocumentId] || []), newRegion]
+      }));
+      
+      setDocuments(prev =>
+        prev.map(doc =>
+          doc.id === selectedDocumentId
+            ? { ...doc, regions: [...doc.regions, newRegion] }
+            : doc
+        )
+      );
+      
+      setSelectedRegionId(newRegion.id);
+
+      // Then update database
       const { error } = await supabase
         .from('document_regions')
         .insert({
@@ -263,26 +300,29 @@ const Index = () => {
           height: newRegion.height,
           type: newRegion.type,
           name: newRegion.name,
-          description: newRegion.description || null
+          description: newRegion.description
         });
 
-      if (error) throw error;
-
-      setDocuments(prev =>
-        prev.map(doc =>
-          doc.id === selectedDocumentId
-            ? { ...doc, regions: [...doc.regions, newRegion] }
-            : doc
-        )
-      );
-      
-      setRegionsCache(prev => ({
-        ...prev,
-        [selectedDocumentId]: [...(prev[selectedDocumentId] || []), newRegion]
-      }));
-      
-      setSelectedRegionId(newRegion.id);
-      toast.success('Region created');
+      if (error) {
+        console.error('Error creating region:', error);
+        toast.error('Failed to create region: ' + error.message);
+        
+        // Revert UI changes on error
+        setRegionsCache(prev => ({
+          ...prev,
+          [selectedDocumentId]: (prev[selectedDocumentId] || []).filter(r => r.id !== newRegion.id)
+        }));
+        
+        setDocuments(prev =>
+          prev.map(doc =>
+            doc.id === selectedDocumentId
+              ? { ...doc, regions: doc.regions.filter(r => r.id !== newRegion.id) }
+              : doc
+          )
+        );
+      } else {
+        toast.success('Region created');
+      }
     } catch (error) {
       console.error('Error creating region:', error);
       toast.error('Failed to create region');
@@ -295,6 +335,7 @@ const Index = () => {
     try {
       console.log('Updating region:', updatedRegion);
       
+      // Update UI first for immediate feedback
       setDocuments(prev =>
         prev.map(doc =>
           doc.id === selectedDocumentId
@@ -315,29 +356,29 @@ const Index = () => {
         )
       }));
 
-      const { 
-        page, x, y, width, height, type, name, description 
-      } = updatedRegion;
+      // Then update database, making sure description is null if empty
+      const updatePayload = {
+        page: updatedRegion.page,
+        x: updatedRegion.x,
+        y: updatedRegion.y,
+        width: updatedRegion.width,
+        height: updatedRegion.height,
+        type: updatedRegion.type,
+        name: updatedRegion.name,
+        description: updatedRegion.description || null // Ensure null for empty descriptions
+      };
 
       const { error } = await supabase
         .from('document_regions')
-        .update({
-          page,
-          x,
-          y,
-          width,
-          height,
-          type,
-          name,
-          description
-        })
+        .update(updatePayload)
         .eq('id', updatedRegion.id)
         .eq('user_id', authState.user.id);
 
       if (error) {
         console.error('Supabase error updating region:', error);
-        toast.error('Failed to update region');
+        toast.error('Failed to update region: ' + error.message);
         
+        // Refresh regions from database on error
         const { data: freshRegions, error: regionsError } = await supabase
           .from('document_regions')
           .select('*')
@@ -353,7 +394,10 @@ const Index = () => {
             height: r.height,
             type: r.type,
             name: r.name,
-            description: r.description
+            description: r.description,
+            document_id: r.document_id,
+            user_id: r.user_id,
+            created_at: r.created_at
           }));
 
           setDocuments(prev =>
@@ -472,18 +516,25 @@ const Index = () => {
           />
 
           <div className="flex-1 overflow-hidden relative">
-            <PdfViewer
-              file={selectedDocument?.file || null}
-              regions={selectedDocument?.regions || []}
-              onRegionCreate={handleRegionCreate}
-              onRegionUpdate={handleRegionUpdate}
-              selectedRegionId={selectedRegionId}
-              onRegionSelect={setSelectedRegionId}
-              onRegionDelete={handleRegionDelete}
-              isSelectionMode={!!currentSelectionType}
-              currentSelectionType={currentSelectionType}
-              onCurrentSelectionTypeChange={setCurrentSelectionType}
-            />
+            {isLoading ? (
+              <div className="flex items-center justify-center h-full">
+                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+                <span className="ml-3">Loading documents...</span>
+              </div>
+            ) : (
+              <PdfViewer
+                file={selectedDocument?.file || null}
+                regions={selectedDocument?.regions || []}
+                onRegionCreate={handleRegionCreate}
+                onRegionUpdate={handleRegionUpdate}
+                selectedRegionId={selectedRegionId}
+                onRegionSelect={setSelectedRegionId}
+                onRegionDelete={handleRegionDelete}
+                isSelectionMode={!!currentSelectionType}
+                currentSelectionType={currentSelectionType}
+                onCurrentSelectionTypeChange={setCurrentSelectionType}
+              />
+            )}
           </div>
           
           <div className="relative">
