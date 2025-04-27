@@ -221,31 +221,66 @@ const Index = () => {
     resetStates();
   };
 
-  const handleDocumentRename = (documentId: string, newName: string) => {
-    setDocuments(prev =>
-      prev.map(doc =>
-        doc.id === documentId ? { ...doc, name: newName } : doc
-      )
-    );
+  const handleDocumentRename = async (documentId: string, newName: string) => {
+    if (!authState.user) return;
+    
+    try {
+      console.log('Attempting to rename document:', documentId, 'to:', newName);
+      
+      const { error: updateError } = await supabase
+        .from('documents')
+        .update({ name: newName })
+        .eq('id', documentId)
+        .eq('user_id', authState.user.id);
+
+      if (updateError) {
+        console.error('Error renaming document:', updateError);
+        toast.error('Failed to rename document');
+        return;
+      }
+
+      setDocuments(prev =>
+        prev.map(doc =>
+          doc.id === documentId ? { ...doc, name: newName } : doc
+        )
+      );
+      
+      toast.success('Document renamed successfully');
+    } catch (error) {
+      console.error('Error in handleDocumentRename:', error);
+      toast.error('Failed to rename document');
+    }
   };
 
   const handleDocumentDelete = async (documentId: string) => {
     if (!authState.user) return;
 
     try {
+      console.log('Attempting to delete document:', documentId);
+
+      // First try to delete from storage
       const { error: storageError } = await supabase.storage
         .from('pdfs')
         .remove([`${authState.user.id}/${documentId}.pdf`]);
 
-      if (storageError) throw storageError;
+      if (storageError) {
+        console.error('Error deleting file from storage:', storageError);
+        toast.error('Failed to delete document from storage');
+        return;
+      }
 
+      // Then delete from database
       const { error: dbError } = await supabase
         .from('documents')
         .delete()
         .eq('id', documentId)
         .eq('user_id', authState.user.id);
 
-      if (dbError) throw dbError;
+      if (dbError) {
+        console.error('Error deleting document from database:', dbError);
+        toast.error('Failed to delete document');
+        return;
+      }
 
       setDocuments(prev => prev.filter(doc => doc.id !== documentId));
       
@@ -262,7 +297,7 @@ const Index = () => {
 
       toast.success('Document deleted successfully');
     } catch (error) {
-      console.error('Error deleting document:', error);
+      console.error('Error in handleDocumentDelete:', error);
       toast.error('Failed to delete document');
     }
   };
