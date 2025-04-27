@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
@@ -15,6 +14,7 @@ import { useDocumentState } from '@/hooks/useDocumentState';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { useAuth } from '@/contexts/AuthProvider';
 import { supabase } from '@/integrations/supabase/client';
+import { useNavigate } from 'react-router-dom';
 
 const Index = () => {
   const [documents, setDocuments] = useState<Document[]>([]);
@@ -37,8 +37,14 @@ const Index = () => {
   const selectedDocument = documents.find(doc => doc.id === selectedDocumentId);
   
   const { authState, signOut } = useAuth();
+  const navigate = useNavigate();
 
   useEffect(() => {
+    if (authState.profile?.role === 'admin') {
+      navigate('/admin');
+      return;
+    }
+
     if (!authState.user) return;
     
     const loadDocuments = async () => {
