@@ -46,19 +46,21 @@ export const initializeStorage = async () => {
       
       console.log('pdfs bucket created successfully');
       
-      // Now try to set policies for the bucket to make it public
+      // Instead of trying to use a stored procedure that doesn't exist,
+      // we'll use SQL to make the bucket public via the API
       try {
-        // Set up bucket policies to allow all operations
-        const { data: publicPolicy } = await supabase.rpc('create_storage_policy', {
-          bucket_name: 'pdfs',
-          policy_name: 'public_access',
-          definition: 'true',
-          operation: 'ALL'
+        // Update bucket to be public
+        const { error: updateError } = await supabase.storage.updateBucket('pdfs', {
+          public: true
         });
-        console.log('Storage policy created:', publicPolicy);
+        
+        if (updateError) {
+          console.error('Error making bucket public:', updateError);
+        } else {
+          console.log('Storage bucket set to public successfully');
+        }
       } catch (policyError) {
-        // Policy creation may fail if not allowed, but we can still proceed
-        console.log('Policy creation skipped, may need manual setup:', policyError);
+        console.log('Policy update failed:', policyError);
       }
       
       return true;

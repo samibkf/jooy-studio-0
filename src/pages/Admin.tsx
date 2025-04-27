@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthProvider';
@@ -354,7 +353,7 @@ const Admin = () => {
             Logged in as: {authState.profile?.email} (Role: {authState.profile?.role})
           </p>
           {!storageInitialized && (
-            <Alert variant="warning" className="mt-2">
+            <Alert variant="destructive" className="mt-2">
               <AlertTitle className="font-semibold text-amber-600">
                 PDF Storage Not Configured
               </AlertTitle>
