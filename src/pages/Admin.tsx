@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthProvider';
@@ -289,50 +288,41 @@ const Admin = () => {
       return;
     }
     
-    if (!doc.file && doc.user_id) {
-      try {
-        console.log(`Attempting direct download for document: ${doc.id} from user ${doc.user_id}`);
-        
-        // Try to get a signed URL directly
-        const { data: fileData, error: urlError } = await supabase.storage
-          .from('pdfs')
-          .createSignedUrl(`${doc.user_id}/${doc.id}.pdf`, 3600);
-
-        if (urlError || !fileData?.signedUrl) {
-          console.error('Error creating signed URL:', urlError);
-          toast.error('File not available for download');
-          return;
-        }
-
-        // Download using the URL
-        const link = document.createElement('a');
-        link.href = fileData.signedUrl;
-        link.setAttribute('download', doc.name);
-        document.body.appendChild(link);
-        link.click();
-        link.remove();
-        toast.success('Document downloaded successfully');
-      } catch (error) {
-        console.error('Error downloading document:', error);
-        toast.error('Failed to download document');
-      }
-      return;
-    }
-    
     try {
-      const blob = await doc.file.slice().arrayBuffer();
-      const url = window.URL.createObjectURL(new Blob([blob]));
+      // Try to get a signed URL for the document
+      const { data: fileData, error: urlError } = await supabase.storage
+        .from('pdfs')
+        .createSignedUrl(`${doc.user_id}/${doc.id}.pdf`, 3600);
+
+      if (urlError || !fileData?.signedUrl) {
+        console.error('Error creating signed URL:', urlError);
+        toast.error('File not available for download');
+        return;
+      }
+
+      // Attempt to download the file using the signed URL
+      const response = await fetch(fileData.signedUrl);
+      
+      if (!response.ok) {
+        console.error(`Download failed: ${response.status} ${response.statusText}`);
+        toast.error('Failed to download document');
+        return;
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.setAttribute('download', doc.name);
+      link.setAttribute('download', doc.name || `document_${doc.id}.pdf`);
       document.body.appendChild(link);
       link.click();
       link.remove();
       window.URL.revokeObjectURL(url);
+      
       toast.success('Document downloaded successfully');
     } catch (error) {
       console.error('Error downloading document:', error);
-      toast.error('Failed to download document');
+      toast.error('An unexpected error occurred while downloading the document');
     }
   };
 
