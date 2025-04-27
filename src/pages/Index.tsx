@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthProvider';
@@ -11,7 +10,8 @@ import { Region, RegionType } from '@/types/regions';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { AlertCircle } from 'lucide-react';
+import { AlertCircle, RefreshCw } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 const Index = () => {
   const { authState, signOut } = useAuth();
@@ -21,31 +21,52 @@ const Index = () => {
   const [isSelectionMode, setIsSelectionMode] = useState<boolean>(false);
   const [currentSelectionType, setCurrentSelectionType] = useState<RegionType | null>(null);
   const [fileError, setFileError] = useState<string | null>(null);
+  const [isProcessing, setIsProcessing] = useState<boolean>(false);
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     setFileError(null);
     
-    if (!file) return;
-
-    // Verify the file has content
-    if (file.size === 0) {
-      setFileError("The PDF file is empty (0 bytes). Please upload a valid PDF.");
-      toast.error("The PDF file is empty (0 bytes). Please upload a valid PDF.");
+    if (!file) {
+      toast.error("No file selected");
       return;
     }
 
-    // Check if it's a PDF
-    if (file.type !== 'application/pdf') {
-      setFileError("Please upload a PDF document");
-      toast.error("Please upload a PDF document");
-      return;
-    }
-
+    setIsProcessing(true);
+    
     try {
-      // Try to read a small portion of the file to verify it's readable
-      const fileSlice = file.slice(0, 5);
-      await fileSlice.arrayBuffer();
+      // Check file size
+      if (file.size === 0) {
+        setFileError("The PDF file is empty (0 bytes). Please select a valid PDF file.");
+        toast.error("The PDF file is empty (0 bytes)");
+        return;
+      }
+
+      // Check file type
+      if (file.type !== 'application/pdf') {
+        setFileError("Please upload a PDF document");
+        toast.error("Please upload a PDF document");
+        return;
+      }
+
+      // Read a small portion to verify it's valid
+      try {
+        const fileSlice = file.slice(0, 5);
+        const buffer = await fileSlice.arrayBuffer();
+        const uint8Array = new Uint8Array(buffer);
+        const signature = new TextDecoder().decode(uint8Array);
+        
+        if (!signature.startsWith('%PDF')) {
+          setFileError("Invalid PDF format. The file does not appear to be a valid PDF.");
+          toast.error("Invalid PDF format");
+          return;
+        }
+      } catch (error) {
+        console.error("Error verifying PDF:", error);
+        setFileError("Unable to read the PDF file. The file may be corrupted.");
+        toast.error("Unable to read the PDF file");
+        return;
+      }
       
       const newDocument: Document = {
         id: Math.random().toString(36).substring(7),
@@ -58,11 +79,20 @@ const Index = () => {
 
       setSelectedDocument(newDocument);
       toast.success(`${file.name} uploaded successfully`);
+      
     } catch (error) {
-      console.error("Error verifying PDF:", error);
-      setFileError("Unable to read the PDF file. The file may be corrupted.");
-      toast.error("Unable to read the PDF file. The file may be corrupted.");
+      console.error("Error processing PDF:", error);
+      setFileError(error instanceof Error ? error.message : "Unknown error processing PDF");
+      toast.error("Error processing PDF");
+    } finally {
+      setIsProcessing(false);
     }
+  };
+
+  const resetFileUpload = () => {
+    setFileError(null);
+    const fileInput = document.getElementById('file-upload') as HTMLInputElement;
+    if (fileInput) fileInput.value = '';
   };
 
   const handleDocumentSelect = (document: Document) => {
@@ -162,7 +192,17 @@ const Index = () => {
       {fileError && (
         <Alert variant="destructive" className="mx-4 mt-2">
           <AlertCircle className="h-4 w-4" />
-          <AlertDescription>{fileError}</AlertDescription>
+          <AlertDescription className="flex items-center justify-between">
+            <span>{fileError}</span>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="ml-4" 
+              onClick={resetFileUpload}
+            >
+              <RefreshCw className="h-4 w-4 mr-2" /> Try Again
+            </Button>
+          </AlertDescription>
         </Alert>
       )}
 
@@ -200,6 +240,7 @@ const Index = () => {
                 accept="application/pdf"
                 className="hidden"
                 onChange={handleFileUpload}
+                disabled={isProcessing}
               />
             </div>
           )}

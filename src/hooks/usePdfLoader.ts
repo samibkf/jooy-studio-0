@@ -27,17 +27,29 @@ export const usePdfLoader = ({ file, canvasContext, currentPage, scale }: UsePdf
         setIsLoading(true);
         setLoadError(null);
         
-        if (file.size === 0) {
-          throw new Error("The PDF file is empty (0 bytes)");
+        // Validate file size
+        if (!file.size || file.size === 0) {
+          throw new Error("The PDF file is empty (0 bytes). Please select a valid PDF file.");
         }
         
+        // Additional validation - check file type
+        if (file.type !== 'application/pdf') {
+          throw new Error("Invalid file format. Please select a PDF document.");
+        }
+        
+        console.log("Loading PDF file:", file.name, "Size:", file.size, "bytes");
+        
+        // Read file as ArrayBuffer
         const fileArrayBuffer = await file.arrayBuffer();
+        
+        // Check PDF signature in the first few bytes
         const uint8Array = new Uint8Array(fileArrayBuffer).slice(0, 5);
         const signature = new TextDecoder().decode(uint8Array);
         if (!signature.startsWith('%PDF')) {
           throw new Error("Invalid PDF format. The file does not appear to be a valid PDF.");
         }
         
+        // Load PDF document
         const loadingTask = pdfjsLib.getDocument({ data: fileArrayBuffer });
         const pdfDocument = await loadingTask.promise;
         
@@ -45,6 +57,7 @@ export const usePdfLoader = ({ file, canvasContext, currentPage, scale }: UsePdf
         setTotalPages(pdfDocument.numPages);
         
         toast.success(`PDF loaded with ${pdfDocument.numPages} pages`);
+        console.log(`PDF successfully loaded with ${pdfDocument.numPages} pages`);
       } catch (error) {
         console.error('Error loading PDF:', error);
         let errorMessage = "Failed to load PDF";
@@ -56,6 +69,7 @@ export const usePdfLoader = ({ file, canvasContext, currentPage, scale }: UsePdf
         setLoadError(errorMessage);
         toast.error(errorMessage);
         setPdf(null);
+        setTotalPages(0);
       } finally {
         setIsLoading(false);
       }
