@@ -38,15 +38,17 @@ const Header = ({ onUploadClick, onExport, hasDocument, user, onSignOut }: Heade
               Upload PDF
             </Button>
             
-            <Button 
-              onClick={onExport} 
-              disabled={!hasDocument}
-              className="flex items-center gap-2"
-              title={!hasDocument ? "Select a document to export" : "Export region mappings"}
-            >
-              <Download className="h-4 w-4" />
-              Export Data
-            </Button>
+            {user?.role === 'admin' && (
+              <Button 
+                onClick={onExport} 
+                disabled={!hasDocument}
+                className="flex items-center gap-2"
+                title={!hasDocument ? "Select a document to export" : "Export region mappings"}
+              >
+                <Download className="h-4 w-4" />
+                Export Data
+              </Button>
+            )}
 
             <Button
               onClick={onSignOut}
