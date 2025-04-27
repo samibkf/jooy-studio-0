@@ -56,14 +56,15 @@ const Admin = () => {
       console.log('Storage initialization result:', initialized);
       setStorageInitialized(initialized);
       if (!initialized) {
-        toast.error('PDF storage not properly configured');
+        toast.error('PDF storage bucket not found');
+        setShowStorageHelp(true);
       } else {
         toast.success('PDF storage configured successfully');
       }
     } catch (error) {
       console.error('Error during storage initialization:', error);
       setStorageInitialized(false);
-      toast.error('Failed to configure PDF storage');
+      toast.error('Failed to check PDF storage status');
     } finally {
       setInitializingStorage(false);
     }
@@ -375,12 +376,12 @@ const Admin = () => {
             Logged in as: {authState.profile?.email} (Role: {authState.profile?.role})
           </p>
           {!storageInitialized && (
-            <Alert variant="destructive" className="mt-4 border-amber-500 bg-amber-50">
+            <Alert className="mt-4 border-amber-500 bg-amber-50">
               <AlertTitle className="font-semibold text-amber-700">
                 PDF Storage Not Configured
               </AlertTitle>
               <AlertDescription className="text-amber-700">
-                <p className="mb-2">The PDF storage system requires configuration in the Supabase dashboard.</p>
+                <p className="mb-2">The PDF storage bucket "pdfs" needs to be created in the Supabase dashboard.</p>
                 <div className="flex items-center space-x-2 mt-2">
                   {initializingStorage ? (
                     <span className="block">Checking storage status...</span>
@@ -428,12 +429,20 @@ const Admin = () => {
               <li>Go to your Supabase project dashboard.</li>
               <li>Navigate to "Storage" in the left sidebar.</li>
               <li>Click on "Create bucket".</li>
-              <li>Name the bucket <code className="bg-gray-100 px-1 py-0.5 rounded">pdfs</code>.</li>
-              <li>Enable public bucket access (if desired, for document sharing).</li>
-              <li>Set file size limits and allowed mime types as needed.</li>
+              <li>Name the bucket <code className="bg-gray-100 px-1 py-0.5 rounded">pdfs</code> (exactly as written, lowercase).</li>
+              <li>Enable RLS (Row Level Security).</li>
               <li>Click "Create bucket".</li>
+              <li>After creating the bucket, click on it and go to the "Policies" tab.</li>
+              <li>Add policies to allow users to upload, download, and manage their files.</li>
               <li>Return to this page and click "Check Again".</li>
             </ol>
+            <Alert className="bg-blue-50 border-blue-200 text-blue-800">
+              <AlertTitle>Note:</AlertTitle>
+              <AlertDescription>
+                If you've already created the bucket but still see this message, try refreshing the page or checking 
+                your browser's console for errors. The bucket name must be exactly "pdfs" (lowercase).
+              </AlertDescription>
+            </Alert>
           </div>
           <DialogFooter>
             <Button onClick={() => setShowStorageHelp(false)}>Close</Button>

@@ -32,11 +32,7 @@ export const initializeStorage = async () => {
       return true;
     }
     
-    // If bucket doesn't exist, we need admin privileges to create it
-    // Since we're using the anon key, we can't create it directly
     console.log('pdfs bucket not found. Please create it in the Supabase dashboard.');
-    
-    // Return false to indicate that storage is not properly configured
     return false;
   } catch (error) {
     console.error('Error initializing storage:', error);
