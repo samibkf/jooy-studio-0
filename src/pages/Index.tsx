@@ -10,6 +10,8 @@ import { Document } from '@/types/documents';
 import { Region, RegionType } from '@/types/regions';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { AlertCircle } from 'lucide-react';
 
 const Index = () => {
   const { authState, signOut } = useAuth();
@@ -18,37 +20,53 @@ const Index = () => {
   const [selectedRegionId, setSelectedRegionId] = useState<string | null>(null);
   const [isSelectionMode, setIsSelectionMode] = useState<boolean>(false);
   const [currentSelectionType, setCurrentSelectionType] = useState<RegionType | null>(null);
+  const [fileError, setFileError] = useState<string | null>(null);
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
+    setFileError(null);
+    
     if (!file) return;
 
     // Verify the file has content
     if (file.size === 0) {
+      setFileError("The PDF file is empty (0 bytes). Please upload a valid PDF.");
       toast.error("The PDF file is empty (0 bytes). Please upload a valid PDF.");
       return;
     }
 
     // Check if it's a PDF
     if (file.type !== 'application/pdf') {
+      setFileError("Please upload a PDF document");
       toast.error("Please upload a PDF document");
       return;
     }
 
-    const newDocument: Document = {
-      id: Math.random().toString(36).substring(7),
-      name: file.name,
-      file: file,
-      regions: [],
-      created_at: new Date().toISOString(),
-      user_id: authState.user?.id,
-    };
+    try {
+      // Try to read a small portion of the file to verify it's readable
+      const fileSlice = file.slice(0, 5);
+      await fileSlice.arrayBuffer();
+      
+      const newDocument: Document = {
+        id: Math.random().toString(36).substring(7),
+        name: file.name,
+        file: file,
+        regions: [],
+        created_at: new Date().toISOString(),
+        user_id: authState.user?.id,
+      };
 
-    setSelectedDocument(newDocument);
-    toast.success(`${file.name} uploaded successfully`);
+      setSelectedDocument(newDocument);
+      toast.success(`${file.name} uploaded successfully`);
+    } catch (error) {
+      console.error("Error verifying PDF:", error);
+      setFileError("Unable to read the PDF file. The file may be corrupted.");
+      toast.error("Unable to read the PDF file. The file may be corrupted.");
+    }
   };
 
   const handleDocumentSelect = (document: Document) => {
+    setFileError(null);
     setSelectedDocument(document);
   };
 
@@ -139,6 +157,13 @@ const Index = () => {
             </Link>
           </p>
         </div>
+      )}
+
+      {fileError && (
+        <Alert variant="destructive" className="mx-4 mt-2">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>{fileError}</AlertDescription>
+        </Alert>
       )}
 
       <div className="flex flex-1 overflow-hidden">
