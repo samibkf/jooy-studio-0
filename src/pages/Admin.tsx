@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthProvider';
@@ -168,53 +169,56 @@ const Admin = () => {
       // Set documents even without files so the user sees something
       setUserDocuments(docsWithRegions);
     
-    // Try to get signed URLs for each document regardless of storage initialization
-    try {
-      // First force a storage check/initialization
-      const storageReady = await initializeStorage();
-      setStorageInitialized(storageReady);
-      
-      if (!storageReady) {
-        console.log('Storage initialization failed, skipping file fetching');
-        setLoadingDocuments(false);
-        return;
-      }
-      
-      // Now try to update each document with its file if available
-      const updatedDocs = await Promise.all(docsWithRegions.map(async (doc) => {
-        try {
-          // First check if the file exists
-          const { data: fileList, error: listError } = await supabase.storage
-            .from('pdfs')
-            .list(userId);
-            
-          if (listError) {
-            console.error('Error listing files:', listError);
-            return doc;
-          }
-          
-          const fileExists = fileList?.some(file => file.name === `${doc.id}.pdf`);
-          
-          if (!fileExists) {
-            console.log(`File ${doc.id}.pdf does not exist for user ${doc.user_id}`);
-            return doc;
-          }
-          
-          return {
-            ...doc,
-            fileAvailable: true
-          };
-        } catch (fileError) {
-          console.error('Error processing document:', doc.id, fileError);
-          return doc;
+      // Try to get signed URLs for each document regardless of storage initialization
+      try {
+        // First force a storage check/initialization
+        const storageReady = await initializeStorage();
+        setStorageInitialized(storageReady);
+        
+        if (!storageReady) {
+          console.log('Storage initialization failed, skipping file fetching');
+          return;
         }
-      }));
+        
+        // Now try to update each document with its file if available
+        const updatedDocs = await Promise.all(docsWithRegions.map(async (doc) => {
+          try {
+            // First check if the file exists
+            const { data: fileList, error: listError } = await supabase.storage
+              .from('pdfs')
+              .list(userId);
+              
+            if (listError) {
+              console.error('Error listing files:', listError);
+              return doc;
+            }
+            
+            const fileExists = fileList?.some(file => file.name === `${doc.id}.pdf`);
+            
+            if (!fileExists) {
+              console.log(`File ${doc.id}.pdf does not exist for user ${doc.user_id}`);
+              return doc;
+            }
+            
+            return {
+              ...doc,
+              fileAvailable: true
+            };
+          } catch (fileError) {
+            console.error('Error processing document:', doc.id, fileError);
+            return doc;
+          }
+        }));
 
-      console.log('Processed documents with files available:', updatedDocs.filter(d => d.fileAvailable).length);
-      setUserDocuments(updatedDocs);
-    } catch (storageError) {
-      console.error('Error accessing storage:', storageError);
-      toast.error('Could not access document storage');
+        console.log('Processed documents with files available:', updatedDocs.filter(d => d.fileAvailable).length);
+        setUserDocuments(updatedDocs);
+      } catch (storageError) {
+        console.error('Error accessing storage:', storageError);
+        toast.error('Could not access document storage');
+      }
+    } catch (error) {
+      console.error('Error in fetchUserDocuments:', error);
+      toast.error('Failed to fetch user documents');
     } finally {
       setLoadingDocuments(false);
     }
