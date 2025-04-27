@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
@@ -178,7 +177,9 @@ const Index = () => {
         id: documentId,
         name: file.name,
         file,
-        regions: []
+        regions: [],
+        created_at: new Date().toISOString(),
+        user_id: authState.user.id
       };
 
       setDocuments(prev => [...prev, newDocument]);
@@ -266,11 +267,10 @@ const Index = () => {
     const newRegion: Region = {
       ...regionData,
       id: uuidv4(),
-      description: regionData.description || null // Ensure null for empty descriptions
+      description: regionData.description || null
     };
 
     try {
-      // Update UI first for immediate feedback
       setRegionsCache(prev => ({
         ...prev,
         [selectedDocumentId]: [...(prev[selectedDocumentId] || []), newRegion]
@@ -286,7 +286,6 @@ const Index = () => {
       
       setSelectedRegionId(newRegion.id);
 
-      // Then update database
       const { error } = await supabase
         .from('document_regions')
         .insert({
@@ -307,7 +306,6 @@ const Index = () => {
         console.error('Error creating region:', error);
         toast.error('Failed to create region: ' + error.message);
         
-        // Revert UI changes on error
         setRegionsCache(prev => ({
           ...prev,
           [selectedDocumentId]: (prev[selectedDocumentId] || []).filter(r => r.id !== newRegion.id)
@@ -335,7 +333,6 @@ const Index = () => {
     try {
       console.log('Updating region:', updatedRegion);
       
-      // Update UI first for immediate feedback
       setDocuments(prev =>
         prev.map(doc =>
           doc.id === selectedDocumentId
@@ -356,7 +353,6 @@ const Index = () => {
         )
       }));
 
-      // Then update database, making sure description is null if empty
       const updatePayload = {
         page: updatedRegion.page,
         x: updatedRegion.x,
@@ -365,7 +361,7 @@ const Index = () => {
         height: updatedRegion.height,
         type: updatedRegion.type,
         name: updatedRegion.name,
-        description: updatedRegion.description || null // Ensure null for empty descriptions
+        description: updatedRegion.description || null
       };
 
       const { error } = await supabase
@@ -378,7 +374,6 @@ const Index = () => {
         console.error('Supabase error updating region:', error);
         toast.error('Failed to update region: ' + error.message);
         
-        // Refresh regions from database on error
         const { data: freshRegions, error: regionsError } = await supabase
           .from('document_regions')
           .select('*')
