@@ -28,8 +28,18 @@ export const exportRegionMapping = (mapping: RegionMapping): void => {
         : []
     }));
 
-    // Create a sorted copy of the regions array
-    const sortedRegions = [...processedRegions].sort((a, b) => a.page - b.page);
+    // Sort regions first by page number, then by region name
+    const sortedRegions = [...processedRegions].sort((a, b) => {
+      // First sort by page number
+      if (a.page !== b.page) {
+        return a.page - b.page;
+      }
+      
+      // If on the same page, sort by region name (assuming format like "1_1", "1_2", etc.)
+      const aNumber = parseInt(a.name.split('_')[1]) || 0;
+      const bNumber = parseInt(b.name.split('_')[1]) || 0;
+      return aNumber - bNumber;
+    });
     
     // Create the mapping with sorted regions
     const sortedMapping = {
@@ -63,3 +73,4 @@ export const exportRegionMapping = (mapping: RegionMapping): void => {
     toast.error('Failed to export data. Please try again.');
   }
 };
+
