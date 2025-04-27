@@ -211,6 +211,25 @@ const RegionOverlay: React.FC<RegionOverlayProps> = ({
     };
   }, [isDragging, resizing]);
   
+  // Calculate a unique position for each note icon based on region ID
+  // to prevent overlaps when multiple regions are selected
+  const getNotePosition = () => {
+    // Extract numeric part from region.id or name to create a unique offset
+    const idMatch = region.id.match(/\d+/g);
+    const nameMatch = region.name.match(/\d+/g);
+    const numericPart = idMatch ? parseInt(idMatch[0], 10) : 
+                       nameMatch ? parseInt(nameMatch[0], 10) : 0;
+    
+    // Calculate an offset based on the region's numeric identifier
+    // This will create a diagonal pattern for the note buttons
+    const offset = (numericPart % 10) * 10; // 0, 10, 20, 30... pixels offset
+    
+    return {
+      right: offset,
+      top: -8 - offset,
+    };
+  };
+  
   return (
     <div
       ref={overlayRef}
@@ -230,13 +249,16 @@ const RegionOverlay: React.FC<RegionOverlayProps> = ({
           <div className="resize-handle se" data-direction="se" />
           <div className="resize-handle sw" data-direction="sw" />
           
-          <div className="absolute -top-8 right-0 flex items-center gap-2">
+          <div 
+            className="absolute flex items-center gap-2"
+            style={getNotePosition()}
+          >
             <Popover>
               <PopoverTrigger asChild>
                 <Button 
                   variant="outline" 
                   size="icon" 
-                  className="h-8 w-8 bg-yellow-400 hover:bg-yellow-500"
+                  className="h-8 w-8 bg-yellow-400 hover:bg-yellow-500 shadow-lg"
                 >
                   <StickyNote 
                     className="h-6 w-6" 
@@ -247,7 +269,7 @@ const RegionOverlay: React.FC<RegionOverlayProps> = ({
               </PopoverTrigger>
               <PopoverContent 
                 side="top" 
-                className="w-80 max-h-[300px]" 
+                className="w-80 max-h-[300px] z-50" 
                 onClick={handleTextAreaInteraction}
               >
                 <div className="space-y-2">
