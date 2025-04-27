@@ -42,6 +42,7 @@ const Header = ({ onUploadClick, onExport, hasDocument, user, onSignOut }: Heade
               onClick={onExport} 
               disabled={!hasDocument}
               className="flex items-center gap-2"
+              title={!hasDocument ? "Select a document to export" : "Export region mappings"}
             >
               <Download className="h-4 w-4" />
               Export Data
@@ -52,6 +53,7 @@ const Header = ({ onUploadClick, onExport, hasDocument, user, onSignOut }: Heade
               variant="ghost"
               size="icon"
               className="text-muted-foreground"
+              title="Sign Out"
             >
               <LogOut className="h-4 w-4" />
             </Button>
