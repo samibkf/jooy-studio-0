@@ -18,8 +18,6 @@ export const initializeStorage = async () => {
       console.error('Error accessing storage buckets:', bucketsError);
       // Log more specific error details to help debug
       if (bucketsError.message) console.error('Error message:', bucketsError.message);
-      if (bucketsError.status) console.error('Error status:', bucketsError.status);
-      if (bucketsError.details) console.error('Error details:', bucketsError.details);
       return false;
     }
     
@@ -38,7 +36,6 @@ export const initializeStorage = async () => {
           console.error('Bucket exists but cannot list contents:', listError);
           // Log more specific error details
           if (listError.message) console.error('List error message:', listError.message);
-          if (listError.status) console.error('List error status:', listError.status);
           return false;
         }
         
