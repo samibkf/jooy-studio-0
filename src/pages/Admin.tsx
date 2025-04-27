@@ -29,26 +29,31 @@ const Admin = () => {
 
   useEffect(() => {
     const checkAdminStatus = async () => {
-      console.log('Checking admin status:', authState.profile);
+      console.log('Admin page - Checking admin status:', authState.profile);
+      
+      if (!authState.session) {
+        console.log('Admin page - No session, waiting for redirect in ProtectedRoute');
+        return;
+      }
       
       if (!authState.profile) {
-        console.log('Profile not loaded yet, waiting...');
-        // We're handling redirect in ProtectedRoute
+        console.log('Admin page - Profile not loaded yet, waiting...');
         return;
       }
       
       if (authState.profile.role !== 'admin') {
-        console.log('Non-admin detected in Admin page, redirecting to home');
+        console.log('Admin page - Non-admin detected, role:', authState.profile.role);
+        console.log('Admin page - Redirecting to home');
         navigate('/');
         return;
       }
       
-      console.log('Admin confirmed, fetching users');
+      console.log('Admin page - Admin confirmed, fetching users');
       fetchUsers();
     };
 
     checkAdminStatus();
-  }, [authState.profile, navigate]);
+  }, [authState.profile, authState.session, navigate]);
 
   const fetchUsers = async () => {
     try {

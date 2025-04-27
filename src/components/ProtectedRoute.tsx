@@ -9,18 +9,29 @@ export const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const [isLoading, setIsLoading] = useState(true);
   
   useEffect(() => {
+    // Debug log to see what's happening with authentication state
+    console.log('ProtectedRoute - Auth state:', { 
+      session: authState.session ? 'exists' : 'null', 
+      profile: authState.profile, 
+      user: authState.user ? 'exists' : 'null',
+      path: location.pathname
+    });
+    
     // Wait for profile to be loaded before making routing decisions
     if (authState.session !== undefined) {
+      // Give a bit more time for profile to load
       const timer = setTimeout(() => {
         setIsLoading(false);
-      }, 500); // Add a small delay to ensure profile is loaded
+        console.log('ProtectedRoute - Finished loading, profile:', authState.profile);
+      }, 1000); // Increased delay to ensure profile is loaded
       
       return () => clearTimeout(timer);
     }
-  }, [authState.session, authState.profile]);
+  }, [authState.session, authState.profile, location.pathname]);
 
   // Show loading while waiting for auth state
   if (isLoading && authState.session) {
+    console.log('ProtectedRoute - Still loading...');
     return <div className="flex items-center justify-center h-screen">Loading...</div>;
   }
 
@@ -31,18 +42,19 @@ export const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 
   // Redirect to auth if not authenticated
   if (!authState.session) {
+    console.log('ProtectedRoute - No session, redirecting to /auth');
     return <Navigate to="/auth" replace />;
   }
   
-  // Redirect admins to admin page if they're trying to access the home page
-  if (authState.profile?.role === 'admin' && location.pathname === '/') {
-    console.log('Admin detected, redirecting to admin dashboard');
+  // Force check role for admin redirection
+  if (authState.profile && authState.profile.role === 'admin' && location.pathname === '/') {
+    console.log('ProtectedRoute - Admin detected, redirecting to admin dashboard');
     return <Navigate to="/admin" replace />;
   }
   
   // Redirect non-admins away from admin page
   if (authState.profile && authState.profile.role !== 'admin' && location.pathname === '/admin') {
-    console.log('Non-admin trying to access admin page, redirecting to home');
+    console.log('ProtectedRoute - Non-admin trying to access admin page, redirecting to home');
     return <Navigate to="/" replace />;
   }
 
