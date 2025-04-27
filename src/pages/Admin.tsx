@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthProvider';
@@ -130,7 +129,8 @@ const Admin = () => {
         return {
           ...doc,
           regions: regions || [],
-          file: null // Initialize with null, we'll try to load it below
+          file: null,
+          user_id: doc.user_id
         };
       }));
 
@@ -223,7 +223,7 @@ const Admin = () => {
 
   const handleUserSelect = (user: Profile) => {
     setSelectedUser(user);
-    setUserDocuments([]); // Clear previous documents
+    setUserDocuments([]);
     fetchUserDocuments(user.id);
   };
 

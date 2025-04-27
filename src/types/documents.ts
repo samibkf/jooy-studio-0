@@ -1,3 +1,4 @@
+
 import { Region } from './regions';
 
 export interface DocumentData {
@@ -5,6 +6,7 @@ export interface DocumentData {
   name: string;
   file: File;
   regions: Region[];
+  user_id?: string; // Adding user_id property
 }
 
 // Keep the Document type as an alias for backward compatibility
