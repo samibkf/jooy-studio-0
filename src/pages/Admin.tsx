@@ -1,5 +1,4 @@
-
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthProvider';
 import { Profile } from '@/types/auth';
@@ -25,7 +24,11 @@ import {
   CardTitle,
   CardFooter,
 } from "@/components/ui/card";
-import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
+import {
+  Alert,
+  AlertTitle,
+  AlertDescription,
+} from "@/components/ui/alert";
 import {
   Dialog,
   DialogContent,
@@ -48,29 +51,31 @@ const Admin = () => {
   const [initializingStorage, setInitializingStorage] = useState(false);
   const [showStorageHelp, setShowStorageHelp] = useState(false);
 
-  useEffect(() => {
-    if (!selectedUser) return;
-
-    // Clean up any previous subscription
-    const cleanupSubscription = supabase.getChannels().forEach(channel => {
+  const cleanupChannels = useCallback(() => {
+    supabase.getChannels().forEach(channel => {
       if (channel.topic.includes('documents-changes')) {
         supabase.removeChannel(channel);
       }
     });
+  }, []);
 
+  useEffect(() => {
+    if (!selectedUser) return;
+
+    cleanupChannels();
     console.log(`Setting up real-time subscription for user: ${selectedUser.id}`);
     
     const channel = supabase
       .channel('documents-changes')
       .on(
-        'postgres_changes', 
-        { 
-          event: '*', 
-          schema: 'public', 
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
           table: 'documents',
           filter: `user_id=eq.${selectedUser.id}`
         },
-        (payload) => {
+        async (payload) => {
           console.log('Document change detected:', payload);
           
           switch(payload.eventType) {
@@ -82,30 +87,51 @@ const Admin = () => {
               break;
             case 'UPDATE':
               console.log('Document updated:', payload.new);
-              setUserDocuments(prev => 
-                prev.map(doc => 
-                  doc.id === payload.new.id 
-                    ? { 
-                        ...doc,
-                        name: payload.new.name // Ensure name updates are applied
-                      } 
-                    : doc
-                )
-              );
+              try {
+                const { data: fileList } = await supabase.storage
+                  .from('pdfs')
+                  .list(selectedUser.id);
+                
+                const fileExists = fileList?.some(file => file.name === `${payload.new.id}.pdf`);
+                
+                setUserDocuments(prev => 
+                  prev.map(doc => 
+                    doc.id === payload.new.id 
+                      ? { 
+                          ...doc,
+                          name: payload.new.name,
+                          fileAvailable: fileExists
+                        } 
+                      : doc
+                  )
+                );
+              } catch (error) {
+                console.error('Error checking file existence:', error);
+              }
               break;
             case 'INSERT':
               console.log('Document inserted:', payload.new);
-              setUserDocuments(prev => [
-                ...prev, 
-                { 
-                  id: payload.new.id,
-                  name: payload.new.name,
-                  user_id: payload.new.user_id,
-                  regions: [], 
-                  file: null as unknown as File, 
-                  fileAvailable: false 
-                } as DocumentData
-              ]);
+              try {
+                const { data: fileList } = await supabase.storage
+                  .from('pdfs')
+                  .list(selectedUser.id);
+                
+                const fileExists = fileList?.some(file => file.name === `${payload.new.id}.pdf`);
+                
+                setUserDocuments(prev => [
+                  ...prev,
+                  {
+                    id: payload.new.id,
+                    name: payload.new.name,
+                    user_id: payload.new.user_id,
+                    regions: [],
+                    file: null as unknown as File,
+                    fileAvailable: fileExists
+                  }
+                ]);
+              } catch (error) {
+                console.error('Error checking file existence:', error);
+              }
               break;
           }
         }
@@ -116,9 +142,9 @@ const Admin = () => {
 
     return () => {
       console.log('Cleaning up document subscription');
-      supabase.removeChannel(channel);
+      cleanupChannels();
     };
-  }, [selectedUser]);
+  }, [selectedUser, cleanupChannels]);
 
   const initStorage = async () => {
     try {
@@ -196,7 +222,6 @@ const Admin = () => {
       console.log('Fetching documents for user:', userId);
       setLoadingDocuments(true);
       
-      // Get the latest documents from the database
       const { data: documents, error } = await supabase
         .from('documents')
         .select('*')
@@ -207,12 +232,27 @@ const Admin = () => {
         throw error;
       }
       
-      console.log('Fetched documents:', documents);
-
       if (!documents || documents.length === 0) {
         setUserDocuments([]);
         toast.info('No documents found for this user');
         setLoadingDocuments(false);
+        return;
+      }
+
+      const storageReady = await initializeStorage();
+      setStorageInitialized(storageReady);
+      
+      if (!storageReady) {
+        console.log('Storage initialization failed, skipping file fetching');
+        return;
+      }
+
+      const { data: fileList, error: listError } = await supabase.storage
+        .from('pdfs')
+        .list(userId);
+        
+      if (listError) {
+        console.error('Error listing files:', listError);
         return;
       }
 
@@ -225,64 +265,20 @@ const Admin = () => {
         if (regionsError) {
           console.error('Error fetching regions for document:', doc.id, regionsError);
         }
+
+        const fileExists = fileList?.some(file => file.name === `${doc.id}.pdf`);
         
         return {
           ...doc,
           regions: regions || [],
           file: null as File | null,
-          fileAvailable: false,
+          fileAvailable: fileExists,
           user_id: doc.user_id
         } as DocumentData;
       }));
 
-      console.log('Documents with regions:', docsWithRegions);
-      
+      console.log('Processed documents with files available:', docsWithRegions.filter(d => d.fileAvailable).length);
       setUserDocuments(docsWithRegions);
-    
-      try {
-        const storageReady = await initializeStorage();
-        setStorageInitialized(storageReady);
-        
-        if (!storageReady) {
-          console.log('Storage initialization failed, skipping file fetching');
-          return;
-        }
-        
-        // Check which files actually exist in storage
-        const updatedDocs = await Promise.all(docsWithRegions.map(async (doc) => {
-          try {
-            const { data: fileList, error: listError } = await supabase.storage
-              .from('pdfs')
-              .list(userId);
-              
-            if (listError) {
-              console.error('Error listing files:', listError);
-              return doc;
-            }
-            
-            const fileExists = fileList?.some(file => file.name === `${doc.id}.pdf`);
-            
-            if (!fileExists) {
-              console.log(`File ${doc.id}.pdf does not exist for user ${doc.user_id}`);
-              return doc;
-            }
-            
-            return {
-              ...doc,
-              fileAvailable: true
-            };
-          } catch (fileError) {
-            console.error('Error processing document:', doc.id, fileError);
-            return doc;
-          }
-        }));
-
-        console.log('Processed documents with files available:', updatedDocs.filter(d => d.fileAvailable).length);
-        setUserDocuments(updatedDocs);
-      } catch (storageError) {
-        console.error('Error accessing storage:', storageError);
-        toast.error('Could not access document storage');
-      }
     } catch (error) {
       console.error('Error in fetchUserDocuments:', error);
       toast.error('Failed to fetch user documents');
@@ -314,6 +310,11 @@ const Admin = () => {
   };
 
   const handleDownload = async (doc: DocumentData) => {
+    if (!doc.fileAvailable) {
+      toast.error('File not available for download');
+      return;
+    }
+
     const storageReady = await initializeStorage();
     setStorageInitialized(storageReady);
     
