@@ -82,10 +82,7 @@ const Admin = () => {
       
       const { data: documents, error } = await supabase
         .from('documents')
-        .select(`
-          *,
-          regions:document_regions(*)
-        `)
+        .select('*')
         .eq('user_id', userId);
 
       if (error) {
@@ -102,12 +99,36 @@ const Admin = () => {
         return;
       }
 
+      // Fetch regions for each document
+      const docsWithRegions = await Promise.all(documents.map(async (doc) => {
+        const { data: regions, error: regionsError } = await supabase
+          .from('document_regions')
+          .select('*')
+          .eq('document_id', doc.id);
+          
+        if (regionsError) {
+          console.error('Error fetching regions for document:', doc.id, regionsError);
+        }
+        
+        return {
+          ...doc,
+          regions: regions || []
+        };
+      }));
+
+      console.log('Documents with regions:', docsWithRegions);
+      
       // Process documents to get signed URLs
-      const transformedDocuments = await Promise.all((documents || []).map(async (doc) => {
+      const transformedDocuments = await Promise.all(docsWithRegions.map(async (doc) => {
         try {
-          const { data: fileData } = await supabase.storage
+          const { data: fileData, error: urlError } = await supabase.storage
             .from('pdfs')
             .createSignedUrl(`${doc.user_id}/${doc.id}.pdf`, 3600);
+
+          if (urlError) {
+            console.error('Error creating signed URL:', urlError);
+            return null;
+          }
 
           console.log('Signed URL created for document:', doc.id, fileData?.signedUrl);
 
@@ -115,7 +136,13 @@ const Admin = () => {
             try {
               const response = await fetch(fileData.signedUrl);
               if (!response.ok) {
-                throw new Error(`Failed to fetch PDF: ${response.status} ${response.statusText}`);
+                console.error(`Failed to fetch PDF: ${response.status} ${response.statusText}`);
+                // Return document without file but with other info so we can still show it
+                return {
+                  ...doc,
+                  file: null,
+                  regions: doc.regions || []
+                };
               }
               const blob = await response.blob();
               const file = new File([blob], doc.name, { type: 'application/pdf' });
@@ -127,13 +154,28 @@ const Admin = () => {
               };
             } catch (fetchError) {
               console.error('Error fetching PDF from signed URL:', fetchError);
-              return null;
+              // Return document without file but with other info
+              return {
+                ...doc,
+                file: null,
+                regions: doc.regions || []
+              };
             }
           }
-          return null;
+          // Return document without file but with other info
+          return {
+            ...doc,
+            file: null,
+            regions: doc.regions || []
+          };
         } catch (fileError) {
           console.error('Error processing document:', doc.id, fileError);
-          return null;
+          // Return document without file but with other info
+          return {
+            ...doc,
+            file: null,
+            regions: doc.regions || []
+          };
         }
       }));
 
@@ -172,6 +214,11 @@ const Admin = () => {
   };
 
   const handleDownload = async (doc: DocumentData) => {
+    if (!doc.file) {
+      toast.error('File not available for download');
+      return;
+    }
+    
     try {
       const blob = await doc.file.slice().arrayBuffer();
       const url = window.URL.createObjectURL(new Blob([blob]));
@@ -302,6 +349,7 @@ const Admin = () => {
                             variant="outline"
                             size="sm"
                             onClick={() => handleDownload(document)}
+                            disabled={!document.file}
                           >
                             <Download className="h-4 w-4" />
                           </Button>
