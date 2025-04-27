@@ -14,13 +14,13 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from '@/components/ui/button';
-import { Download, Search, User } from 'lucide-react';
+import { Download, LogOut, Search, User } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { exportRegionMapping } from '@/utils/exportUtils';
 import { toast } from 'sonner';
 
 const Admin = () => {
-  const { authState } = useAuth();
+  const { authState, signOut } = useAuth();
   const navigate = useNavigate();
   const [users, setUsers] = useState<Profile[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -112,15 +112,23 @@ const Admin = () => {
           console.log('Signed URL created for document:', doc.id, fileData?.signedUrl);
 
           if (fileData?.signedUrl) {
-            const response = await fetch(fileData.signedUrl);
-            const blob = await response.blob();
-            const file = new File([blob], doc.name, { type: 'application/pdf' });
-
-            return {
-              ...doc,
-              file,
-              regions: doc.regions || []
-            };
+            try {
+              const response = await fetch(fileData.signedUrl);
+              if (!response.ok) {
+                throw new Error(`Failed to fetch PDF: ${response.status} ${response.statusText}`);
+              }
+              const blob = await response.blob();
+              const file = new File([blob], doc.name, { type: 'application/pdf' });
+              
+              return {
+                ...doc,
+                file,
+                regions: doc.regions || []
+              };
+            } catch (fetchError) {
+              console.error('Error fetching PDF from signed URL:', fetchError);
+              return null;
+            }
           }
           return null;
         } catch (fileError) {
@@ -181,6 +189,16 @@ const Admin = () => {
     }
   };
 
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+      navigate('/auth');
+    } catch (error) {
+      console.error('Error signing out:', error);
+      toast.error('Failed to sign out');
+    }
+  };
+
   const filteredUsers = users.filter(user => 
     user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
     (user.full_name && user.full_name.toLowerCase().includes(searchTerm.toLowerCase()))
@@ -188,7 +206,18 @@ const Admin = () => {
 
   return (
     <div className="container mx-auto py-8">
-      <h1 className="text-2xl font-bold mb-6">Admin Dashboard</h1>
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold">Admin Dashboard</h1>
+        <Button 
+          variant="outline"
+          size="sm" 
+          className="flex items-center gap-2"
+          onClick={handleSignOut}
+        >
+          <LogOut className="h-4 w-4" />
+          Sign Out
+        </Button>
+      </div>
       
       <p className="text-sm text-muted-foreground mb-4">
         Logged in as: {authState.profile?.email} (Role: {authState.profile?.role})
