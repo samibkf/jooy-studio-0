@@ -159,9 +159,10 @@ const Admin = () => {
         return {
           ...doc,
           regions: regions || [],
-          file: null,
+          file: null as File | null,  // Explicitly type as File | null
+          fileAvailable: false,       // Add default fileAvailable property
           user_id: doc.user_id
-        };
+        } as DocumentData;  // Explicitly cast to DocumentData
       }));
 
       console.log('Documents with regions:', docsWithRegions);
@@ -200,6 +201,7 @@ const Admin = () => {
               return doc;
             }
             
+            // Return an updated document with fileAvailable set to true
             return {
               ...doc,
               fileAvailable: true
