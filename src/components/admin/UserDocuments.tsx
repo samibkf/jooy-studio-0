@@ -40,7 +40,12 @@ const UserDocuments = ({ user, onDocumentView }: UserDocumentsProps) => {
             const response = await fetch(signedUrl.signedUrl);
             const blob = await response.blob();
             const file = new File([blob], doc.name, { type: 'application/pdf' });
-            return { ...doc, file, regions: doc.regions || [] };
+            return { 
+              ...doc, 
+              file, 
+              regions: doc.regions || [],
+              created_at: doc.created_at // Ensure created_at is included
+            };
           }
           return null;
         })
