@@ -1,10 +1,9 @@
-
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthProvider';
 import { Profile } from '@/types/auth';
 import { supabase } from '@/integrations/supabase/client';
-import { Document } from '@/types/documents';
+import { DocumentData } from '@/types/documents';
 import {
   Table,
   TableBody,
@@ -25,7 +24,7 @@ const Admin = () => {
   const [users, setUsers] = useState<Profile[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedUser, setSelectedUser] = useState<Profile | null>(null);
-  const [userDocuments, setUserDocuments] = useState<Document[]>([]);
+  const [userDocuments, setUserDocuments] = useState<DocumentData[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -69,7 +68,7 @@ const Admin = () => {
 
       if (error) throw error;
 
-      // Transform the data to match our Document type
+      // Transform the data to match our DocumentData type
       const transformedDocuments = await Promise.all((documents || []).map(async (doc) => {
         const { data: fileData } = await supabase.storage
           .from('pdfs')
@@ -89,7 +88,7 @@ const Admin = () => {
         return null;
       }));
 
-      setUserDocuments(transformedDocuments.filter(Boolean) as Document[]);
+      setUserDocuments(transformedDocuments.filter(Boolean) as DocumentData[]);
     } catch (error) {
       console.error('Error fetching user documents:', error);
       toast.error('Failed to load user documents');
@@ -101,7 +100,7 @@ const Admin = () => {
     fetchUserDocuments(user.id);
   };
 
-  const handleExport = (document: Document) => {
+  const handleExport = (document: DocumentData) => {
     if (document.regions.length === 0) {
       toast.error('No regions defined in this document');
       return;
@@ -117,7 +116,7 @@ const Admin = () => {
     toast.success('Data exported successfully');
   };
 
-  const handleDownload = async (document: Document) => {
+  const handleDownload = async (document: DocumentData) => {
     try {
       const blob = await document.file.slice().arrayBuffer();
       const url = window.URL.createObjectURL(new Blob([blob]));
