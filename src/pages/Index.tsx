@@ -36,17 +36,11 @@ const Index = () => {
 
   const selectedDocument = documents.find(doc => doc.id === selectedDocumentId);
   
-  const { authState, signOut } = useAuth();
+  const { authState } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (authState.profile?.role === 'admin') {
-      console.log('Admin user detected, redirecting to admin page');
-      navigate('/admin');
-      return;
-    } else {
-      console.log('Regular user detected:', authState.profile);
-    }
+    console.log('User profile loaded in Index:', authState.profile);
 
     if (!authState.user) return;
     

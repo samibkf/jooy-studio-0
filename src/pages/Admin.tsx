@@ -29,10 +29,21 @@ const Admin = () => {
 
   useEffect(() => {
     const checkAdminStatus = async () => {
-      if (!authState.profile?.role || authState.profile.role !== 'admin') {
+      console.log('Checking admin status:', authState.profile);
+      
+      if (!authState.profile) {
+        console.log('Profile not loaded yet, waiting...');
+        // We're handling redirect in ProtectedRoute
+        return;
+      }
+      
+      if (authState.profile.role !== 'admin') {
+        console.log('Non-admin detected in Admin page, redirecting to home');
         navigate('/');
         return;
       }
+      
+      console.log('Admin confirmed, fetching users');
       fetchUsers();
     };
 
@@ -142,6 +153,10 @@ const Admin = () => {
     <div className="container mx-auto py-8">
       <h1 className="text-2xl font-bold mb-6">Admin Dashboard</h1>
       
+      <p className="text-sm text-muted-foreground mb-4">
+        Logged in as: {authState.profile?.email} (Role: {authState.profile?.role})
+      </p>
+
       <div className="flex items-center gap-4 mb-6">
         <Search className="h-5 w-5 text-muted-foreground" />
         <Input

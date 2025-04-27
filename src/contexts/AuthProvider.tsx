@@ -15,28 +15,39 @@ const AuthContext = createContext<{
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [authState, setAuthState] = useState<AuthState>({
     user: null,
-    session: null,
+    session: undefined, // Initially undefined to indicate loading
     profile: null,
   });
 
   useEffect(() => {
+    console.log('Setting up auth state listener');
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        console.log('Auth state changed:', event, session?.user?.email);
         setAuthState(prev => ({ ...prev, session, user: session?.user ?? null }));
         
         if (session?.user) {
           // Fetch user profile after a small delay to prevent auth recursion
           setTimeout(async () => {
-            const { data: profile } = await supabase
-              .from('profiles')
-              .select('*')
-              .eq('id', session.user.id)
-              .single();
-            
-            console.log('Profile loaded:', profile);
-            setAuthState(prev => ({ ...prev, profile }));
-          }, 0);
+            try {
+              const { data: profile, error } = await supabase
+                .from('profiles')
+                .select('*')
+                .eq('id', session.user.id)
+                .single();
+              
+              if (error) {
+                console.error('Error fetching profile during auth change:', error);
+                return;
+              }
+              
+              console.log('Profile loaded during auth change:', profile);
+              setAuthState(prev => ({ ...prev, profile }));
+            } catch (error) {
+              console.error('Exception when fetching profile:', error);
+            }
+          }, 10);
         } else {
           setAuthState(prev => ({ ...prev, profile: null }));
         }
@@ -45,6 +56,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     // Check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
+      console.log('Initial session check:', session?.user?.email);
       setAuthState(prev => ({ ...prev, session, user: session?.user ?? null }));
       
       if (session?.user) {
@@ -55,7 +67,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           .single()
           .then(({ data: profile, error }) => {
             if (error) {
-              console.error('Error fetching profile:', error);
+              console.error('Error fetching initial profile:', error);
             } else {
               console.log('Initial profile loaded:', profile);
               setAuthState(prev => ({ ...prev, profile }));
