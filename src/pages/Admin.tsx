@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthProvider';
@@ -26,6 +27,7 @@ const Admin = () => {
   const [selectedUser, setSelectedUser] = useState<Profile | null>(null);
   const [userDocuments, setUserDocuments] = useState<DocumentData[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingDocuments, setLoadingDocuments] = useState(false);
 
   useEffect(() => {
     const checkAdminStatus = async () => {
@@ -63,6 +65,7 @@ const Admin = () => {
         .neq('role', 'admin');
 
       if (error) throw error;
+      console.log('Fetched users:', users);
       setUsers(users || []);
     } catch (error) {
       console.error('Error fetching users:', error);
@@ -74,6 +77,9 @@ const Admin = () => {
 
   const fetchUserDocuments = async (userId: string) => {
     try {
+      console.log('Fetching documents for user:', userId);
+      setLoadingDocuments(true);
+      
       const { data: documents, error } = await supabase
         .from('documents')
         .select(`
@@ -82,36 +88,62 @@ const Admin = () => {
         `)
         .eq('user_id', userId);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching documents:', error);
+        throw error;
+      }
+      
+      console.log('Fetched documents:', documents);
 
+      if (!documents || documents.length === 0) {
+        setUserDocuments([]);
+        toast.info('No documents found for this user');
+        setLoadingDocuments(false);
+        return;
+      }
+
+      // Process documents to get signed URLs
       const transformedDocuments = await Promise.all((documents || []).map(async (doc) => {
-        const { data: fileData } = await supabase.storage
-          .from('pdfs')
-          .createSignedUrl(`${doc.user_id}/${doc.id}.pdf`, 3600);
+        try {
+          const { data: fileData } = await supabase.storage
+            .from('pdfs')
+            .createSignedUrl(`${doc.user_id}/${doc.id}.pdf`, 3600);
 
-        if (fileData?.signedUrl) {
-          const response = await fetch(fileData.signedUrl);
-          const blob = await response.blob();
-          const file = new File([blob], doc.name, { type: 'application/pdf' });
+          console.log('Signed URL created for document:', doc.id, fileData?.signedUrl);
 
-          return {
-            ...doc,
-            file,
-            regions: doc.regions || []
-          };
+          if (fileData?.signedUrl) {
+            const response = await fetch(fileData.signedUrl);
+            const blob = await response.blob();
+            const file = new File([blob], doc.name, { type: 'application/pdf' });
+
+            return {
+              ...doc,
+              file,
+              regions: doc.regions || []
+            };
+          }
+          return null;
+        } catch (fileError) {
+          console.error('Error processing document:', doc.id, fileError);
+          return null;
         }
-        return null;
       }));
 
-      setUserDocuments(transformedDocuments.filter(Boolean) as DocumentData[]);
+      const validDocuments = transformedDocuments.filter(Boolean) as DocumentData[];
+      console.log('Processed documents:', validDocuments.length);
+      setUserDocuments(validDocuments);
     } catch (error) {
       console.error('Error fetching user documents:', error);
       toast.error('Failed to load user documents');
+      setUserDocuments([]);
+    } finally {
+      setLoadingDocuments(false);
     }
   };
 
   const handleUserSelect = (user: Profile) => {
     setSelectedUser(user);
+    setUserDocuments([]); // Clear previous documents
     fetchUserDocuments(user.id);
   };
 
@@ -218,42 +250,50 @@ const Admin = () => {
           <h2 className="text-xl font-semibold mb-4">
             {selectedUser ? `${selectedUser.full_name || selectedUser.email}'s Documents` : 'Select a User'}
           </h2>
-          {selectedUser && (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Document</TableHead>
-                  <TableHead>Regions</TableHead>
-                  <TableHead>Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {userDocuments.map((document) => (
-                  <TableRow key={document.id}>
-                    <TableCell>{document.name}</TableCell>
-                    <TableCell>{document.regions.length}</TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleDownload(document)}
-                        >
-                          <Download className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleExport(document)}
-                        >
-                          Export
-                        </Button>
-                      </div>
-                    </TableCell>
+          {loadingDocuments ? (
+            <p>Loading documents...</p>
+          ) : selectedUser ? (
+            userDocuments.length > 0 ? (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Document</TableHead>
+                    <TableHead>Regions</TableHead>
+                    <TableHead>Actions</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {userDocuments.map((document) => (
+                    <TableRow key={document.id}>
+                      <TableCell>{document.name}</TableCell>
+                      <TableCell>{document.regions.length}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleDownload(document)}
+                          >
+                            <Download className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleExport(document)}
+                          >
+                            Export
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            ) : (
+              <p>No documents found for this user.</p>
+            )
+          ) : (
+            <p>Select a user to view their documents.</p>
           )}
         </div>
       </div>
