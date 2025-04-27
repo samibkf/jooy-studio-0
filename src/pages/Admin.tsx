@@ -47,6 +47,58 @@ const Admin = () => {
   const [initializingStorage, setInitializingStorage] = useState(false);
   const [showStorageHelp, setShowStorageHelp] = useState(false);
 
+  useEffect(() => {
+    if (!selectedUser) return;
+
+    const channel = supabase
+      .channel('documents-changes')
+      .on(
+        'postgres_changes', 
+        { 
+          event: '*', 
+          schema: 'public', 
+          table: 'documents',
+          filter: `user_id=eq.${selectedUser.id}`
+        },
+        (payload) => {
+          console.log('Document change payload:', payload);
+          
+          switch(payload.eventType) {
+            case 'DELETE':
+              setUserDocuments(prev => 
+                prev.filter(doc => doc.id !== payload.old.id)
+              );
+              break;
+            case 'UPDATE':
+              setUserDocuments(prev => 
+                prev.map(doc => 
+                  doc.id === payload.new.id 
+                    ? { ...doc, ...payload.new } 
+                    : doc
+                )
+              );
+              break;
+            case 'INSERT':
+              setUserDocuments(prev => [
+                ...prev, 
+                { 
+                  ...payload.new, 
+                  regions: [], 
+                  file: null, 
+                  fileAvailable: false 
+                }
+              ]);
+              break;
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [selectedUser]);
+
   const initStorage = async () => {
     try {
       setInitializingStorage(true);
