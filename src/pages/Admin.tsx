@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthProvider';
@@ -13,7 +14,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from '@/components/ui/button';
-import { Download, LogOut, Search, User, RefreshCw } from 'lucide-react';
+import { Download, LogOut, Search, User, RefreshCw, ExternalLink } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { exportRegionMapping } from '@/utils/exportUtils';
 import { toast } from 'sonner';
@@ -25,6 +26,15 @@ import {
   CardFooter,
 } from "@/components/ui/card";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
 const Admin = () => {
   const { authState, signOut } = useAuth();
@@ -37,6 +47,7 @@ const Admin = () => {
   const [loadingDocuments, setLoadingDocuments] = useState(false);
   const [storageInitialized, setStorageInitialized] = useState(false);
   const [initializingStorage, setInitializingStorage] = useState(false);
+  const [showStorageHelp, setShowStorageHelp] = useState(false);
 
   const initStorage = async () => {
     try {
@@ -45,9 +56,9 @@ const Admin = () => {
       console.log('Storage initialization result:', initialized);
       setStorageInitialized(initialized);
       if (!initialized) {
-        toast.error('Failed to configure PDF storage. Some features may not work.');
+        toast.error('PDF storage not properly configured');
       } else {
-        toast.success('PDF storage configured successfully.');
+        toast.success('PDF storage configured successfully');
       }
     } catch (error) {
       console.error('Error during storage initialization:', error);
@@ -364,31 +375,71 @@ const Admin = () => {
             Logged in as: {authState.profile?.email} (Role: {authState.profile?.role})
           </p>
           {!storageInitialized && (
-            <Alert variant="destructive" className="mt-2">
-              <AlertTitle className="font-semibold text-amber-600">
+            <Alert variant="destructive" className="mt-4 border-amber-500 bg-amber-50">
+              <AlertTitle className="font-semibold text-amber-700">
                 PDF Storage Not Configured
               </AlertTitle>
-              <AlertDescription className="text-amber-600">
-                The PDF storage system is not properly configured. Document downloads may not work correctly.
-                {initializingStorage ? (
-                  <span className="block mt-1">Configuring storage...</span>
-                ) : (
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="ml-2 mt-1 bg-amber-50"
-                    onClick={handleRetryStorage}
-                    disabled={initializingStorage}
-                  >
-                    <RefreshCw className={`h-3 w-3 mr-1 ${initializingStorage ? 'animate-spin' : ''}`} />
-                    Retry Configuration
-                  </Button>
-                )}
+              <AlertDescription className="text-amber-700">
+                <p className="mb-2">The PDF storage system requires configuration in the Supabase dashboard.</p>
+                <div className="flex items-center space-x-2 mt-2">
+                  {initializingStorage ? (
+                    <span className="block">Checking storage status...</span>
+                  ) : (
+                    <>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="bg-amber-100 hover:bg-amber-200 text-amber-800 border-amber-300"
+                        onClick={handleRetryStorage}
+                        disabled={initializingStorage}
+                      >
+                        <RefreshCw className={`h-3 w-3 mr-1 ${initializingStorage ? 'animate-spin' : ''}`} />
+                        Check Again
+                      </Button>
+                      
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="bg-amber-100 hover:bg-amber-200 text-amber-800 border-amber-300"
+                        onClick={() => setShowStorageHelp(true)}
+                      >
+                        <ExternalLink className="h-3 w-3 mr-1" />
+                        Configuration Help
+                      </Button>
+                    </>
+                  )}
+                </div>
               </AlertDescription>
             </Alert>
           )}
         </CardContent>
       </Card>
+      
+      <Dialog open={showStorageHelp} onOpenChange={setShowStorageHelp}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>PDF Storage Configuration</DialogTitle>
+            <DialogDescription>
+              Follow these steps to configure PDF storage in your Supabase project.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <ol className="list-decimal pl-5 space-y-2">
+              <li>Go to your Supabase project dashboard.</li>
+              <li>Navigate to "Storage" in the left sidebar.</li>
+              <li>Click on "Create bucket".</li>
+              <li>Name the bucket <code className="bg-gray-100 px-1 py-0.5 rounded">pdfs</code>.</li>
+              <li>Enable public bucket access (if desired, for document sharing).</li>
+              <li>Set file size limits and allowed mime types as needed.</li>
+              <li>Click "Create bucket".</li>
+              <li>Return to this page and click "Check Again".</li>
+            </ol>
+          </div>
+          <DialogFooter>
+            <Button onClick={() => setShowStorageHelp(false)}>Close</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
       
       <div className="flex items-center gap-4 mb-6">
         <Search className="h-5 w-5 text-muted-foreground" />

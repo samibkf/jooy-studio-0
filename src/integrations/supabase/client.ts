@@ -16,70 +16,28 @@ export const initializeStorage = async () => {
   try {
     console.log('Starting storage initialization check');
     
-    // First check if we can access the storage service at all
-    try {
-      const { data, error } = await supabase.storage.getBucket('pdfs');
-      
-      if (!error && data) {
-        console.log('pdfs bucket exists and is accessible');
-        return true;
-      }
-      
-      if (error && error.message !== 'The resource was not found') {
-        console.error('Error checking bucket existence:', error);
-        return false;
-      }
-      
-      console.log('pdfs bucket does not exist, attempting to create it');
-    } catch (accessError) {
-      console.error('Initial storage access check failed:', accessError);
+    // First check if we can access existing buckets
+    const { data: buckets, error: bucketsError } = await supabase.storage.listBuckets();
+    
+    if (bucketsError) {
+      console.error('Error accessing storage buckets:', bucketsError);
       return false;
     }
     
-    // Try to create the bucket
-    try {
-      const { data, error } = await supabase.storage.createBucket('pdfs', {
-        public: true,
-        fileSizeLimit: 10485760, // 10MB
-        allowedMimeTypes: ['application/pdf']
-      });
-      
-      if (error) {
-        console.error('Failed to create pdfs bucket with options:', error);
-        
-        // Try a simplified approach without options
-        const { error: simpleError } = await supabase.storage.createBucket('pdfs');
-        
-        if (simpleError) {
-          console.error('Also failed to create simple bucket:', simpleError);
-          return false;
-        }
-      }
-      
-      console.log('pdfs bucket created successfully');
-      
-      // Try to update the bucket to be public
-      try {
-        const { error: updateError } = await supabase.storage.updateBucket('pdfs', {
-          public: true
-        });
-        
-        if (updateError) {
-          console.error('Error making bucket public:', updateError);
-          // Continue anyway, as the bucket may still work
-        } else {
-          console.log('Storage bucket set to public successfully');
-        }
-      } catch (policyError) {
-        console.log('Policy update failed:', policyError);
-        // Continue anyway, as the bucket may still work
-      }
-      
+    // Check if pdfs bucket exists
+    const pdfsBucket = buckets?.find(b => b.name === 'pdfs');
+    
+    if (pdfsBucket) {
+      console.log('pdfs bucket exists');
       return true;
-    } catch (createError) {
-      console.error('Error creating bucket:', createError);
-      return false;
     }
+    
+    // If bucket doesn't exist, we need admin privileges to create it
+    // Since we're using the anon key, we can't create it directly
+    console.log('pdfs bucket not found. Please create it in the Supabase dashboard.');
+    
+    // Return false to indicate that storage is not properly configured
+    return false;
   } catch (error) {
     console.error('Error initializing storage:', error);
     return false;
