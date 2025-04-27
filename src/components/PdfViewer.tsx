@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import * as pdfjsLib from 'pdfjs-dist';
 import { PDFDocumentProxy } from 'pdfjs-dist';
@@ -84,7 +85,14 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
           throw new Error("The PDF file is empty (0 bytes)");
         }
         
+        // Check if the file is a PDF by reading its signature
         const fileArrayBuffer = await file.arrayBuffer();
+        const uint8Array = new Uint8Array(fileArrayBuffer).slice(0, 5);
+        const signature = new TextDecoder().decode(uint8Array);
+        if (!signature.startsWith('%PDF')) {
+          throw new Error("Invalid PDF format. The file does not appear to be a valid PDF.");
+        }
+        
         const loadingTask = pdfjsLib.getDocument({ data: fileArrayBuffer });
         const pdfDocument = await loadingTask.promise;
         
@@ -110,6 +118,13 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
     };
     
     loadPdf();
+    
+    // Clean up function
+    return () => {
+      if (pdf) {
+        pdf.destroy().catch(e => console.error('Error destroying PDF document:', e));
+      }
+    };
   }, [file]);
   
   useEffect(() => {
