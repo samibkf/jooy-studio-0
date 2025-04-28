@@ -39,7 +39,10 @@ const en = {
     noDocumentSelected: "No document selected",
     noRegionsDefined: "No regions defined",
     dataExported: "Data exported successfully",
-    loadingDocuments: "Loading documents..."
+    loadingDocuments: "Loading documents...",
+    page: "Page",
+    type: "Type",
+    unnamedRegion: "Unnamed Region"
   },
   languages: {
     english: "English",

@@ -81,7 +81,7 @@ const Sidebar = ({
       {selectedRegion ? (
         <div className="flex flex-col flex-1 p-4 h-full">
           <div className="flex justify-between items-center mb-2">
-            <h3 className="text-lg font-medium">{selectedRegion.name || 'Unnamed Region'}</h3>
+            <h3 className="text-lg font-medium">{selectedRegion.name || t('document.unnamedRegion')}</h3>
             <Button
               variant="outline" 
               size="sm"
@@ -93,8 +93,8 @@ const Sidebar = ({
           </div>
           
           <div className="text-sm text-muted-foreground mb-2">
-            <p>Page: {selectedRegion.page}</p>
-            <p>Type: {selectedRegion.type}</p>
+            <p>{t('document.page')}: {selectedRegion.page}</p>
+            <p>{t('document.type')}: {selectedRegion.type}</p>
           </div>
           
           <label className="text-sm font-medium mb-1">{t('sidebar.description')}</label>
@@ -116,7 +116,7 @@ const Sidebar = ({
                   onClick={() => onRegionSelect(region.id)}
                   className="p-2 hover:bg-accent rounded-md cursor-pointer text-sm transition-colors"
                 >
-                  {region.name || 'Unnamed Region'}
+                  {region.name || t('document.unnamedRegion')}
                 </div>
               ))}
             </div>
