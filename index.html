@@ -16,6 +16,58 @@
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:site" content="@lovable_dev" />
     <meta name="twitter:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
+    
+    <!-- Add RTL support -->
+    <style>
+      html[dir="rtl"] * {
+        text-align: right;
+      }
+      
+      html[dir="rtl"] .flex, 
+      html[dir="rtl"] .flex-row {
+        flex-direction: row-reverse;
+      }
+      
+      html[dir="rtl"] .text-left {
+        text-align: right;
+      }
+      
+      html[dir="rtl"] .text-right {
+        text-align: left;
+      }
+      
+      html[dir="rtl"] .ml-auto {
+        margin-left: unset;
+        margin-right: auto;
+      }
+      
+      html[dir="rtl"] .mr-auto {
+        margin-right: unset;
+        margin-left: auto;
+      }
+      
+      html[dir="rtl"] .ml-1, 
+      html[dir="rtl"] .ml-2, 
+      html[dir="rtl"] .ml-3, 
+      html[dir="rtl"] .ml-4 {
+        margin-left: unset;
+        margin-right: 0.25rem;
+        margin-right: 0.5rem;
+        margin-right: 0.75rem;
+        margin-right: 1rem;
+      }
+      
+      html[dir="rtl"] .mr-1, 
+      html[dir="rtl"] .mr-2, 
+      html[dir="rtl"] .mr-3, 
+      html[dir="rtl"] .mr-4 {
+        margin-right: unset;
+        margin-left: 0.25rem;
+        margin-left: 0.5rem;
+        margin-left: 0.75rem;
+        margin-left: 1rem;
+      }
+    </style>
   </head>
 
   <body>

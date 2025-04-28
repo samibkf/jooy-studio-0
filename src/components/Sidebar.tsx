@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Trash2 } from 'lucide-react';
 import { Region } from '@/types/regions';
 import { toast } from 'sonner';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface SidebarProps {
   selectedRegion: Region | null;
@@ -24,6 +25,7 @@ const Sidebar = ({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [localDescription, setLocalDescription] = useState<string>('');
   const saveTimeoutRef = useRef<NodeJS.Timeout>();
+  const { t } = useLanguage();
   
   // Update local description when selected region changes
   useEffect(() => {
@@ -46,7 +48,7 @@ const Sidebar = ({
           ...selectedRegion,
           description: newDescription || null
         });
-        toast.success('Description saved', {
+        toast.success(t('document.descriptionSaved'), {
           duration: 2000
         });
       }
@@ -56,9 +58,9 @@ const Sidebar = ({
   const handleDelete = () => {
     if (!selectedRegion) return;
     
-    if (confirm('Are you sure you want to delete this region?')) {
+    if (confirm(t('document.confirmDelete'))) {
       onRegionDelete(selectedRegion.id);
-      toast.success('Region deleted');
+      toast.success(t('document.regionDeleted'));
     }
   };
 
@@ -92,17 +94,17 @@ const Sidebar = ({
             <p>Type: {selectedRegion.type}</p>
           </div>
           
-          <label className="text-sm font-medium mb-1">Description</label>
+          <label className="text-sm font-medium mb-1">{t('sidebar.description')}</label>
           <Textarea 
             ref={textareaRef}
             value={localDescription} 
             onChange={handleChange}
-            placeholder="Add a description..." 
+            placeholder={t('sidebar.addDescription')} 
             className="flex-1 w-full min-h-0 resize-none"
           />
           
           <div className="mt-4">
-            <h4 className="text-sm font-medium mb-2">Other regions</h4>
+            <h4 className="text-sm font-medium mb-2">{t('sidebar.otherRegions')}</h4>
             <div className="max-h-48 overflow-y-auto">
               {regions.filter(r => r.id !== selectedRegion.id).map((region) => (
                 <div 
@@ -118,7 +120,7 @@ const Sidebar = ({
         </div>
       ) : (
         <div className="flex-1 flex items-center justify-center p-4 text-muted-foreground">
-          <p>Select a region to view or edit its description</p>
+          <p>{t('sidebar.selectRegion')}</p>
         </div>
       )}
     </div>
