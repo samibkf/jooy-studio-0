@@ -17,17 +17,24 @@
     <meta name="twitter:site" content="@lovable_dev" />
     <meta name="twitter:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
     
-    <!-- Add RTL support -->
+    <!-- Improved RTL support -->
     <style>
+      /* Basic RTL support */
       html[dir="rtl"] * {
         text-align: right;
       }
       
-      html[dir="rtl"] .flex, 
+      /* Flexbox direction overrides */
       html[dir="rtl"] .flex-row {
         flex-direction: row-reverse;
       }
       
+      /* Don't reverse flex when explicitly using flex-row-reverse */
+      html[dir="rtl"] .flex-row-reverse {
+        flex-direction: row;
+      }
+      
+      /* Text alignment classes */
       html[dir="rtl"] .text-left {
         text-align: right;
       }
@@ -36,6 +43,7 @@
         text-align: left;
       }
       
+      /* Margin auto classes */
       html[dir="rtl"] .ml-auto {
         margin-left: unset;
         margin-right: auto;
@@ -46,26 +54,88 @@
         margin-left: auto;
       }
       
-      html[dir="rtl"] .ml-1, 
-      html[dir="rtl"] .ml-2, 
-      html[dir="rtl"] .ml-3, 
-      html[dir="rtl"] .ml-4 {
+      /* Left margin classes */
+      html[dir="rtl"] .ml-1 {
         margin-left: unset;
         margin-right: 0.25rem;
+      }
+      
+      html[dir="rtl"] .ml-2 {
+        margin-left: unset;
         margin-right: 0.5rem;
+      }
+      
+      html[dir="rtl"] .ml-3 {
+        margin-left: unset;
         margin-right: 0.75rem;
+      }
+      
+      html[dir="rtl"] .ml-4 {
+        margin-left: unset;
         margin-right: 1rem;
       }
       
-      html[dir="rtl"] .mr-1, 
-      html[dir="rtl"] .mr-2, 
-      html[dir="rtl"] .mr-3, 
-      html[dir="rtl"] .mr-4 {
+      /* Right margin classes */
+      html[dir="rtl"] .mr-1 {
         margin-right: unset;
         margin-left: 0.25rem;
+      }
+      
+      html[dir="rtl"] .mr-2 {
+        margin-right: unset;
         margin-left: 0.5rem;
+      }
+      
+      html[dir="rtl"] .mr-3 {
+        margin-right: unset;
         margin-left: 0.75rem;
+      }
+      
+      html[dir="rtl"] .mr-4 {
+        margin-right: unset;
         margin-left: 1rem;
+      }
+      
+      /* Ensure RTL support for gap classes to prevent disorganization */
+      html[dir="rtl"] .gap-1,
+      html[dir="rtl"] .gap-2,
+      html[dir="rtl"] .gap-3,
+      html[dir="rtl"] .gap-4 {
+        gap: 0.25rem;
+        gap: 0.5rem;
+        gap: 0.75rem;
+        gap: 1rem;
+      }
+      
+      /* Fix for buttons and icons in RTL */
+      html[dir="rtl"] button,
+      html[dir="rtl"] .btn {
+        direction: rtl;
+      }
+      
+      html[dir="rtl"] .items-center {
+        align-items: center;
+      }
+      
+      /* Preserve header button organization */
+      html[dir="rtl"] header .flex {
+        display: flex;
+      }
+      
+      /* Don't reverse icon-only buttons to maintain visual consistency */
+      html[dir="rtl"] button[size="icon"] {
+        transform: none;
+      }
+      
+      /* Fix border directions */
+      html[dir="rtl"] .border-l {
+        border-left: none;
+        border-right: 1px solid;
+      }
+      
+      html[dir="rtl"] .border-r {
+        border-right: none;
+        border-left: 1px solid;
       }
     </style>
   </head>

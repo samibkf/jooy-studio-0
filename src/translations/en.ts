@@ -44,7 +44,8 @@ const en = {
   languages: {
     english: "English",
     arabic: "Arabic",
-    french: "French"
+    french: "French",
+    selectLanguage: "Select language"
   }
 };
 
