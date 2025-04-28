@@ -7,12 +7,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card } from '@/components/ui/card';
-import { useLanguage } from '@/contexts/LanguageContext';
-import LanguageSelector from '@/components/LanguageSelector';
 
 const Auth = () => {
   const { authState, signIn, signUp } = useAuth();
-  const { t } = useLanguage();
   const [isSignUp, setIsSignUp] = useState(false);
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
@@ -46,24 +43,20 @@ const Auth = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
-      <div className="absolute top-4 right-4">
-        <LanguageSelector />
-      </div>
-      
       <Card className="w-full max-w-md p-6 space-y-6">
         <div className="text-center">
           <h1 className="text-2xl font-bold">
-            {isSignUp ? t('auth.createAccount') : t('auth.welcomeBack')}
+            {isSignUp ? 'Create an Account' : 'Welcome Back'}
           </h1>
           <p className="text-muted-foreground mt-2">
-            {isSignUp ? t('auth.signUp') : t('auth.signIn')}
+            {isSignUp ? 'Sign up to get started' : 'Sign in to your account'}
           </p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           {isSignUp && (
             <div className="space-y-2">
-              <Label htmlFor="fullName">{t('auth.fullName')}</Label>
+              <Label htmlFor="fullName">Full Name</Label>
               <Input
                 id="fullName"
                 type="text"
@@ -78,7 +71,7 @@ const Auth = () => {
           )}
 
           <div className="space-y-2">
-            <Label htmlFor="email">{t('auth.email')}</Label>
+            <Label htmlFor="email">Email</Label>
             <Input
               id="email"
               type="email"
@@ -92,7 +85,7 @@ const Auth = () => {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="password">{t('auth.password')}</Label>
+            <Label htmlFor="password">Password</Label>
             <Input
               id="password"
               type="password"
@@ -107,10 +100,10 @@ const Auth = () => {
 
           <Button type="submit" className="w-full" disabled={loading}>
             {loading
-              ? t('auth.loading')
+              ? 'Loading...'
               : isSignUp
-              ? t('auth.createAccountBtn')
-              : t('auth.signInBtn')}
+              ? 'Create Account'
+              : 'Sign In'}
           </Button>
         </form>
 
@@ -121,8 +114,8 @@ const Auth = () => {
             className="text-sm text-primary hover:underline"
           >
             {isSignUp
-              ? t('auth.alreadyHaveAccount')
-              : t('auth.dontHaveAccount')}
+              ? 'Already have an account? Sign in'
+              : "Don't have an account? Sign up"}
           </button>
         </div>
       </Card>

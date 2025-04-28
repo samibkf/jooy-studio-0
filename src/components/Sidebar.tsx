@@ -5,7 +5,6 @@ import { Button } from '@/components/ui/button';
 import { Trash2 } from 'lucide-react';
 import { Region } from '@/types/regions';
 import { toast } from 'sonner';
-import { useLanguage } from '@/contexts/LanguageContext';
 
 interface SidebarProps {
   selectedRegion: Region | null;
@@ -25,7 +24,6 @@ const Sidebar = ({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [localDescription, setLocalDescription] = useState<string>('');
   const saveTimeoutRef = useRef<NodeJS.Timeout>();
-  const { t, isRTL } = useLanguage();
   
   // Update local description when selected region changes
   useEffect(() => {
@@ -48,7 +46,7 @@ const Sidebar = ({
           ...selectedRegion,
           description: newDescription || null
         });
-        toast.success(t('document.descriptionSaved'), {
+        toast.success('Description saved', {
           duration: 2000
         });
       }
@@ -58,9 +56,9 @@ const Sidebar = ({
   const handleDelete = () => {
     if (!selectedRegion) return;
     
-    if (confirm(t('document.confirmDelete'))) {
+    if (confirm('Are you sure you want to delete this region?')) {
       onRegionDelete(selectedRegion.id);
-      toast.success(t('document.regionDeleted'));
+      toast.success('Region deleted');
     }
   };
 
@@ -73,11 +71,8 @@ const Sidebar = ({
     };
   }, []);
 
-  // Class that applies proper border based on RTL
-  const borderClass = isRTL ? "border-r" : "border-l";
-
   return (
-    <div className={`h-full w-full flex flex-col bg-background ${borderClass}`}>
+    <div className="h-full w-full flex flex-col bg-background border-l">
       {selectedRegion ? (
         <div className="flex flex-col flex-1 p-4 h-full">
           <div className="flex justify-between items-center mb-2">
@@ -97,18 +92,17 @@ const Sidebar = ({
             <p>Type: {selectedRegion.type}</p>
           </div>
           
-          <label className="text-sm font-medium mb-1">{t('sidebar.description')}</label>
+          <label className="text-sm font-medium mb-1">Description</label>
           <Textarea 
             ref={textareaRef}
             value={localDescription} 
             onChange={handleChange}
-            placeholder={t('sidebar.addDescription')} 
+            placeholder="Add a description..." 
             className="flex-1 w-full min-h-0 resize-none"
-            dir="auto" // Allow the textarea to auto-detect direction based on content
           />
           
           <div className="mt-4">
-            <h4 className="text-sm font-medium mb-2">{t('sidebar.otherRegions')}</h4>
+            <h4 className="text-sm font-medium mb-2">Other regions</h4>
             <div className="max-h-48 overflow-y-auto">
               {regions.filter(r => r.id !== selectedRegion.id).map((region) => (
                 <div 
@@ -124,7 +118,7 @@ const Sidebar = ({
         </div>
       ) : (
         <div className="flex-1 flex items-center justify-center p-4 text-muted-foreground">
-          <p>{t('sidebar.selectRegion')}</p>
+          <p>Select a region to view or edit its description</p>
         </div>
       )}
     </div>

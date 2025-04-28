@@ -3,8 +3,6 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Upload, Download, File, LogOut } from 'lucide-react';
 import type { Profile } from '@/types/auth';
-import { useLanguage } from '@/contexts/LanguageContext';
-import LanguageSelector from './LanguageSelector';
 
 interface HeaderProps {
   onUploadClick: () => void;
@@ -15,14 +13,12 @@ interface HeaderProps {
 }
 
 const Header = ({ onUploadClick, onExport, hasDocument, user, onSignOut }: HeaderProps) => {
-  const { t, language } = useLanguage();
-  
   return (
     <header className="bg-white border-b border-gray-200 shadow-sm py-4">
       <div className="container mx-auto px-4 flex justify-between items-center">
         <div className="flex items-center gap-2">
           <File className="h-6 w-6 text-primary" />
-          <h1 className="text-2xl font-bold text-gray-800">{t('app.title')}</h1>
+          <h1 className="text-2xl font-bold text-gray-800">Book+ Studio</h1>
         </div>
         
         <div className="flex items-center gap-4">
@@ -32,36 +28,34 @@ const Header = ({ onUploadClick, onExport, hasDocument, user, onSignOut }: Heade
             </span>
           )}
           
-          <div className={`flex items-center gap-3 ${language === 'ar' ? 'flex-row' : ''}`}>
+          <div className="flex items-center gap-3">
             <Button 
               onClick={onUploadClick} 
               variant="outline" 
-              className={`flex items-center gap-2 ${language === 'ar' ? 'flex-row-reverse' : ''}`}
+              className="flex items-center gap-2"
             >
               <Upload className="h-4 w-4" />
-              {t('header.uploadPdf')}
+              Upload PDF
             </Button>
             
             {user?.role === 'admin' && (
               <Button 
                 onClick={onExport} 
                 disabled={!hasDocument}
-                className={`flex items-center gap-2 ${language === 'ar' ? 'flex-row-reverse' : ''}`}
-                title={!hasDocument ? t('document.noDocumentSelected') : t('document.dataExported')}
+                className="flex items-center gap-2"
+                title={!hasDocument ? "Select a document to export" : "Export region mappings"}
               >
                 <Download className="h-4 w-4" />
-                {t('header.exportData')}
+                Export Data
               </Button>
             )}
-
-            <LanguageSelector />
 
             <Button
               onClick={onSignOut}
               variant="ghost"
               size="icon"
               className="text-muted-foreground"
-              title={t('header.signOut')}
+              title="Sign Out"
             >
               <LogOut className="h-4 w-4" />
             </Button>
