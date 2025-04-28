@@ -18,7 +18,7 @@ const Header = ({ onUploadClick, onExport, hasDocument, user, onSignOut }: Heade
       <div className="container mx-auto px-4 flex justify-between items-center">
         <div className="flex items-center gap-2">
           <File className="h-6 w-6 text-primary" />
-          <h1 className="text-2xl font-bold text-gray-800">PDF Region Mapper</h1>
+          <h1 className="text-2xl font-bold text-gray-800">Book+ Studio</h1>
         </div>
         
         <div className="flex items-center gap-4">
