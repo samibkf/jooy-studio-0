@@ -25,7 +25,7 @@ const Sidebar = ({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [localDescription, setLocalDescription] = useState<string>('');
   const saveTimeoutRef = useRef<NodeJS.Timeout>();
-  const { t } = useLanguage();
+  const { t, isRTL } = useLanguage();
   
   // Update local description when selected region changes
   useEffect(() => {
@@ -73,8 +73,11 @@ const Sidebar = ({
     };
   }, []);
 
+  // Class that applies proper border based on RTL
+  const borderClass = isRTL ? "border-r" : "border-l";
+
   return (
-    <div className="h-full w-full flex flex-col bg-background border-l">
+    <div className={`h-full w-full flex flex-col bg-background ${borderClass}`}>
       {selectedRegion ? (
         <div className="flex flex-col flex-1 p-4 h-full">
           <div className="flex justify-between items-center mb-2">
@@ -101,6 +104,7 @@ const Sidebar = ({
             onChange={handleChange}
             placeholder={t('sidebar.addDescription')} 
             className="flex-1 w-full min-h-0 resize-none"
+            dir="auto" // Allow the textarea to auto-detect direction based on content
           />
           
           <div className="mt-4">
