@@ -39,16 +39,12 @@ const fr = {
     noDocumentSelected: "Aucun document sélectionné",
     noRegionsDefined: "Aucune région définie",
     dataExported: "Données exportées avec succès",
-    loadingDocuments: "Chargement des documents...",
-    page: "Page",
-    type: "Type",
-    unnamedRegion: "Région sans nom"
+    loadingDocuments: "Chargement des documents..."
   },
   languages: {
     english: "Anglais",
     arabic: "Arabe",
-    french: "Français",
-    selectLanguage: "Choisir la langue"
+    french: "Français"
   }
 };
 

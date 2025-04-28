@@ -25,7 +25,7 @@ const Sidebar = ({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [localDescription, setLocalDescription] = useState<string>('');
   const saveTimeoutRef = useRef<NodeJS.Timeout>();
-  const { t, isRTL } = useLanguage();
+  const { t } = useLanguage();
   
   // Update local description when selected region changes
   useEffect(() => {
@@ -73,15 +73,12 @@ const Sidebar = ({
     };
   }, []);
 
-  // Class that applies proper border based on RTL
-  const borderClass = isRTL ? "border-r" : "border-l";
-
   return (
-    <div className={`h-full w-full flex flex-col bg-background ${borderClass}`}>
+    <div className="h-full w-full flex flex-col bg-background border-l">
       {selectedRegion ? (
         <div className="flex flex-col flex-1 p-4 h-full">
           <div className="flex justify-between items-center mb-2">
-            <h3 className="text-lg font-medium">{selectedRegion.name || t('document.unnamedRegion')}</h3>
+            <h3 className="text-lg font-medium">{selectedRegion.name || 'Unnamed Region'}</h3>
             <Button
               variant="outline" 
               size="sm"
@@ -93,8 +90,8 @@ const Sidebar = ({
           </div>
           
           <div className="text-sm text-muted-foreground mb-2">
-            <p>{t('document.page')}: {selectedRegion.page}</p>
-            <p>{t('document.type')}: {selectedRegion.type}</p>
+            <p>Page: {selectedRegion.page}</p>
+            <p>Type: {selectedRegion.type}</p>
           </div>
           
           <label className="text-sm font-medium mb-1">{t('sidebar.description')}</label>
@@ -104,7 +101,6 @@ const Sidebar = ({
             onChange={handleChange}
             placeholder={t('sidebar.addDescription')} 
             className="flex-1 w-full min-h-0 resize-none"
-            dir="auto" // Allow the textarea to auto-detect direction based on content
           />
           
           <div className="mt-4">
@@ -116,7 +112,7 @@ const Sidebar = ({
                   onClick={() => onRegionSelect(region.id)}
                   className="p-2 hover:bg-accent rounded-md cursor-pointer text-sm transition-colors"
                 >
-                  {region.name || t('document.unnamedRegion')}
+                  {region.name || 'Unnamed Region'}
                 </div>
               ))}
             </div>

@@ -39,16 +39,12 @@ const ar = {
     noDocumentSelected: "لم يتم تحديد مستند",
     noRegionsDefined: "لا توجد مناطق محددة",
     dataExported: "تم تصدير البيانات بنجاح",
-    loadingDocuments: "جاري تحميل المستندات...",
-    page: "الصفحة",
-    type: "النوع",
-    unnamedRegion: "منطقة بدون اسم"
+    loadingDocuments: "جاري تحميل المستندات..."
   },
   languages: {
     english: "الإنجليزية",
     arabic: "العربية",
-    french: "الفرنسية",
-    selectLanguage: "اختر اللغة"
+    french: "الفرنسية"
   }
 };
 

@@ -39,16 +39,12 @@ const en = {
     noDocumentSelected: "No document selected",
     noRegionsDefined: "No regions defined",
     dataExported: "Data exported successfully",
-    loadingDocuments: "Loading documents...",
-    page: "Page",
-    type: "Type",
-    unnamedRegion: "Unnamed Region"
+    loadingDocuments: "Loading documents..."
   },
   languages: {
     english: "English",
     arabic: "Arabic",
-    french: "French",
-    selectLanguage: "Select language"
+    french: "French"
   }
 };
 

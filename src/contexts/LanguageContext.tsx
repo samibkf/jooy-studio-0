@@ -9,7 +9,6 @@ type LanguageContextProps = {
   language: Language;
   setLanguage: (lang: Language) => void;
   t: (key: string) => string;
-  isRTL: boolean;
 };
 
 // Create the context with default values
@@ -17,7 +16,6 @@ const LanguageContext = createContext<LanguageContextProps>({
   language: "en",
   setLanguage: () => {},
   t: () => "",
-  isRTL: false,
 });
 
 // Translation files
@@ -40,16 +38,13 @@ export const LanguageProvider: React.FC<{ children: ReactNode }> = ({ children }
       ? savedLanguage
       : "en";
   });
-  
-  // Determine if current language is RTL
-  const isRTL = language === "ar";
 
   // Update document language and direction
   useEffect(() => {
     document.documentElement.lang = language;
-    document.documentElement.dir = isRTL ? "rtl" : "ltr";
+    document.documentElement.dir = language === "ar" ? "rtl" : "ltr";
     localStorage.setItem("language", language);
-  }, [language, isRTL]);
+  }, [language]);
 
   // Translation function
   const t = (key: string): string => {
@@ -58,7 +53,7 @@ export const LanguageProvider: React.FC<{ children: ReactNode }> = ({ children }
   };
 
   return (
-    <LanguageContext.Provider value={{ language, setLanguage, t, isRTL }}>
+    <LanguageContext.Provider value={{ language, setLanguage, t }}>
       {children}
     </LanguageContext.Provider>
   );

@@ -15,7 +15,7 @@ interface HeaderProps {
 }
 
 const Header = ({ onUploadClick, onExport, hasDocument, user, onSignOut }: HeaderProps) => {
-  const { t, language } = useLanguage();
+  const { t } = useLanguage();
   
   return (
     <header className="bg-white border-b border-gray-200 shadow-sm py-4">
@@ -32,11 +32,11 @@ const Header = ({ onUploadClick, onExport, hasDocument, user, onSignOut }: Heade
             </span>
           )}
           
-          <div className={`flex items-center gap-3 ${language === 'ar' ? 'flex-row' : ''}`}>
+          <div className="flex items-center gap-3">
             <Button 
               onClick={onUploadClick} 
               variant="outline" 
-              className={`flex items-center gap-2 ${language === 'ar' ? 'flex-row-reverse' : ''}`}
+              className="flex items-center gap-2"
             >
               <Upload className="h-4 w-4" />
               {t('header.uploadPdf')}
@@ -46,7 +46,7 @@ const Header = ({ onUploadClick, onExport, hasDocument, user, onSignOut }: Heade
               <Button 
                 onClick={onExport} 
                 disabled={!hasDocument}
-                className={`flex items-center gap-2 ${language === 'ar' ? 'flex-row-reverse' : ''}`}
+                className="flex items-center gap-2"
                 title={!hasDocument ? t('document.noDocumentSelected') : t('document.dataExported')}
               >
                 <Download className="h-4 w-4" />
