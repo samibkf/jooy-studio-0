@@ -30,7 +30,7 @@ export const createBucket = async () => {
     // Get the current session to ensure we're authenticated
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) {
-      console.error(`[${new Date().toISOString()}] No active session found`);
+      console.log(`[${new Date().toISOString()}] No active session found - skipping bucket creation`);
       return false;
     }
 
@@ -94,7 +94,7 @@ export const initializeStorage = async () => {
     // First ensure we have an active session
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) {
-      console.error(`[${new Date().toISOString()}] No active session found during storage initialization`);
+      console.log(`[${new Date().toISOString()}] No active session found during storage initialization - skipping`);
       return false;
     }
     
