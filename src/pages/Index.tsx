@@ -13,7 +13,7 @@ import DocumentList from '@/components/DocumentList';
 import { useDocumentState } from '@/hooks/useDocumentState';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { useAuth } from '@/contexts/AuthProvider';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase, initializeStorage } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 
 const Index = () => {
@@ -43,6 +43,10 @@ const Index = () => {
     setIsLoading(true);
     try {
       console.log("Loading documents for user:", authState.user.id);
+      
+      // Initialize storage to ensure bucket exists
+      await initializeStorage();
+      
       const { data: dbDocuments, error } = await supabase
         .from('documents')
         .select('*')
@@ -51,88 +55,194 @@ const Index = () => {
       if (error) {
         console.error("Error loading documents:", error);
         toast.error('Failed to load documents: ' + error.message);
+        setIsLoading(false);
         return;
       }
 
       console.log("Documents loaded:", dbDocuments);
-      const documentsWithRegions = await Promise.all(
-        dbDocuments.map(async (doc) => {
-          try {
-            const { data: regions, error: regionsError } = await supabase
-              .from('document_regions')
-              .select('*')
-              .eq('document_id', doc.id);
-
-            if (regionsError) {
-              console.error(`Error loading regions for document ${doc.name}:`, regionsError);
-              toast.error(`Failed to load regions for document ${doc.name}`);
-              return null;
-            }
-
-            console.log(`Regions for document ${doc.id}:`, regions);
-            
-            const filePath = `${authState.user.id}/${doc.id}.pdf`;
-            console.log('Attempting to get signed URL for:', filePath);
-            
-            const { data: fileData, error: fileError } = await supabase.storage
-              .from('pdfs')
-              .createSignedUrl(filePath, 3600);
-
-            if (fileError) {
-              console.error(`Error getting signed URL for document ${doc.name}:`, fileError);
-              toast.error(`Failed to access PDF for ${doc.name}`);
-              return null;
-            }
-
-            if (fileData?.signedUrl) {
-              try {
-                const response = await fetch(fileData.signedUrl);
-                if (!response.ok) {
-                  throw new Error(`Failed to fetch PDF: ${response.status}`);
-                }
-                const blob = await response.blob();
-                const file = new File([blob], doc.name, { type: 'application/pdf' });
-
-                return {
-                  ...doc,
-                  file,
-                  regions: (regions || []).map(r => ({
-                    id: r.id,
-                    page: r.page,
-                    x: r.x,
-                    y: r.y,
-                    width: r.width,
-                    height: r.height,
-                    type: r.type,
-                    name: r.name,
-                    description: r.description,
-                    document_id: r.document_id,
-                    user_id: r.user_id,
-                    created_at: r.created_at
-                  }))
-                };
-              } catch (fetchError) {
-                console.error('Error fetching PDF file:', fetchError);
-                toast.error(`Failed to fetch PDF for ${doc.name}`);
-                return null;
-              }
-            }
-            return null;
-          } catch (docError) {
-            console.error('Error processing document:', docError);
-            return null;
-          }
-        })
-      );
-
-      const validDocuments = documentsWithRegions.filter(Boolean) as DocumentData[];
-      setDocuments(validDocuments);
       
+      if (!dbDocuments || dbDocuments.length === 0) {
+        console.log("No documents found for user");
+        setIsLoading(false);
+        return;
+      }
+      
+      const validDocuments: DocumentData[] = [];
       const newCache: Record<string, Region[]> = {};
-      validDocuments.forEach(doc => {
-        newCache[doc.id] = doc.regions;
-      });
+      
+      for (const doc of dbDocuments) {
+        try {
+          // First get the regions for this document
+          const { data: regions, error: regionsError } = await supabase
+            .from('document_regions')
+            .select('*')
+            .eq('document_id', doc.id);
+
+          if (regionsError) {
+            console.error(`Error loading regions for document ${doc.name}:`, regionsError);
+            toast.error(`Failed to load regions for document ${doc.name}`);
+            continue;
+          }
+
+          const filePath = `${authState.user.id}/${doc.id}.pdf`;
+          console.log('Attempting to download PDF file directly:', filePath);
+          
+          try {
+            // First try to directly download the file instead of getting a signed URL
+            const { data: fileData, error: downloadError } = await supabase.storage
+              .from('pdfs')
+              .download(filePath);
+
+            if (downloadError) {
+              console.error(`Error downloading PDF for document ${doc.name}:`, downloadError);
+              throw downloadError;
+            }
+
+            if (fileData) {
+              const file = new File([fileData], doc.name, { type: 'application/pdf' });
+              
+              const typedRegions = (regions || []).map(r => ({
+                id: r.id,
+                page: r.page,
+                x: r.x,
+                y: r.y,
+                width: r.width,
+                height: r.height,
+                type: r.type,
+                name: r.name,
+                description: r.description,
+                document_id: r.document_id,
+                user_id: r.user_id,
+                created_at: r.created_at
+              }));
+              
+              const documentData: DocumentData = {
+                ...doc,
+                file,
+                regions: typedRegions,
+                fileAvailable: true
+              };
+              
+              validDocuments.push(documentData);
+              newCache[doc.id] = typedRegions;
+              console.log(`Successfully loaded document ${doc.name} with direct download`);
+            }
+          } catch (downloadError) {
+            console.warn(`Direct download failed for ${doc.name}, trying signed URL method:`, downloadError);
+            
+            // Try with signed URL as fallback
+            try {
+              const { data: signedUrlData, error: signedUrlError } = await supabase.storage
+                .from('pdfs')
+                .createSignedUrl(filePath, 3600);
+
+              if (signedUrlError || !signedUrlData?.signedUrl) {
+                console.error(`Error getting signed URL for document ${doc.name}:`, signedUrlError);
+                
+                // Add the document without the file, so at least the metadata is available
+                const typedRegions = (regions || []).map(r => ({
+                  id: r.id,
+                  page: r.page,
+                  x: r.x,
+                  y: r.y,
+                  width: r.width,
+                  height: r.height,
+                  type: r.type,
+                  name: r.name,
+                  description: r.description,
+                  document_id: r.document_id,
+                  user_id: r.user_id,
+                  created_at: r.created_at
+                }));
+                
+                const documentData: DocumentData = {
+                  ...doc,
+                  // Creating an empty file as a placeholder
+                  file: new File([], doc.name, { type: 'application/pdf' }),
+                  regions: typedRegions,
+                  fileAvailable: false
+                };
+                
+                validDocuments.push(documentData);
+                newCache[doc.id] = typedRegions;
+                
+                toast.error(`Failed to access PDF for ${doc.name}`);
+                continue;
+              }
+
+              const response = await fetch(signedUrlData.signedUrl);
+              if (!response.ok) {
+                throw new Error(`Failed to fetch PDF: ${response.status}`);
+              }
+              
+              const blob = await response.blob();
+              const file = new File([blob], doc.name, { type: 'application/pdf' });
+
+              const typedRegions = (regions || []).map(r => ({
+                id: r.id,
+                page: r.page,
+                x: r.x,
+                y: r.y,
+                width: r.width,
+                height: r.height,
+                type: r.type,
+                name: r.name,
+                description: r.description,
+                document_id: r.document_id,
+                user_id: r.user_id,
+                created_at: r.created_at
+              }));
+              
+              const documentData: DocumentData = {
+                ...doc,
+                file,
+                regions: typedRegions,
+                fileAvailable: true
+              };
+              
+              validDocuments.push(documentData);
+              newCache[doc.id] = typedRegions;
+              console.log(`Successfully loaded document ${doc.name} with signed URL`);
+            } catch (fetchError) {
+              console.error('Error fetching PDF file:', fetchError);
+              toast.error(`Failed to fetch PDF for ${doc.name}`);
+              
+              // Add the document without the file, so at least the metadata is available
+              const typedRegions = (regions || []).map(r => ({
+                id: r.id,
+                page: r.page,
+                x: r.x,
+                y: r.y,
+                width: r.width,
+                height: r.height,
+                type: r.type,
+                name: r.name,
+                description: r.description,
+                document_id: r.document_id,
+                user_id: r.user_id,
+                created_at: r.created_at
+              }));
+              
+              const documentData: DocumentData = {
+                ...doc,
+                // Creating an empty file as a placeholder
+                file: new File([], doc.name, { type: 'application/pdf' }),
+                regions: typedRegions,
+                fileAvailable: false
+              };
+              
+              validDocuments.push(documentData);
+              newCache[doc.id] = typedRegions;
+            }
+          }
+        } catch (docError) {
+          console.error('Error processing document:', docError);
+        }
+      }
+
+      setDocuments(validDocuments);
       setRegionsCache(newCache);
+      console.log("Processed documents:", validDocuments.length);
     } catch (loadError) {
       console.error('Error loading documents:', loadError);
       toast.error('Failed to load documents');
@@ -185,7 +295,8 @@ const Index = () => {
         id: documentId,
         name: file.name,
         file,
-        regions: []
+        regions: [],
+        fileAvailable: true
       };
 
       setDocuments(prev => [...prev, newDocument]);
@@ -206,6 +317,12 @@ const Index = () => {
 
   const handleDocumentSelect = (documentId: string) => {
     if (selectedDocumentId === documentId) return;
+    
+    const docToSelect = documents.find(doc => doc.id === documentId);
+    
+    if (docToSelect && !docToSelect.fileAvailable) {
+      toast.error(`PDF file for "${docToSelect.name}" is not available. Try refreshing the page or re-uploading the document.`);
+    }
     
     if (selectedDocumentId && selectedDocument) {
       setDocuments(prev => 
@@ -535,7 +652,7 @@ const Index = () => {
         <Header
           onUploadClick={handleFileUpload}
           onExport={handleExport}
-          hasDocument={!!selectedDocument}
+          hasDocument={!!selectedDocument && selectedDocument.fileAvailable}
           user={authState.profile}
           onSignOut={signOut}
         />
@@ -559,7 +676,7 @@ const Index = () => {
               </div>
             ) : (
               <PdfViewer
-                file={selectedDocument?.file || null}
+                file={selectedDocument?.fileAvailable ? selectedDocument.file : null}
                 regions={selectedDocument?.regions || []}
                 onRegionCreate={handleRegionCreate}
                 onRegionUpdate={handleRegionUpdate}
