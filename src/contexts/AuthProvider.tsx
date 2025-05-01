@@ -101,12 +101,18 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     try {
       console.log(`Attempting to sign in: ${email} (rememberMe: ${rememberMe})`);
       
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-        options: {
-          persistSession: rememberMe // Control session persistence based on rememberMe
-        }
+      // If rememberMe is false, update the Supabase client's auth configuration temporarily
+      if (!rememberMe) {
+        await supabase.auth.setSession({
+          access_token: '',
+          refresh_token: ''
+        });
+      }
+      
+      // Sign in with email and password
+      const { error } = await supabase.auth.signInWithPassword({ 
+        email, 
+        password 
       });
       
       if (error) throw error;
