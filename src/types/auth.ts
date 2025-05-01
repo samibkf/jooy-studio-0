@@ -5,6 +5,7 @@ export interface AuthFormData {
   email: string;
   password: string;
   fullName?: string;
+  rememberMe?: boolean; // Added rememberMe field
 }
 
 export interface AuthState {

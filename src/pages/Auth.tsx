@@ -7,11 +7,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
 
 const Auth = () => {
   const { authState, signIn, signUp } = useAuth();
   const [isSignUp, setIsSignUp] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [rememberMe, setRememberMe] = useState(true);
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -31,7 +33,7 @@ const Auth = () => {
         await signUp(formData.email, formData.password, formData.fullName);
         toast.success('Account created! Please check your email for verification.');
       } else {
-        await signIn(formData.email, formData.password);
+        await signIn(formData.email, formData.password, rememberMe);
         toast.success('Welcome back!');
       }
     } catch (error: any) {
@@ -97,6 +99,19 @@ const Auth = () => {
               disabled={loading}
             />
           </div>
+
+          {!isSignUp && (
+            <div className="flex items-center space-x-2">
+              <Checkbox 
+                id="rememberMe" 
+                checked={rememberMe} 
+                onCheckedChange={(checked) => setRememberMe(checked === true)}
+              />
+              <Label htmlFor="rememberMe" className="text-sm font-normal cursor-pointer">
+                Keep me signed in
+              </Label>
+            </div>
+          )}
 
           <Button type="submit" className="w-full" disabled={loading}>
             {loading

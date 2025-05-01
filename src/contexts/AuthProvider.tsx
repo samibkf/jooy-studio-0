@@ -7,7 +7,7 @@ import { toast } from 'sonner';
 
 const AuthContext = createContext<{
   authState: AuthState;
-  signIn: (email: string, password: string) => Promise<void>;
+  signIn: (email: string, password: string, rememberMe?: boolean) => Promise<void>;
   signUp: (email: string, password: string, fullName: string) => Promise<void>;
   signOut: () => Promise<void>;
 } | null>(null);
@@ -97,10 +97,18 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     };
   }, []);
 
-  const signIn = async (email: string, password: string) => {
+  const signIn = async (email: string, password: string, rememberMe: boolean = true) => {
     try {
-      console.log('Attempting to sign in:', email);
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      console.log(`Attempting to sign in: ${email} (rememberMe: ${rememberMe})`);
+      
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+        options: {
+          persistSession: rememberMe // Control session persistence based on rememberMe
+        }
+      });
+      
       if (error) throw error;
     } catch (error) {
       console.error('Sign in error:', error);

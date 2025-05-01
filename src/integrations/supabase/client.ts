@@ -8,7 +8,7 @@ const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiO
 // Create Supabase client with enhanced storage configuration
 export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
   auth: {
-    persistSession: true,
+    persistSession: true, // Default to true, but can be overridden during signIn
     autoRefreshToken: true,
     detectSessionInUrl: true,
     flowType: 'pkce'
