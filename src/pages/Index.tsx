@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
@@ -15,6 +16,7 @@ import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { useAuth } from '@/contexts/AuthProvider';
 import { supabase, initializeStorage } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 
 const Index = () => {
   const [documents, setDocuments] = useState<DocumentData[]>([]);
@@ -22,6 +24,8 @@ const Index = () => {
   const [isDocumentListCollapsed, setIsDocumentListCollapsed] = useState(true);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
+  const [retryCount, setRetryCount] = useState<Record<string, number>>({});
+  const [storageInitialized, setStorageInitialized] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const {
@@ -45,7 +49,15 @@ const Index = () => {
       console.log("Loading documents for user:", authState.user.id);
       
       // Initialize storage to ensure bucket exists
-      await initializeStorage();
+      const storageReady = await initializeStorage();
+      setStorageInitialized(storageReady);
+      
+      if (!storageReady) {
+        toast.warning("Storage system is not fully initialized. Document access may be limited.", {
+          duration: 10000,
+          id: "storage-initialization-warning"
+        });
+      }
       
       const { data: dbDocuments, error } = await supabase
         .from('documents')
@@ -59,7 +71,7 @@ const Index = () => {
         return;
       }
 
-      console.log("Documents loaded:", dbDocuments);
+      console.log("Documents loaded from database:", dbDocuments);
       
       if (!dbDocuments || dbDocuments.length === 0) {
         console.log("No documents found for user");
@@ -69,6 +81,7 @@ const Index = () => {
       
       const validDocuments: DocumentData[] = [];
       const newCache: Record<string, Region[]> = {};
+      let documentWithIssues = 0;
       
       for (const doc of dbDocuments) {
         try {
@@ -84,157 +97,99 @@ const Index = () => {
             continue;
           }
 
-          const filePath = `${authState.user.id}/${doc.id}.pdf`;
-          console.log('Attempting to download PDF file directly:', filePath);
+          const typedRegions = (regions || []).map(r => ({
+            id: r.id,
+            page: r.page,
+            x: r.x,
+            y: r.y,
+            width: r.width,
+            height: r.height,
+            type: r.type,
+            name: r.name,
+            description: r.description,
+            document_id: r.document_id,
+            user_id: r.user_id,
+            created_at: r.created_at
+          }));
           
-          try {
-            // First try to directly download the file instead of getting a signed URL
-            const { data: fileData, error: downloadError } = await supabase.storage
-              .from('pdfs')
-              .download(filePath);
+          // First try multiple paths to see which one works
+          const filePaths = [
+            `${authState.user.id}/${doc.id}.pdf`,
+            `${doc.user_id || authState.user.id}/${doc.id}.pdf`,
+            `public/${doc.id}.pdf`
+          ];
+          
+          let fileFound = false;
+          let pdfFile: File | null = null;
 
-            if (downloadError) {
-              console.error(`Error downloading PDF for document ${doc.name}:`, downloadError);
-              throw downloadError;
-            }
-
-            if (fileData) {
-              const file = new File([fileData], doc.name, { type: 'application/pdf' });
-              
-              const typedRegions = (regions || []).map(r => ({
-                id: r.id,
-                page: r.page,
-                x: r.x,
-                y: r.y,
-                width: r.width,
-                height: r.height,
-                type: r.type,
-                name: r.name,
-                description: r.description,
-                document_id: r.document_id,
-                user_id: r.user_id,
-                created_at: r.created_at
-              }));
-              
-              const documentData: DocumentData = {
-                ...doc,
-                file,
-                regions: typedRegions,
-                fileAvailable: true
-              };
-              
-              validDocuments.push(documentData);
-              newCache[doc.id] = typedRegions;
-              console.log(`Successfully loaded document ${doc.name} with direct download`);
-            }
-          } catch (downloadError) {
-            console.warn(`Direct download failed for ${doc.name}, trying signed URL method:`, downloadError);
+          // Try each path with direct download
+          for (const path of filePaths) {
+            if (fileFound) continue;
             
-            // Try with signed URL as fallback
+            console.log(`Attempting to download PDF file directly: ${path}`);
             try {
-              const { data: signedUrlData, error: signedUrlError } = await supabase.storage
+              const { data: fileData, error: downloadError } = await supabase.storage
                 .from('pdfs')
-                .createSignedUrl(filePath, 3600);
+                .download(path);
 
-              if (signedUrlError || !signedUrlData?.signedUrl) {
-                console.error(`Error getting signed URL for document ${doc.name}:`, signedUrlError);
-                
-                // Add the document without the file, so at least the metadata is available
-                const typedRegions = (regions || []).map(r => ({
-                  id: r.id,
-                  page: r.page,
-                  x: r.x,
-                  y: r.y,
-                  width: r.width,
-                  height: r.height,
-                  type: r.type,
-                  name: r.name,
-                  description: r.description,
-                  document_id: r.document_id,
-                  user_id: r.user_id,
-                  created_at: r.created_at
-                }));
-                
-                const documentData: DocumentData = {
-                  ...doc,
-                  // Creating an empty file as a placeholder
-                  file: new File([], doc.name, { type: 'application/pdf' }),
-                  regions: typedRegions,
-                  fileAvailable: false
-                };
-                
-                validDocuments.push(documentData);
-                newCache[doc.id] = typedRegions;
-                
-                toast.error(`Failed to access PDF for ${doc.name}`);
-                continue;
+              if (!downloadError && fileData) {
+                pdfFile = new File([fileData], doc.name, { type: 'application/pdf' });
+                fileFound = true;
+                console.log(`Successfully loaded document ${doc.name} with direct download from ${path}`);
+                break;
               }
-
-              const response = await fetch(signedUrlData.signedUrl);
-              if (!response.ok) {
-                throw new Error(`Failed to fetch PDF: ${response.status}`);
-              }
-              
-              const blob = await response.blob();
-              const file = new File([blob], doc.name, { type: 'application/pdf' });
-
-              const typedRegions = (regions || []).map(r => ({
-                id: r.id,
-                page: r.page,
-                x: r.x,
-                y: r.y,
-                width: r.width,
-                height: r.height,
-                type: r.type,
-                name: r.name,
-                description: r.description,
-                document_id: r.document_id,
-                user_id: r.user_id,
-                created_at: r.created_at
-              }));
-              
-              const documentData: DocumentData = {
-                ...doc,
-                file,
-                regions: typedRegions,
-                fileAvailable: true
-              };
-              
-              validDocuments.push(documentData);
-              newCache[doc.id] = typedRegions;
-              console.log(`Successfully loaded document ${doc.name} with signed URL`);
-            } catch (fetchError) {
-              console.error('Error fetching PDF file:', fetchError);
-              toast.error(`Failed to fetch PDF for ${doc.name}`);
-              
-              // Add the document without the file, so at least the metadata is available
-              const typedRegions = (regions || []).map(r => ({
-                id: r.id,
-                page: r.page,
-                x: r.x,
-                y: r.y,
-                width: r.width,
-                height: r.height,
-                type: r.type,
-                name: r.name,
-                description: r.description,
-                document_id: r.document_id,
-                user_id: r.user_id,
-                created_at: r.created_at
-              }));
-              
-              const documentData: DocumentData = {
-                ...doc,
-                // Creating an empty file as a placeholder
-                file: new File([], doc.name, { type: 'application/pdf' }),
-                regions: typedRegions,
-                fileAvailable: false
-              };
-              
-              validDocuments.push(documentData);
-              newCache[doc.id] = typedRegions;
+            } catch (downloadError) {
+              console.warn(`Direct download failed for ${path}:`, downloadError);
             }
           }
+          
+          // If direct download failed, try with signed URLs
+          if (!fileFound) {
+            for (const path of filePaths) {
+              if (fileFound) continue;
+              
+              try {
+                console.log(`Trying signed URL for: ${path}`);
+                const { data: signedUrlData, error: signedUrlError } = await supabase.storage
+                  .from('pdfs')
+                  .createSignedUrl(path, 3600);
+
+                if (!signedUrlError && signedUrlData?.signedUrl) {
+                  try {
+                    const response = await fetch(signedUrlData.signedUrl);
+                    if (response.ok) {
+                      const blob = await response.blob();
+                      pdfFile = new File([blob], doc.name, { type: 'application/pdf' });
+                      fileFound = true;
+                      console.log(`Successfully loaded document ${doc.name} with signed URL from ${path}`);
+                      break;
+                    }
+                  } catch (fetchError) {
+                    console.warn(`Fetch from signed URL failed for ${path}:`, fetchError);
+                  }
+                }
+              } catch (signedUrlError) {
+                console.warn(`Failed to get signed URL for ${path}:`, signedUrlError);
+              }
+            }
+          }
+          
+          // Add the document with or without the file
+          const documentData: DocumentData = {
+            ...doc,
+            file: pdfFile || new File([], doc.name, { type: 'application/pdf' }),
+            regions: typedRegions,
+            fileAvailable: fileFound,
+            uploadRequired: !fileFound
+          };
+          
+          validDocuments.push(documentData);
+          newCache[doc.id] = typedRegions;
+          
+          if (!fileFound) {
+            documentWithIssues++;
+          }
+          
         } catch (docError) {
           console.error('Error processing document:', docError);
         }
@@ -242,7 +197,15 @@ const Index = () => {
 
       setDocuments(validDocuments);
       setRegionsCache(newCache);
-      console.log("Processed documents:", validDocuments.length);
+      
+      console.log("Processed documents:", validDocuments.length, "Documents with issues:", documentWithIssues);
+      
+      if (documentWithIssues > 0) {
+        toast.warning(`${documentWithIssues} document(s) have PDF access issues. You may need to re-upload them.`, {
+          duration: 8000
+        });
+      }
+      
     } catch (loadError) {
       console.error('Error loading documents:', loadError);
       toast.error('Failed to load documents');
@@ -272,46 +235,85 @@ const Index = () => {
       toast.error('Please select a PDF file');
       return;
     }
-
+    
+    // Check if we're re-uploading an existing document
+    const reuploadDocId = selectedDocumentId && selectedDocument?.uploadRequired ? selectedDocumentId : null;
+    const documentId = reuploadDocId || uuidv4();
+    
     try {
-      const documentId = uuidv4();
+      // Make sure storage is initialized
+      await initializeStorage();
+
+      toast.loading('Uploading PDF file...', { id: 'pdf-upload' });
+      
+      const filePath = `${authState.user.id}/${documentId}.pdf`;
+      console.log(`Uploading PDF to ${filePath}`);
+      
       const { error: uploadError } = await supabase.storage
         .from('pdfs')
-        .upload(`${authState.user.id}/${documentId}.pdf`, file);
+        .upload(filePath, file, { upsert: true });
 
-      if (uploadError) throw uploadError;
+      if (uploadError) {
+        console.error('Storage upload error:', uploadError);
+        toast.error('Failed to upload PDF file: ' + uploadError.message, { id: 'pdf-upload' });
+        return;
+      }
+      
+      if (reuploadDocId) {
+        // Update existing document
+        setDocuments(prev => 
+          prev.map(doc => 
+            doc.id === reuploadDocId 
+              ? { ...doc, file, fileAvailable: true, uploadRequired: false } 
+              : doc
+          )
+        );
+        
+        toast.success('Document PDF re-uploaded successfully', { id: 'pdf-upload' });
+      } else {
+        // Create new document in database
+        const { error: dbError } = await supabase
+          .from('documents')
+          .insert({
+            id: documentId,
+            name: file.name,
+            user_id: authState.user.id
+          });
 
-      const { error: dbError } = await supabase
-        .from('documents')
-        .insert({
+        if (dbError) {
+          console.error('Database insert error:', dbError);
+          toast.error('Failed to save document information: ' + dbError.message, { id: 'pdf-upload' });
+          return;
+        }
+
+        const newDocument: DocumentData = {
           id: documentId,
           name: file.name,
-          user_id: authState.user.id
-        });
+          file,
+          regions: [],
+          fileAvailable: true
+        };
 
-      if (dbError) throw dbError;
-
-      const newDocument: DocumentData = {
-        id: documentId,
-        name: file.name,
-        file,
-        regions: [],
-        fileAvailable: true
-      };
-
-      setDocuments(prev => [...prev, newDocument]);
-      setSelectedDocumentId(documentId);
-      resetStates();
-      setIsDocumentListCollapsed(false);
-      toast.success('Document added successfully');
-      
-      setRegionsCache(prev => ({
-        ...prev,
-        [documentId]: []
-      }));
+        setDocuments(prev => [...prev, newDocument]);
+        setSelectedDocumentId(documentId);
+        resetStates();
+        setIsDocumentListCollapsed(false);
+        
+        toast.success('Document added successfully', { id: 'pdf-upload' });
+        
+        setRegionsCache(prev => ({
+          ...prev,
+          [documentId]: []
+        }));
+      }
     } catch (error) {
       console.error('Error uploading document:', error);
-      toast.error('Failed to upload document');
+      toast.error('Failed to upload document', { id: 'pdf-upload' });
+    }
+    
+    // Clear file input
+    if (e.target) {
+      e.target.value = '';
     }
   };
 
@@ -321,7 +323,15 @@ const Index = () => {
     const docToSelect = documents.find(doc => doc.id === documentId);
     
     if (docToSelect && !docToSelect.fileAvailable) {
-      toast.error(`PDF file for "${docToSelect.name}" is not available. Try refreshing the page or re-uploading the document.`);
+      toast.warning(`PDF file for "${docToSelect.name}" is not available. You may need to re-upload it.`, {
+        action: {
+          label: "Re-upload",
+          onClick: () => {
+            setSelectedDocumentId(documentId);
+            fileInputRef.current?.click();
+          }
+        }
+      });
     }
     
     if (selectedDocumentId && selectedDocument) {
@@ -638,6 +648,80 @@ const Index = () => {
     setIsSidebarCollapsed(!isSidebarCollapsed);
   };
 
+  const handleRetryLoadDocument = async () => {
+    if (!selectedDocumentId || !authState.user) return;
+    
+    toast.loading('Retrying document access...', { id: 'retry-load' });
+    
+    try {
+      // Update retry count
+      setRetryCount(prev => ({
+        ...prev,
+        [selectedDocumentId]: (prev[selectedDocumentId] || 0) + 1
+      }));
+      
+      const doc = documents.find(d => d.id === selectedDocumentId);
+      if (!doc) {
+        toast.error('Document not found', { id: 'retry-load' });
+        return;
+      }
+      
+      const filePath = `${authState.user.id}/${selectedDocumentId}.pdf`;
+      
+      // Try direct download first
+      const { data: fileData, error: downloadError } = await supabase.storage
+        .from('pdfs')
+        .download(filePath);
+        
+      if (downloadError || !fileData) {
+        console.warn(`Direct retry download failed:`, downloadError);
+        
+        // Try with signed URL as fallback
+        const { data: signedUrlData, error: signedUrlError } = await supabase.storage
+          .from('pdfs')
+          .createSignedUrl(filePath, 3600);
+          
+        if (signedUrlError || !signedUrlData?.signedUrl) {
+          toast.error('PDF file still not accessible. Please try re-uploading.', { id: 'retry-load' });
+          return;
+        }
+        
+        const response = await fetch(signedUrlData.signedUrl);
+        if (!response.ok) {
+          toast.error('Failed to fetch PDF. Please try re-uploading.', { id: 'retry-load' });
+          return;
+        }
+        
+        const blob = await response.blob();
+        const file = new File([blob], doc.name, { type: 'application/pdf' });
+        
+        // Update document with file
+        setDocuments(prev => 
+          prev.map(d => 
+            d.id === selectedDocumentId ? { ...d, file, fileAvailable: true } : d
+          )
+        );
+        
+        toast.success('Document loaded successfully', { id: 'retry-load' });
+      } else {
+        // Direct download succeeded
+        const file = new File([fileData], doc.name, { type: 'application/pdf' });
+        
+        // Update document with file
+        setDocuments(prev => 
+          prev.map(d => 
+            d.id === selectedDocumentId ? { ...d, file, fileAvailable: true } : d
+          )
+        );
+        
+        toast.success('Document loaded successfully', { id: 'retry-load' });
+      }
+    } catch (error) {
+      console.error('Error retrying document load:', error);
+      toast.error('Failed to reload document', { id: 'retry-load' });
+    }
+  };
+
   return (
     <ProtectedRoute>
       <div className="flex flex-col h-screen">
@@ -673,6 +757,34 @@ const Index = () => {
               <div className="flex items-center justify-center h-full">
                 <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
                 <span className="ml-3">Loading documents...</span>
+              </div>
+            ) : selectedDocument && !selectedDocument.fileAvailable ? (
+              <div className="flex flex-col items-center justify-center h-full p-4">
+                <Alert className="max-w-md mb-4 bg-amber-50 border-amber-300">
+                  <AlertTitle className="text-amber-800">PDF File Not Available</AlertTitle>
+                  <AlertDescription className="text-amber-700">
+                    The PDF file for "{selectedDocument.name}" could not be accessed. 
+                    This can happen when accessing your documents from a new device.
+                  </AlertDescription>
+                </Alert>
+                
+                <div className="flex gap-4 mt-4">
+                  <Button 
+                    onClick={handleRetryLoadDocument} 
+                    variant="outline"
+                    disabled={retryCount[selectedDocumentId] > 2}
+                  >
+                    Retry Loading
+                  </Button>
+                  
+                  <Button onClick={() => fileInputRef.current?.click()}>
+                    Re-upload PDF
+                  </Button>
+                </div>
+                
+                <p className="mt-8 text-sm text-muted-foreground max-w-md text-center">
+                  All your region data is still available and will be reconnected when the PDF is uploaded again.
+                </p>
               </div>
             ) : (
               <PdfViewer
