@@ -312,8 +312,8 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
   if (!file) {
     return <div className="flex flex-col items-center justify-center h-[calc(100vh-72px)] bg-muted">
         <div className="text-center p-10">
-          <h2 className="text-2xl font-bold mb-2">Welcome to Jooy Studio</h2>
-          <p className="text-muted-foreground">Interactive Books Start Here</p>
+          <h2 className="font-bold mb-2 text-3xl">Welcome to Jooy Studio</h2>
+          <p className="text-muted-foreground text-lg">Interactive Books Start Here</p>
         </div>
       </div>;
   }
