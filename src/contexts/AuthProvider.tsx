@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -144,12 +143,54 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const signOut = async () => {
     try {
       console.log('Attempting to sign out');
+      
+      // First check if we have a session
+      const { data: { session: currentSession } } = await supabase.auth.getSession();
+      
+      // If we don't have a session, just clear the local state
+      if (!currentSession) {
+        console.log('No active session found, clearing local auth state');
+        setAuthState({
+          user: null,
+          session: null,
+          profile: null
+        });
+        return;
+      }
+      
+      // We have a session, so try to sign out from Supabase
       const { error } = await supabase.auth.signOut();
-      if (error) throw error;
+      
+      if (error) {
+        console.error('Supabase sign out error:', error);
+        // Even if we get an error, still clear the local state
+        setAuthState({
+          user: null,
+          session: null,
+          profile: null
+        });
+        toast.error(`Sign out error: ${error.message}`);
+        return;
+      }
+      
       console.log('Sign out successful');
+      // State will be updated by the onAuthStateChange listener
     } catch (error) {
-      console.error('Sign out error:', error);
-      throw error;
+      console.error('Sign out catch error:', error);
+      
+      // Ensure we clear the local state even if there's an error
+      setAuthState({
+        user: null,
+        session: null,
+        profile: null
+      });
+      
+      // Show error to user
+      if (error instanceof Error) {
+        toast.error(`Sign out error: ${error.message}`);
+      } else {
+        toast.error('An unknown error occurred during sign out');
+      }
     }
   };
 
