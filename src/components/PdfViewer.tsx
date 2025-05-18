@@ -5,7 +5,7 @@ import { Region } from '@/types/regions';
 import RegionOverlay from './RegionOverlay';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
-import { ArrowLeft, ArrowRight, MousePointer } from 'lucide-react';
+import { ArrowLeft, ArrowRight, MousePointer, Copy } from 'lucide-react';
 import { Toggle } from '@/components/ui/toggle';
 import { TooltipProvider, TooltipTrigger, TooltipContent, Tooltip } from '@/components/ui/tooltip';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -57,8 +57,10 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
   const [preventCreateRegion, setPreventCreateRegion] = useState(false);
   const [isTemporarilyBlocked, setIsTemporarilyBlocked] = useState(false);
   const [creationTimeoutId, setCreationTimeoutId] = useState<number | null>(null);
+  const [isCopyingPage, setIsCopyingPage] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  
   const getNextRegionNumber = (pageNumber: number): number => {
     const pageRegions = regions.filter(region => region.page === pageNumber);
     if (pageRegions.length === 0) {
@@ -70,6 +72,7 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
     }).filter(num => !isNaN(num));
     return Math.max(...regionNumbers, 0) + 1;
   };
+  
   useEffect(() => {
     if (!file) return;
     const loadPdf = async () => {
@@ -90,6 +93,7 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
     };
     loadPdf();
   }, [file]);
+  
   useEffect(() => {
     if (!pdf || !canvasRef.current) return;
     const renderPage = async () => {
@@ -114,6 +118,7 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
     };
     renderPage();
   }, [pdf, currentPage, scale]);
+  
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.key === 'Delete' || e.key === 'Backspace') && selectedRegionId && document.activeElement instanceof HTMLElement && !['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) {
@@ -124,7 +129,7 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [selectedRegionId, onRegionDelete]);
-
+  
   // Clear the timeout when component unmounts
   useEffect(() => {
     return () => {
@@ -133,6 +138,7 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
       }
     };
   }, [creationTimeoutId]);
+  
   const createRegion = (rect: {
     x: number;
     y: number;
@@ -152,10 +158,10 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
         name: regionName,
         description: ''
       };
-
+      
       // Create region
       onRegionCreate(newRegion);
-
+      
       // Block further region creation temporarily
       setIsTemporarilyBlocked(true);
       const timeoutId = window.setTimeout(() => {
@@ -164,6 +170,7 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
       setCreationTimeoutId(timeoutId);
     }
   };
+  
   const handleMouseDown = (e: React.MouseEvent) => {
     if (!isSelectionMode && !isDoubleClickMode || !containerRef.current || isTemporarilyBlocked) return;
     const rect = containerRef.current.getBoundingClientRect();
@@ -176,7 +183,7 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
         width: selectionRect.width,
         height: selectionRect.height
       };
-
+      
       // Reset selection
       setSelectionRect({
         x: 0,
@@ -187,7 +194,7 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
       setSelectionPoint(null);
       setIsSelecting(false);
       setIsDoubleClickMode(false);
-
+      
       // Create region outside of the render flow
       createRegion(currentRect);
     } else {
@@ -204,6 +211,7 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
       setIsSelecting(true);
     }
   };
+  
   const handleDoubleClick = (e: React.MouseEvent) => {
     if (!containerRef.current || isTemporarilyBlocked) return;
     if (isSelectionMode) {
@@ -236,6 +244,7 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
     setIsSelecting(true);
     onCurrentSelectionTypeChange('area');
   };
+  
   const handleMouseMove = (e: React.MouseEvent) => {
     if (!isSelecting || !containerRef.current || !selectionPoint) return;
     const rect = containerRef.current.getBoundingClientRect();
@@ -248,9 +257,11 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
       height: Math.abs(y - selectionPoint.y)
     });
   };
+  
   const handleMouseUp = () => {
     return;
   };
+  
   const handleNextPage = () => {
     if (currentPage < totalPages - 1) {
       setCurrentPage(prev => prev + 1);
@@ -267,6 +278,7 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
       setIsDoubleClickMode(false);
     }
   };
+  
   const handlePrevPage = () => {
     if (currentPage > 0) {
       setCurrentPage(prev => prev - 1);
@@ -283,12 +295,15 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
       setIsDoubleClickMode(false);
     }
   };
+  
   const handleZoomIn = () => {
     setScale(prev => Math.min(prev + 0.1, 3.0));
   };
+  
   const handleZoomOut = () => {
     setScale(prev => Math.max(prev - 0.1, 0.5));
   };
+  
   const handleEscKey = (e: KeyboardEvent) => {
     if (e.key === 'Escape' && selectionPoint) {
       setSelectionPoint(null);
@@ -301,14 +316,81 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
       setIsSelecting(false);
     }
   };
+  
+  // Function to copy the current page as an image to clipboard
+  const copyPageToClipboard = async () => {
+    if (!canvasRef.current) {
+      toast.error('Canvas not available');
+      return;
+    }
+    
+    try {
+      setIsCopyingPage(true);
+      
+      // Create a new canvas to include any region overlays
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      
+      if (!ctx) {
+        toast.error('Failed to create canvas context');
+        return;
+      }
+      
+      // Set the same dimensions as the PDF canvas
+      canvas.width = canvasRef.current.width;
+      canvas.height = canvasRef.current.height;
+      
+      // Draw the PDF page
+      ctx.drawImage(canvasRef.current, 0, 0);
+      
+      // Draw all the region overlays
+      // This simulates what the user sees on screen including regions
+      pageRegions.forEach(region => {
+        ctx.strokeStyle = region.id === selectedRegionId ? '#2563eb' : 'rgba(37, 99, 235, 0.8)';
+        ctx.lineWidth = region.id === selectedRegionId ? 3 : 2;
+        ctx.fillStyle = region.id === selectedRegionId ? 'rgba(37, 99, 235, 0.2)' : 'rgba(37, 99, 235, 0.1)';
+        
+        ctx.fillRect(region.x, region.y, region.width, region.height);
+        ctx.strokeRect(region.x, region.y, region.width, region.height);
+        
+        // Add region name as label
+        ctx.font = '12px Arial';
+        ctx.fillStyle = region.id === selectedRegionId ? '#2563eb' : 'rgba(37, 99, 235, 0.8)';
+        ctx.fillText(region.name, region.x + 5, region.y + 15);
+      });
+      
+      // Convert to blob
+      const blob = await new Promise<Blob>((resolve) => {
+        canvas.toBlob((blob) => {
+          if (blob) resolve(blob);
+          else toast.error('Failed to create image blob');
+        }, 'image/png');
+      });
+      
+      // Create ClipboardItem and write to clipboard
+      const clipboardItem = new ClipboardItem({ 'image/png': blob });
+      await navigator.clipboard.write([clipboardItem]);
+      
+      toast.success('Page copied to clipboard');
+    } catch (error) {
+      console.error('Error copying to clipboard:', error);
+      toast.error('Failed to copy page: ' + (error instanceof Error ? error.message : 'Unknown error'));
+    } finally {
+      setIsCopyingPage(false);
+    }
+  };
+  
   useEffect(() => {
     window.addEventListener('keydown', handleEscKey);
     return () => window.removeEventListener('keydown', handleEscKey);
   }, [selectionPoint]);
+  
   const pageRegions = regions.filter(region => region.page === currentPage + 1);
+  
   useEffect(() => {
     setPreventCreateRegion(false);
   }, [currentPage]);
+  
   if (!file) {
     return <div className="flex flex-col items-center justify-center h-[calc(100vh-72px)] bg-muted">
         <div className="text-center p-10">
@@ -317,11 +399,12 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
         </div>
       </div>;
   }
+  
   return <div className="flex flex-col h-full w-full">
       <div className="bg-white border-b border-gray-200 p-2 w-full sticky top-0 z-10">
         <div className="flex items-center justify-between max-w-[1200px] mx-auto">
           <div className="flex items-center space-x-6">
-            <div className="flex items-center">
+            <div className="flex items-center space-x-2">
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -332,6 +415,26 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
                   </TooltipTrigger>
                   <TooltipContent>
                     <p>Draw custom area regions</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+              
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button 
+                      variant="outline" 
+                      size="icon" 
+                      onClick={copyPageToClipboard} 
+                      disabled={isCopyingPage || !canvasRef.current}
+                      className="h-9 w-9"
+                    >
+                      <Copy className="h-4 w-4" />
+                      <span className="sr-only">Copy Page</span>
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Copy page as image</p>
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
@@ -390,4 +493,5 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
       </ScrollArea>
     </div>;
 };
+
 export default PdfViewer;
