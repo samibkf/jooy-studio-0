@@ -362,16 +362,16 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
         const textWidth = ctx.measureText(regionName).width;
         const textHeight = 20;
         
-        // Draw a vibrant background badge for the region name
-        const badgeX = region.x;
-        const badgeY = region.y - textHeight - 4;
+        // Draw a vibrant background badge for the region name - NOW ON THE LEFT SIDE
+        const badgeX = region.x - textWidth - 16; // Position to the left of the region
+        const badgeY = region.y + region.height / 2; // Center vertically with the region
         const badgePadding = 8;
         
         // Draw a high-contrast background for the text
         ctx.fillStyle = '#F97316'; // Bright orange background
         ctx.fillRect(
           badgeX - badgePadding/2, 
-          badgeY - badgePadding/2, 
+          badgeY - textHeight - badgePadding/2, 
           textWidth + badgePadding, 
           textHeight + badgePadding
         );
@@ -381,7 +381,7 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
         ctx.lineWidth = 1;
         ctx.strokeRect(
           badgeX - badgePadding/2, 
-          badgeY - badgePadding/2, 
+          badgeY - textHeight - badgePadding/2, 
           textWidth + badgePadding, 
           textHeight + badgePadding
         );
@@ -389,13 +389,13 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
         // Set text properties for high visibility
         ctx.fillStyle = '#FFFFFF'; // White text
         ctx.font = 'bold 16px Arial'; // Bold font
-        ctx.fillText(regionName, badgeX, badgeY + textHeight - badgePadding/2);
+        ctx.fillText(regionName, badgeX, badgeY - badgePadding/2);
         
         // If there's a description, add an indicator
         if (region.description) {
           ctx.font = '12px Arial';
           ctx.fillStyle = '#FFFFFF';
-          ctx.fillText('(has description)', badgeX + textWidth + 5, badgeY + textHeight - badgePadding/2);
+          ctx.fillText('(has description)', badgeX, badgeY + 10);
         }
       });
       
