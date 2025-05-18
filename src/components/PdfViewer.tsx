@@ -381,7 +381,7 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
           }
         }
         
-        // Check for overlapping with other regions
+        // Define badge rectangle coordinates
         const badgeRect = {
           x: badgeX - badgePadding/2,
           y: badgeY - textHeight - badgePadding/2,
@@ -433,6 +433,12 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
           }
         }
         
+        // Ensure the badge is within canvas boundaries
+        if (badgeRect.x < 0) badgeRect.x = 0;
+        if (badgeRect.y < 0) badgeRect.y = 0;
+        if (badgeRect.x + badgeRect.width > canvas.width) badgeRect.x = canvas.width - badgeRect.width;
+        if (badgeRect.y + badgeRect.height > canvas.height) badgeRect.y = canvas.height - badgeRect.height;
+        
         // Draw a high-contrast background for the text
         ctx.fillStyle = '#F97316'; // Bright orange background
         ctx.fillRect(
@@ -442,7 +448,7 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
           badgeRect.height
         );
         
-        // Add a border to the badge
+        // Add a border to the badge - ensure this is drawn correctly
         ctx.strokeStyle = '#000000';
         ctx.lineWidth = 1;
         ctx.strokeRect(
@@ -455,7 +461,12 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
         // Set text properties for high visibility
         ctx.fillStyle = '#FFFFFF'; // White text
         ctx.font = 'bold 16px Arial'; // Bold font
-        ctx.fillText(regionName, badgeX, badgeY - badgePadding/2 + textHeight/2);
+        
+        // Calculate text position to center it in the badge
+        const textX = badgeRect.x + badgePadding/2;
+        const textY = badgeRect.y + badgeRect.height/2 + 5; // Adjust for vertical alignment
+        
+        ctx.fillText(regionName, textX, textY);
       });
       
       // Convert to blob
