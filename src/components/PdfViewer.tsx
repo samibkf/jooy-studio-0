@@ -10,6 +10,7 @@ import { Toggle } from '@/components/ui/toggle';
 import { TooltipProvider, TooltipTrigger, TooltipContent, Tooltip } from '@/components/ui/tooltip';
 import { ScrollArea } from '@/components/ui/scroll-area';
 pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+
 interface PdfViewerProps {
   file: File | null;
   regions: Region[];
@@ -346,6 +347,7 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
       // Draw all the region overlays
       // This simulates what the user sees on screen including regions
       pageRegions.forEach(region => {
+        // Create a vibrant background for the region
         ctx.strokeStyle = region.id === selectedRegionId ? '#2563eb' : 'rgba(37, 99, 235, 0.8)';
         ctx.lineWidth = region.id === selectedRegionId ? 3 : 2;
         ctx.fillStyle = region.id === selectedRegionId ? 'rgba(37, 99, 235, 0.2)' : 'rgba(37, 99, 235, 0.1)';
@@ -353,10 +355,48 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
         ctx.fillRect(region.x, region.y, region.width, region.height);
         ctx.strokeRect(region.x, region.y, region.width, region.height);
         
-        // Add region name as label
-        ctx.font = '12px Arial';
-        ctx.fillStyle = region.id === selectedRegionId ? '#2563eb' : 'rgba(37, 99, 235, 0.8)';
-        ctx.fillText(region.name, region.x + 5, region.y + 15);
+        // Create a more prominent label for the region name
+        // Draw a background highlight for the text
+        const regionName = region.name || 'Unnamed Region';
+        ctx.font = 'bold 16px Arial';
+        const textWidth = ctx.measureText(regionName).width;
+        const textHeight = 20;
+        
+        // Draw a vibrant background badge for the region name
+        const badgeX = region.x;
+        const badgeY = region.y - textHeight - 4;
+        const badgePadding = 8;
+        
+        // Draw a high-contrast background for the text
+        ctx.fillStyle = '#F97316'; // Bright orange background
+        ctx.fillRect(
+          badgeX - badgePadding/2, 
+          badgeY - badgePadding/2, 
+          textWidth + badgePadding, 
+          textHeight + badgePadding
+        );
+        
+        // Add a border to the badge
+        ctx.strokeStyle = '#000000';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(
+          badgeX - badgePadding/2, 
+          badgeY - badgePadding/2, 
+          textWidth + badgePadding, 
+          textHeight + badgePadding
+        );
+        
+        // Set text properties for high visibility
+        ctx.fillStyle = '#FFFFFF'; // White text
+        ctx.font = 'bold 16px Arial'; // Bold font
+        ctx.fillText(regionName, badgeX, badgeY + textHeight - badgePadding/2);
+        
+        // If there's a description, add an indicator
+        if (region.description) {
+          ctx.font = '12px Arial';
+          ctx.fillStyle = '#FFFFFF';
+          ctx.fillText('(has description)', badgeX + textWidth + 5, badgeY + textHeight - badgePadding/2);
+        }
       });
       
       // Convert to blob
