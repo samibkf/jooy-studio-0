@@ -344,8 +344,10 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
       // Draw the PDF page
       ctx.drawImage(canvasRef.current, 0, 0);
       
+      // Find all regions on this page
+      const pageRegions = regions.filter(region => region.page === currentPage + 1);
+      
       // Draw all the region overlays
-      // This simulates what the user sees on screen including regions
       pageRegions.forEach(region => {
         // Create a vibrant background for the region
         ctx.strokeStyle = region.id === selectedRegionId ? '#2563eb' : 'rgba(37, 99, 235, 0.8)';
@@ -356,47 +358,104 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
         ctx.strokeRect(region.x, region.y, region.width, region.height);
         
         // Create a more prominent label for the region name
-        // Draw a background highlight for the text
         const regionName = region.name || 'Unnamed Region';
         ctx.font = 'bold 16px Arial';
         const textWidth = ctx.measureText(regionName).width;
         const textHeight = 20;
-        
-        // Draw a vibrant background badge for the region name - NOW ON THE LEFT SIDE
-        const badgeX = region.x - textWidth - 16; // Position to the left of the region
-        const badgeY = region.y + region.height / 2; // Center vertically with the region
         const badgePadding = 8;
+        
+        // Calculate optimal position for the badge
+        // Start by trying to position it to the left
+        let badgeX = Math.max(0, region.x - textWidth - 16);
+        let badgeY = region.y + region.height / 2;
+        
+        // Check if badge would go off the left side of the canvas
+        if (badgeX < 0) {
+          // Try positioning to the right of the region instead
+          badgeX = region.x + region.width + 8;
+          
+          // If that would go off the right side, place it inside the region at the top
+          if (badgeX + textWidth + badgePadding > canvas.width) {
+            badgeX = region.x + 5;
+            badgeY = region.y + textHeight + 5;
+          }
+        }
+        
+        // Check for overlapping with other regions
+        const badgeRect = {
+          x: badgeX - badgePadding/2,
+          y: badgeY - textHeight - badgePadding/2,
+          width: textWidth + badgePadding,
+          height: textHeight + badgePadding
+        };
+        
+        // Adjust position if overlapping with another region
+        let hasOverlap = true;
+        let attempts = 0;
+        const maxAttempts = 4; // Limit the number of repositioning attempts
+        
+        while (hasOverlap && attempts < maxAttempts) {
+          hasOverlap = pageRegions.some(otherRegion => {
+            if (otherRegion === region) return false;
+            
+            // Check for overlap with other region
+            return !(
+              badgeRect.x + badgeRect.width < otherRegion.x ||
+              badgeRect.x > otherRegion.x + otherRegion.width ||
+              badgeRect.y + badgeRect.height < otherRegion.y ||
+              badgeRect.y > otherRegion.y + otherRegion.height
+            );
+          });
+          
+          if (hasOverlap) {
+            // Try different positions in sequence
+            attempts++;
+            switch (attempts) {
+              case 1: // Try below the region
+                badgeX = region.x + 5;
+                badgeY = region.y + region.height + textHeight + 5;
+                break;
+              case 2: // Try above the region
+                badgeX = region.x + 5;
+                badgeY = Math.max(textHeight + 5, region.y - 5);
+                break;
+              case 3: // Try inside the region
+                badgeX = region.x + 5;
+                badgeY = region.y + region.height / 2;
+                break;
+              default: // Give up and just place it at the region's corner
+                hasOverlap = false;
+            }
+            
+            // Update the badge rectangle coordinates
+            badgeRect.x = badgeX - badgePadding/2;
+            badgeRect.y = badgeY - textHeight - badgePadding/2;
+          }
+        }
         
         // Draw a high-contrast background for the text
         ctx.fillStyle = '#F97316'; // Bright orange background
         ctx.fillRect(
-          badgeX - badgePadding/2, 
-          badgeY - textHeight - badgePadding/2, 
-          textWidth + badgePadding, 
-          textHeight + badgePadding
+          badgeRect.x,
+          badgeRect.y,
+          badgeRect.width,
+          badgeRect.height
         );
         
         // Add a border to the badge
         ctx.strokeStyle = '#000000';
         ctx.lineWidth = 1;
         ctx.strokeRect(
-          badgeX - badgePadding/2, 
-          badgeY - textHeight - badgePadding/2, 
-          textWidth + badgePadding, 
-          textHeight + badgePadding
+          badgeRect.x,
+          badgeRect.y,
+          badgeRect.width,
+          badgeRect.height
         );
         
         // Set text properties for high visibility
         ctx.fillStyle = '#FFFFFF'; // White text
         ctx.font = 'bold 16px Arial'; // Bold font
-        ctx.fillText(regionName, badgeX, badgeY - badgePadding/2);
-        
-        // If there's a description, add an indicator
-        if (region.description) {
-          ctx.font = '12px Arial';
-          ctx.fillStyle = '#FFFFFF';
-          ctx.fillText('(has description)', badgeX, badgeY + 10);
-        }
+        ctx.fillText(regionName, badgeX, badgeY - badgePadding/2 + textHeight/2);
       });
       
       // Convert to blob
