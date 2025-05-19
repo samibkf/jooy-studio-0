@@ -2,6 +2,8 @@
 import React from 'react';
 import { useTextAssignment } from '@/contexts/TextAssignmentContext';
 import { Region } from '@/types/regions';
+import { Undo2 } from 'lucide-react';
+import { Button } from './ui/button';
 
 interface DraggableTextProps {
   region: Region;
@@ -16,6 +18,9 @@ const DraggableText = ({ region, onRegionUpdate }: DraggableTextProps) => {
     getAssignedText,
     isRegionAssigned
   } = useTextAssignment();
+
+  // Find the text assigned to this region
+  const assignedText = titledTexts.find(text => text.assignedRegionId === region.id);
 
   const handleUndoText = () => {
     undoRegionAssignment(region.id);
@@ -52,14 +57,23 @@ const DraggableText = ({ region, onRegionUpdate }: DraggableTextProps) => {
       <div className="flex justify-between items-center mb-1">
         <span className="text-xs font-medium">Drop Zone</span>
         {isRegionAssigned(region.id) && (
-          <button
+          <Button
             onClick={handleUndoText}
-            className="text-xs text-blue-500 hover:text-blue-700"
+            size="sm"
+            variant="ghost"
+            className="h-6 px-2 text-xs text-blue-500 hover:text-blue-700"
           >
+            <Undo2 className="h-3 w-3 mr-1" />
             Undo
-          </button>
+          </Button>
         )}
       </div>
+      
+      {assignedText && (
+        <div className="mt-1 text-xs text-gray-500">
+          <span className="font-medium">{assignedText.title}:</span> {assignedText.content.substring(0, 50)}...
+        </div>
+      )}
     </div>
   );
 };

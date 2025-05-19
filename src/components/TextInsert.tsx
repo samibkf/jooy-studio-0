@@ -20,6 +20,7 @@ const TextInsert = ({ regions, onRegionUpdate }: TextInsertProps) => {
     assignTextsToRegions, 
     undoAllAssignments, 
     assignTextToRegion, 
+    undoRegionAssignment,
     isRegionAssigned
   } = useTextAssignment();
 
@@ -61,7 +62,7 @@ const TextInsert = ({ regions, onRegionUpdate }: TextInsertProps) => {
       });
       
       toast.success('Text assigned to regions');
-      setShowDraggable(false);
+      setShowDraggable(true);
     }
   };
   
@@ -85,6 +86,28 @@ const TextInsert = ({ regions, onRegionUpdate }: TextInsertProps) => {
   const handleDragStart = (e: React.DragEvent, textIndex: number) => {
     e.dataTransfer.setData('text/plain', textIndex.toString());
   };
+
+  const handleUndoSpecificText = (regionId: string) => {
+    // Find the region
+    const region = regions.find(r => r.id === regionId);
+    if (!region) return;
+    
+    // Undo the assignment
+    undoRegionAssignment(regionId);
+    
+    // Update region description to null
+    onRegionUpdate({
+      ...region,
+      description: null
+    });
+    
+    setShowDraggable(true);
+    toast.success(`Text unassigned from region ${region.name || regionId}`);
+  };
+
+  // Get unassigned texts and texts that are assigned (for display)
+  const unassignedTexts = titledTexts.filter(text => !text.assignedRegionId);
+  const assignedTexts = titledTexts.filter(text => text.assignedRegionId);
 
   return (
     <div className="space-y-4">
@@ -111,29 +134,67 @@ const TextInsert = ({ regions, onRegionUpdate }: TextInsertProps) => {
             className="flex-shrink-0"
             disabled={titledTexts.length === 0}
           >
-            <Undo2 className="h-4 w-4 mr-1" /> Undo
+            <Undo2 className="h-4 w-4 mr-1" /> Undo All
           </Button>
         </div>
       </div>
       
-      {showDraggable && titledTexts.length > 0 && (
+      {titledTexts.length > 0 && (
         <div className="space-y-2">
-          <p className="text-sm font-medium">Drag text to assign to regions:</p>
-          <div className="max-h-60 overflow-y-auto space-y-2">
-            {titledTexts.map((text, index) => (
-              <div
-                key={index}
-                draggable
-                onDragStart={(e) => handleDragStart(e, index)}
-                className={`p-2 border rounded-md cursor-move ${
-                  text.assignedRegionId ? 'opacity-50 border-green-500' : 'border-gray-300'
-                }`}
-              >
-                <p className="font-medium text-sm">{text.title}</p>
-                <p className="text-xs line-clamp-2">{text.content}</p>
+          {unassignedTexts.length > 0 && (
+            <>
+              <p className="text-sm font-medium">Unassigned Texts:</p>
+              <div className="max-h-60 overflow-y-auto space-y-2">
+                {unassignedTexts.map((text, index) => (
+                  <div
+                    key={`unassigned-${index}`}
+                    draggable
+                    onDragStart={(e) => handleDragStart(e, titledTexts.indexOf(text))}
+                    className="p-2 border rounded-md cursor-move border-gray-300 bg-white hover:border-blue-300 hover:bg-blue-50 transition-colors"
+                  >
+                    <p className="font-medium text-sm">{text.title}</p>
+                    <p className="text-xs line-clamp-2">{text.content}</p>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
+            </>
+          )}
+          
+          {assignedTexts.length > 0 && (
+            <>
+              <p className="text-sm font-medium">Assigned Texts:</p>
+              <div className="max-h-60 overflow-y-auto space-y-2">
+                {assignedTexts.map((text, index) => {
+                  // Find which region this text is assigned to
+                  const assignedRegion = regions.find(r => r.id === text.assignedRegionId);
+                  
+                  return (
+                    <div
+                      key={`assigned-${index}`}
+                      className="p-2 border rounded-md border-green-500 bg-green-50"
+                    >
+                      <div className="flex justify-between items-center">
+                        <p className="font-medium text-sm">{text.title}</p>
+                        <Button
+                          onClick={() => text.assignedRegionId && handleUndoSpecificText(text.assignedRegionId)}
+                          size="sm"
+                          variant="ghost"
+                          className="h-6 px-2 text-xs text-blue-500 hover:text-blue-700"
+                        >
+                          <Undo2 className="h-3 w-3 mr-1" />
+                          Undo
+                        </Button>
+                      </div>
+                      <p className="text-xs">{text.content.substring(0, 50)}...</p>
+                      {assignedRegion && (
+                        <p className="text-xs mt-1 text-green-700">Assigned to: {assignedRegion.name || 'Unnamed Region'}</p>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </>
+          )}
         </div>
       )}
     </div>
