@@ -2,9 +2,14 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
-import { Trash2 } from 'lucide-react';
+import { Trash2, Undo2 } from 'lucide-react';
 import { Region } from '@/types/regions';
 import { toast } from 'sonner';
+import TextInsert from './TextInsert';
+import DraggableText from './DraggableText';
+import { useTextAssignment } from '@/contexts/TextAssignmentContext';
+import { Separator } from '@/components/ui/separator';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 interface SidebarProps {
   selectedRegion: Region | null;
@@ -24,6 +29,7 @@ const Sidebar = ({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [localDescription, setLocalDescription] = useState<string>('');
   const saveTimeoutRef = useRef<NodeJS.Timeout>();
+  const { isRegionAssigned, undoRegionAssignment } = useTextAssignment();
   
   // Update local description when selected region changes
   useEffect(() => {
@@ -62,6 +68,18 @@ const Sidebar = ({
     }
   };
 
+  const handleUndoRegionText = () => {
+    if (!selectedRegion) return;
+    
+    undoRegionAssignment(selectedRegion.id);
+    onRegionUpdate({
+      ...selectedRegion,
+      description: null
+    });
+    setLocalDescription('');
+    toast.success('Text assignment undone');
+  };
+
   // Cleanup timeout on unmount
   useEffect(() => {
     return () => {
@@ -75,46 +93,77 @@ const Sidebar = ({
     <div className="h-full w-full flex flex-col bg-background border-l">
       {selectedRegion ? (
         <div className="flex flex-col flex-1 p-4 h-full">
-          <div className="flex justify-between items-center mb-2">
-            <h3 className="text-lg font-medium">{selectedRegion.name || 'Unnamed Region'}</h3>
-            <Button
-              variant="outline" 
-              size="sm"
-              onClick={handleDelete}
-              className="text-destructive hover:text-destructive"
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
-          </div>
-          
-          <div className="text-sm text-muted-foreground mb-2">
-            <p>Page: {selectedRegion.page}</p>
-            <p>Type: {selectedRegion.type}</p>
-          </div>
-          
-          <label className="text-sm font-medium mb-1">Description</label>
-          <Textarea 
-            ref={textareaRef}
-            value={localDescription} 
-            onChange={handleChange}
-            placeholder="Add a description..." 
-            className="flex-1 w-full min-h-0 resize-none"
-          />
-          
-          <div className="mt-4">
-            <h4 className="text-sm font-medium mb-2">Other regions</h4>
-            <div className="max-h-48 overflow-y-auto">
-              {regions.filter(r => r.id !== selectedRegion.id).map((region) => (
-                <div 
-                  key={region.id}
-                  onClick={() => onRegionSelect(region.id)}
-                  className="p-2 hover:bg-accent rounded-md cursor-pointer text-sm transition-colors"
-                >
-                  {region.name || 'Unnamed Region'}
+          <Tabs defaultValue="edit">
+            <TabsList className="mb-2">
+              <TabsTrigger value="edit">Edit Region</TabsTrigger>
+              <TabsTrigger value="insert">Insert Text</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="edit" className="space-y-4">
+              <div className="flex justify-between items-center">
+                <h3 className="text-lg font-medium">{selectedRegion.name || 'Unnamed Region'}</h3>
+                <div className="flex space-x-2">
+                  {isRegionAssigned(selectedRegion.id) && (
+                    <Button
+                      variant="outline" 
+                      size="sm"
+                      onClick={handleUndoRegionText}
+                      className="text-blue-600 hover:text-blue-800"
+                    >
+                      <Undo2 className="h-4 w-4 mr-1" />
+                    </Button>
+                  )}
+                  <Button
+                    variant="outline" 
+                    size="sm"
+                    onClick={handleDelete}
+                    className="text-destructive hover:text-destructive"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
                 </div>
-              ))}
-            </div>
-          </div>
+              </div>
+              
+              <div className="text-sm text-muted-foreground mb-2">
+                <p>Page: {selectedRegion.page}</p>
+                <p>Type: {selectedRegion.type}</p>
+              </div>
+
+              <DraggableText region={selectedRegion} onRegionUpdate={onRegionUpdate} />
+              
+              <label className="text-sm font-medium mb-1">Description</label>
+              <Textarea 
+                ref={textareaRef}
+                value={localDescription} 
+                onChange={handleChange}
+                placeholder="Add a description..." 
+                className={`flex-1 w-full min-h-0 resize-none ${
+                  isRegionAssigned(selectedRegion.id) ? 'border-green-500' : ''
+                }`}
+              />
+              
+              <div className="mt-4">
+                <h4 className="text-sm font-medium mb-2">Other regions</h4>
+                <div className="max-h-48 overflow-y-auto">
+                  {regions.filter(r => r.id !== selectedRegion.id).map((region) => (
+                    <div 
+                      key={region.id}
+                      onClick={() => onRegionSelect(region.id)}
+                      className={`p-2 hover:bg-accent rounded-md cursor-pointer text-sm transition-colors ${
+                        isRegionAssigned(region.id) ? 'border-l-4 border-green-500' : ''
+                      }`}
+                    >
+                      {region.name || 'Unnamed Region'}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </TabsContent>
+            
+            <TabsContent value="insert">
+              <TextInsert regions={regions} onRegionUpdate={onRegionUpdate} />
+            </TabsContent>
+          </Tabs>
         </div>
       ) : (
         <div className="flex-1 flex items-center justify-center p-4 text-muted-foreground">

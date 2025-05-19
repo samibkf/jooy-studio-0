@@ -1,15 +1,13 @@
-import React, { useState, useRef, useEffect } from 'react';
+
+import React, { useState, useRef } from 'react';
 import { Region } from '@/types/regions';
-import { Textarea } from '@/components/ui/textarea';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Button } from '@/components/ui/button';
-import { StickyNote } from 'lucide-react';
+import { useTextAssignment } from '@/contexts/TextAssignmentContext';
 
 interface RegionOverlayProps {
   region: Region;
   isSelected: boolean;
   onSelect: () => void;
-  onUpdate: (updatedRegion: Region) => void;
+  onUpdate: (region: Region) => void;
   scale: number;
 }
 
@@ -18,280 +16,108 @@ const RegionOverlay: React.FC<RegionOverlayProps> = ({
   isSelected,
   onSelect,
   onUpdate,
-  scale,
+  scale
 }) => {
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
-  const [resizing, setResizing] = useState<string | null>(null);
-  const [localDescription, setLocalDescription] = useState<string>('');
-  const overlayRef = useRef<HTMLDivElement>(null);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const [position, setPosition] = useState({ x: region.x, y: region.y });
+  const containerRef = useRef<HTMLDivElement>(null);
+  const { isRegionAssigned } = useTextAssignment();
+
+  const hasText = isRegionAssigned(region.id);
   
-  useEffect(() => {
-    setLocalDescription(region.description || '');
-  }, [region.id, region.description]);
-  
-  const scaledStyle = {
-    left: region.x * scale,
-    top: region.y * scale,
-    width: region.width * scale,
-    height: region.height * scale,
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (e.button !== 0) return; // Only handle left-click
+    e.stopPropagation();
+    setIsDragging(true);
+    setDragStart({
+      x: e.clientX,
+      y: e.clientY
+    });
+    onSelect();
   };
 
-  const handleTextAreaInteraction = (e: React.MouseEvent | React.KeyboardEvent) => {
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isDragging || !containerRef.current) return;
     e.stopPropagation();
+    e.preventDefault(); // Prevent text selection
+
+    const dx = (e.clientX - dragStart.x) / scale;
+    const dy = (e.clientY - dragStart.y) / scale;
+
+    const newX = position.x + dx;
+    const newY = position.y + dy;
+
+    setPosition({
+      x: newX,
+      y: newY
+    });
+
+    setDragStart({
+      x: e.clientX,
+      y: e.clientY
+    });
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    e.stopPropagation();
-    
-    if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
-      e.nativeEvent.stopImmediatePropagation();
-    }
-  };
+  const handleMouseUp = () => {
+    if (!isDragging) return;
+    setIsDragging(false);
 
-  const handleDescriptionChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    e.stopPropagation();
-    setLocalDescription(e.target.value);
-  };
-  
-  const handleDescriptionBlur = () => {
-    if (localDescription !== (region.description || '')) {
+    // Only update if position has changed
+    if (position.x !== region.x || position.y !== region.y) {
       onUpdate({
         ...region,
-        description: localDescription || null
+        x: position.x,
+        y: position.y
       });
     }
   };
 
-  useEffect(() => {
-    const manageTextareaKeyEvents = (e: KeyboardEvent) => {
-      if (document.activeElement === textareaRef.current && 
-          ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'].includes(e.key)) {
-        e.stopPropagation();
-      }
-    };
+  // Set correct border and background colors based on selection and assignment
+  const borderColor = isSelected ? '#2563eb' : hasText ? 'rgba(34, 197, 94, 0.8)' : 'rgba(37, 99, 235, 0.8)';
+  const bgColor = isSelected ? 'rgba(37, 99, 235, 0.2)' : hasText ? 'rgba(34, 197, 94, 0.1)' : 'rgba(37, 99, 235, 0.1)';
+  const borderWidth = isSelected ? '3px' : '2px';
 
-    window.addEventListener('keydown', manageTextareaKeyEvents, { capture: true });
-    
-    return () => {
-      window.removeEventListener('keydown', manageTextareaKeyEvents, { capture: true });
-    };
-  }, []);
+  // Update the DOM element position when the region coordinates change
+  React.useEffect(() => {
+    setPosition({
+      x: region.x,
+      y: region.y
+    });
+  }, [region.x, region.y]);
 
-  const handleMouseDown = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    onSelect();
-
-    const target = e.target as HTMLElement;
-    if (target.classList.contains('resize-handle')) {
-      setResizing(target.dataset.direction || null);
-    } else {
-      setIsDragging(true);
-    }
-    
-    setDragStart({ x: e.clientX, y: e.clientY });
-  };
-  
-  const handleMouseMove = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    
-    if (!isDragging && !resizing) return;
-    
-    if (isDragging) {
-      const deltaX = (e.clientX - dragStart.x) / scale;
-      const deltaY = (e.clientY - dragStart.y) / scale;
-      
-      const updatedRegion = {
-        ...region,
-        x: region.x + deltaX,
-        y: region.y + deltaY
-      };
-      
-      onUpdate(updatedRegion);
-      setDragStart({ x: e.clientX, y: e.clientY });
-    } else if (resizing && overlayRef.current) {
-      const parentRect = overlayRef.current.parentElement?.getBoundingClientRect();
-      if (!parentRect) return;
-
-      const x = (e.clientX - parentRect.left) / scale;
-      const y = (e.clientY - parentRect.top) / scale;
-      
-      let updatedRegion = { ...region };
-
-      switch (resizing) {
-        case 'n':
-          updatedRegion = {
-            ...region,
-            y: y,
-            height: region.height + (region.y - y)
-          };
-          break;
-        case 's':
-          updatedRegion = {
-            ...region,
-            height: y - region.y
-          };
-          break;
-        case 'e':
-          updatedRegion = {
-            ...region,
-            width: x - region.x
-          };
-          break;
-        case 'w':
-          updatedRegion = {
-            ...region,
-            x: x,
-            width: region.width + (region.x - x)
-          };
-          break;
-        case 'ne':
-          updatedRegion = {
-            ...region,
-            y: y,
-            height: region.height + (region.y - y),
-            width: x - region.x
-          };
-          break;
-        case 'nw':
-          updatedRegion = {
-            ...region,
-            x: x,
-            y: y,
-            width: region.width + (region.x - x),
-            height: region.height + (region.y - y)
-          };
-          break;
-        case 'se':
-          updatedRegion = {
-            ...region,
-            width: x - region.x,
-            height: y - region.y
-          };
-          break;
-        case 'sw':
-          updatedRegion = {
-            ...region,
-            x: x,
-            width: region.width + (region.x - x),
-            height: y - region.y
-          };
-          break;
-      }
-      
-      if (updatedRegion.width > 10 && updatedRegion.height > 10) {
-        onUpdate(updatedRegion);
-      }
-    }
-  };
-  
-  const handleMouseUp = () => {
-    setIsDragging(false);
-    setResizing(null);
-  };
-  
-  useEffect(() => {
-    if (isDragging || resizing) {
-      window.addEventListener('mousemove', handleMouseMove as any);
-      window.addEventListener('mouseup', handleMouseUp);
-    }
-    
-    return () => {
-      window.removeEventListener('mousemove', handleMouseMove as any);
-      window.removeEventListener('mouseup', handleMouseUp);
-    };
-  }, [isDragging, resizing]);
-  
-  const getNotePosition = () => {
-    const idMatch = region.id.match(/\d+/g);
-    const nameMatch = region.name.match(/\d+/g);
-    const numericPart = idMatch ? parseInt(idMatch[0], 10) : 
-                       nameMatch ? parseInt(nameMatch[0], 10) : 0;
-    
-    const offset = (numericPart % 10) * 10;
-    
-    return {
-      right: offset,
-      top: -8 - offset,
-    };
-  };
-  
   return (
     <div
-      ref={overlayRef}
-      className={`region-overlay ${isSelected ? 'selected' : ''}`}
-      style={scaledStyle}
-      onClick={onSelect}
+      ref={containerRef}
+      className={`absolute cursor-move ${isSelected ? 'z-20' : 'z-10'}`}
+      style={{
+        left: position.x,
+        top: position.y,
+        width: region.width,
+        height: region.height,
+        border: `${borderWidth} solid ${borderColor}`,
+        backgroundColor: bgColor,
+        boxSizing: 'border-box',
+        touchAction: 'none'
+      }}
       onMouseDown={handleMouseDown}
+      onMouseMove={handleMouseMove}
+      onMouseUp={handleMouseUp}
+      onMouseLeave={handleMouseUp}
+      onClick={(e) => e.stopPropagation()}
     >
-      {isSelected && (
-        <>
-          <div className="resize-handle n" data-direction="n" />
-          <div className="resize-handle s" data-direction="s" />
-          <div className="resize-handle e" data-direction="e" />
-          <div className="resize-handle w" data-direction="w" />
-          <div className="resize-handle ne" data-direction="ne" />
-          <div className="resize-handle nw" data-direction="nw" />
-          <div className="resize-handle se" data-direction="se" />
-          <div className="resize-handle sw" data-direction="sw" />
-          
-          <div 
-            className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2 flex items-center gap-2"
-          >
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button 
-                  variant="outline" 
-                  size="icon" 
-                  className="h-8 w-8 bg-yellow-400 hover:bg-yellow-500 shadow-lg"
-                >
-                  <StickyNote 
-                    className="h-6 w-6" 
-                    color="#10B981"
-                    strokeWidth={2}
-                  />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent 
-                side="top" 
-                className="w-80 max-h-[300px] z-50" 
-                onClick={handleTextAreaInteraction}
-              >
-                <div className="space-y-2">
-                  <h4 className="font-medium">Region Description</h4>
-                  <div className="max-h-[250px] overflow-auto">
-                    <Textarea
-                      ref={textareaRef}
-                      placeholder="Add a description..."
-                      value={localDescription}
-                      onChange={handleDescriptionChange}
-                      onBlur={handleDescriptionBlur}
-                      onMouseDown={handleTextAreaInteraction}
-                      onDoubleClick={handleTextAreaInteraction}
-                      onKeyDown={handleKeyDown}
-                      rows={5}
-                      className="min-h-[100px] w-full"
-                    />
-                  </div>
-                </div>
-              </PopoverContent>
-            </Popover>
-          </div>
-          
-          <div 
-            className="absolute bottom-0 left-1/2 transform -translate-x-1/2 bg-black bg-opacity-50 text-white text-xs px-1 truncate text-center w-full"
-          >
-            {region.name || 'Unnamed Region'}
-          </div>
-        </>
-      )}
-      
-      {!isSelected && (
-        <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white text-xs px-1 truncate">
-          {region.name || 'Unnamed Region'}
-        </div>
-      )}
+      <div
+        className="absolute px-1 text-xs font-semibold"
+        style={{
+          backgroundColor: hasText ? 'rgba(34, 197, 94, 0.8)' : 'rgba(37, 99, 235, 0.8)',
+          color: 'white',
+          top: '3px',
+          left: '3px',
+          borderRadius: '2px'
+        }}
+      >
+        {region.name}
+      </div>
     </div>
   );
 };
