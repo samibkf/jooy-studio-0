@@ -15,7 +15,6 @@ const DraggableText = ({ region, onRegionUpdate }: DraggableTextProps) => {
     titledTexts,
     undoRegionAssignment,
     assignTextToRegion,
-    getAssignedText,
     isRegionAssigned
   } = useTextAssignment();
 

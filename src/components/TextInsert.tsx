@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import { Undo2 } from 'lucide-react';
 import { Region } from '@/types/regions';
 import { useTextAssignment } from '@/contexts/TextAssignmentContext';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface TextInsertProps {
   regions: Region[];
@@ -140,60 +141,64 @@ const TextInsert = ({ regions, onRegionUpdate }: TextInsertProps) => {
       </div>
       
       {titledTexts.length > 0 && (
-        <div className="space-y-2">
+        <div className="flex flex-col space-y-4">
           {unassignedTexts.length > 0 && (
-            <>
-              <p className="text-sm font-medium">Unassigned Texts:</p>
-              <div className="max-h-60 overflow-y-auto space-y-2">
-                {unassignedTexts.map((text, index) => (
-                  <div
-                    key={`unassigned-${index}`}
-                    draggable
-                    onDragStart={(e) => handleDragStart(e, titledTexts.indexOf(text))}
-                    className="p-2 border rounded-md cursor-move border-gray-300 bg-white hover:border-blue-300 hover:bg-blue-50 transition-colors"
-                  >
-                    <p className="font-medium text-sm">{text.title}</p>
-                    <p className="text-xs line-clamp-2">{text.content}</p>
-                  </div>
-                ))}
-              </div>
-            </>
+            <div>
+              <p className="text-sm font-medium mb-2">Unassigned Texts:</p>
+              <ScrollArea className="h-[180px] border rounded-md p-2">
+                <div className="space-y-2">
+                  {unassignedTexts.map((text, index) => (
+                    <div
+                      key={`unassigned-${index}`}
+                      draggable={true}
+                      onDragStart={(e) => handleDragStart(e, titledTexts.indexOf(text))}
+                      className="p-2 border rounded-md cursor-move border-gray-300 bg-white hover:border-blue-300 hover:bg-blue-50 transition-colors"
+                    >
+                      <p className="font-medium text-sm">{text.title}</p>
+                      <p className="text-xs line-clamp-2">{text.content}</p>
+                    </div>
+                  ))}
+                </div>
+              </ScrollArea>
+            </div>
           )}
           
           {assignedTexts.length > 0 && (
-            <>
-              <p className="text-sm font-medium">Assigned Texts:</p>
-              <div className="max-h-60 overflow-y-auto space-y-2">
-                {assignedTexts.map((text, index) => {
-                  // Find which region this text is assigned to
-                  const assignedRegion = regions.find(r => r.id === text.assignedRegionId);
-                  
-                  return (
-                    <div
-                      key={`assigned-${index}`}
-                      className="p-2 border rounded-md border-green-500 bg-green-50"
-                    >
-                      <div className="flex justify-between items-center">
-                        <p className="font-medium text-sm">{text.title}</p>
-                        <Button
-                          onClick={() => text.assignedRegionId && handleUndoSpecificText(text.assignedRegionId)}
-                          size="sm"
-                          variant="ghost"
-                          className="h-6 px-2 text-xs text-blue-500 hover:text-blue-700"
-                        >
-                          <Undo2 className="h-3 w-3 mr-1" />
-                          Undo
-                        </Button>
+            <div>
+              <p className="text-sm font-medium mb-2">Assigned Texts:</p>
+              <ScrollArea className="h-[180px] border rounded-md p-2">
+                <div className="space-y-2">
+                  {assignedTexts.map((text, index) => {
+                    // Find which region this text is assigned to
+                    const assignedRegion = regions.find(r => r.id === text.assignedRegionId);
+                    
+                    return (
+                      <div
+                        key={`assigned-${index}`}
+                        className="p-2 border rounded-md border-green-500 bg-green-50"
+                      >
+                        <div className="flex justify-between items-center">
+                          <p className="font-medium text-sm">{text.title}</p>
+                          <Button
+                            onClick={() => text.assignedRegionId && handleUndoSpecificText(text.assignedRegionId)}
+                            size="sm"
+                            variant="ghost"
+                            className="h-6 px-2 text-xs text-blue-500 hover:text-blue-700"
+                          >
+                            <Undo2 className="h-3 w-3 mr-1" />
+                            Undo
+                          </Button>
+                        </div>
+                        <p className="text-xs">{text.content.substring(0, 50)}...</p>
+                        {assignedRegion && (
+                          <p className="text-xs mt-1 text-green-700">Assigned to: {assignedRegion.name || 'Unnamed Region'}</p>
+                        )}
                       </div>
-                      <p className="text-xs">{text.content.substring(0, 50)}...</p>
-                      {assignedRegion && (
-                        <p className="text-xs mt-1 text-green-700">Assigned to: {assignedRegion.name || 'Unnamed Region'}</p>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </>
+                    );
+                  })}
+                </div>
+              </ScrollArea>
+            </div>
           )}
         </div>
       )}
