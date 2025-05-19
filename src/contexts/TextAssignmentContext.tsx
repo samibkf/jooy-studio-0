@@ -13,7 +13,7 @@ type TextAssignmentContextType = {
   titledTexts: TitledText[];
   originalTexts: Record<string, string | null>;
   setTitledTexts: React.Dispatch<React.SetStateAction<TitledText[]>>;
-  assignTextsToRegions: (text: string, regions: Region[]) => void;
+  assignTextsToRegions: (text: string, regions: Region[]) => TitledText[];
   undoAllAssignments: () => void;
   undoRegionAssignment: (regionId: string) => void;
   assignTextToRegion: (textIndex: number, regionId: string) => void;
@@ -41,7 +41,7 @@ export const TextAssignmentProvider: React.FC<{ children: React.ReactNode }> = (
     setOriginalTexts({});
   };
 
-  const assignTextsToRegions = (text: string, regions: Region[]) => {
+  const assignTextsToRegions = (text: string, regions: Region[]): TitledText[] => {
     const parsedTexts = parseTitledText(text);
     const newTitledTexts = [...parsedTexts];
     const newOriginalTexts: Record<string, string | null> = {};

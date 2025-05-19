@@ -46,21 +46,23 @@ const TextInsert = ({ regions, onRegionUpdate }: TextInsertProps) => {
     });
     
     // Assign texts to regions in order
-    processedTexts.forEach((text, index) => {
-      if (index < sortedRegions.length) {
-        const regionId = sortedRegions[index].id;
-        assignTextToRegion(index, regionId);
-        
-        // Update region description through parent component
-        onRegionUpdate({
-          ...sortedRegions[index],
-          description: text.content
-        });
-      }
-    });
-    
-    toast.success('Text assigned to regions');
-    setShowDraggable(false);
+    if (processedTexts && processedTexts.length > 0) {
+      processedTexts.forEach((text, index) => {
+        if (index < sortedRegions.length) {
+          const regionId = sortedRegions[index].id;
+          assignTextToRegion(index, regionId);
+          
+          // Update region description through parent component
+          onRegionUpdate({
+            ...sortedRegions[index],
+            description: text.content
+          });
+        }
+      });
+      
+      toast.success('Text assigned to regions');
+      setShowDraggable(false);
+    }
   };
   
   const handleUndo = () => {
