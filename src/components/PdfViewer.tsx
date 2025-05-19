@@ -10,7 +10,6 @@ import { Toggle } from '@/components/ui/toggle';
 import { TooltipProvider, TooltipTrigger, TooltipContent, Tooltip } from '@/components/ui/tooltip';
 import { ScrollArea } from '@/components/ui/scroll-area';
 pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
-
 interface PdfViewerProps {
   file: File | null;
   regions: Region[];
@@ -344,12 +343,9 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
       // Draw the PDF page
       ctx.drawImage(canvasRef.current, 0, 0);
       
-      // Find all regions on this page
-      const pageRegions = regions.filter(region => region.page === currentPage + 1);
-      
       // Draw all the region overlays
+      // This simulates what the user sees on screen including regions
       pageRegions.forEach(region => {
-        // Create a vibrant background for the region
         ctx.strokeStyle = region.id === selectedRegionId ? '#2563eb' : 'rgba(37, 99, 235, 0.8)';
         ctx.lineWidth = region.id === selectedRegionId ? 3 : 2;
         ctx.fillStyle = region.id === selectedRegionId ? 'rgba(37, 99, 235, 0.2)' : 'rgba(37, 99, 235, 0.1)';
@@ -357,116 +353,10 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
         ctx.fillRect(region.x, region.y, region.width, region.height);
         ctx.strokeRect(region.x, region.y, region.width, region.height);
         
-        // Create a more prominent label for the region name
-        const regionName = region.name || 'Unnamed Region';
-        ctx.font = 'bold 16px Arial';
-        const textWidth = ctx.measureText(regionName).width;
-        const textHeight = 20;
-        const badgePadding = 8;
-        
-        // Calculate optimal position for the badge
-        // Start by trying to position it to the left
-        let badgeX = Math.max(0, region.x - textWidth - 16);
-        let badgeY = region.y + region.height / 2;
-        
-        // Check if badge would go off the left side of the canvas
-        if (badgeX < 0) {
-          // Try positioning to the right of the region instead
-          badgeX = region.x + region.width + 8;
-          
-          // If that would go off the right side, place it inside the region at the top
-          if (badgeX + textWidth + badgePadding > canvas.width) {
-            badgeX = region.x + 5;
-            badgeY = region.y + textHeight + 5;
-          }
-        }
-        
-        // Define badge rectangle coordinates
-        const badgeRect = {
-          x: badgeX - badgePadding/2,
-          y: badgeY - textHeight - badgePadding/2,
-          width: textWidth + badgePadding,
-          height: textHeight + badgePadding
-        };
-        
-        // Adjust position if overlapping with another region
-        let hasOverlap = true;
-        let attempts = 0;
-        const maxAttempts = 4; // Limit the number of repositioning attempts
-        
-        while (hasOverlap && attempts < maxAttempts) {
-          hasOverlap = pageRegions.some(otherRegion => {
-            if (otherRegion === region) return false;
-            
-            // Check for overlap with other region
-            return !(
-              badgeRect.x + badgeRect.width < otherRegion.x ||
-              badgeRect.x > otherRegion.x + otherRegion.width ||
-              badgeRect.y + badgeRect.height < otherRegion.y ||
-              badgeRect.y > otherRegion.y + otherRegion.height
-            );
-          });
-          
-          if (hasOverlap) {
-            // Try different positions in sequence
-            attempts++;
-            switch (attempts) {
-              case 1: // Try below the region
-                badgeX = region.x + 5;
-                badgeY = region.y + region.height + textHeight + 5;
-                break;
-              case 2: // Try above the region
-                badgeX = region.x + 5;
-                badgeY = Math.max(textHeight + 5, region.y - 5);
-                break;
-              case 3: // Try inside the region
-                badgeX = region.x + 5;
-                badgeY = region.y + region.height / 2;
-                break;
-              default: // Give up and just place it at the region's corner
-                hasOverlap = false;
-            }
-            
-            // Update the badge rectangle coordinates
-            badgeRect.x = badgeX - badgePadding/2;
-            badgeRect.y = badgeY - textHeight - badgePadding/2;
-          }
-        }
-        
-        // Ensure the badge is within canvas boundaries
-        if (badgeRect.x < 0) badgeRect.x = 0;
-        if (badgeRect.y < 0) badgeRect.y = 0;
-        if (badgeRect.x + badgeRect.width > canvas.width) badgeRect.x = canvas.width - badgeRect.width;
-        if (badgeRect.y + badgeRect.height > canvas.height) badgeRect.y = canvas.height - badgeRect.height;
-        
-        // Draw a high-contrast background for the text
-        ctx.fillStyle = '#F97316'; // Bright orange background
-        ctx.fillRect(
-          badgeRect.x,
-          badgeRect.y,
-          badgeRect.width,
-          badgeRect.height
-        );
-        
-        // Add a border to the badge - ensure this is drawn correctly
-        ctx.strokeStyle = '#000000';
-        ctx.lineWidth = 1;
-        ctx.strokeRect(
-          badgeRect.x,
-          badgeRect.y,
-          badgeRect.width,
-          badgeRect.height
-        );
-        
-        // Set text properties for high visibility
-        ctx.fillStyle = '#FFFFFF'; // White text
-        ctx.font = 'bold 16px Arial'; // Bold font
-        
-        // Calculate text position to center it in the badge
-        const textX = badgeRect.x + badgePadding/2;
-        const textY = badgeRect.y + badgeRect.height/2 + 5; // Adjust for vertical alignment
-        
-        ctx.fillText(regionName, textX, textY);
+        // Add region name as label
+        ctx.font = '12px Arial';
+        ctx.fillStyle = region.id === selectedRegionId ? '#2563eb' : 'rgba(37, 99, 235, 0.8)';
+        ctx.fillText(region.name, region.x + 5, region.y + 15);
       });
       
       // Convert to blob
