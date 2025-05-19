@@ -10,6 +10,7 @@ import { Toggle } from '@/components/ui/toggle';
 import { TooltipProvider, TooltipTrigger, TooltipContent, Tooltip } from '@/components/ui/tooltip';
 import { ScrollArea } from '@/components/ui/scroll-area';
 pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+
 interface PdfViewerProps {
   file: File | null;
   regions: Region[];
@@ -22,6 +23,7 @@ interface PdfViewerProps {
   currentSelectionType: 'area' | null;
   onCurrentSelectionTypeChange: (type: 'area' | null) => void;
 }
+
 const PdfViewer: React.FC<PdfViewerProps> = ({
   file,
   regions,
@@ -327,37 +329,9 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
     try {
       setIsCopyingPage(true);
       
-      // Create a new canvas to include any region overlays
-      const canvas = document.createElement('canvas');
-      const ctx = canvas.getContext('2d');
-      
-      if (!ctx) {
-        toast.error('Failed to create canvas context');
-        return;
-      }
-      
-      // Set the same dimensions as the PDF canvas
-      canvas.width = canvasRef.current.width;
-      canvas.height = canvasRef.current.height;
-      
-      // Draw the PDF page
-      ctx.drawImage(canvasRef.current, 0, 0);
-      
-      // Draw all the region overlays
-      // This simulates what the user sees on screen including regions
-      pageRegions.forEach(region => {
-        ctx.strokeStyle = region.id === selectedRegionId ? '#2563eb' : 'rgba(37, 99, 235, 0.8)';
-        ctx.lineWidth = region.id === selectedRegionId ? 3 : 2;
-        ctx.fillStyle = region.id === selectedRegionId ? 'rgba(37, 99, 235, 0.2)' : 'rgba(37, 99, 235, 0.1)';
-        
-        ctx.fillRect(region.x, region.y, region.width, region.height);
-        ctx.strokeRect(region.x, region.y, region.width, region.height);
-        
-        // Add region name as label
-        ctx.font = '12px Arial';
-        ctx.fillStyle = region.id === selectedRegionId ? '#2563eb' : 'rgba(37, 99, 235, 0.8)';
-        ctx.fillText(region.name, region.x + 5, region.y + 15);
-      });
+      // Simply copy the current PDF page without any regions or annotations
+      // Get the canvas element that contains the PDF page
+      const canvas = canvasRef.current;
       
       // Convert to blob
       const blob = await new Promise<Blob>((resolve) => {
