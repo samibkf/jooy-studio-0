@@ -12,9 +12,10 @@ interface TextInsertProps {
   regions: Region[];
   onRegionUpdate: (region: Region) => void;
   selectedRegion: Region | null;
+  onRegionSelect: (regionId: string) => void;
 }
 
-const TextInsert = ({ regions, onRegionUpdate, selectedRegion }: TextInsertProps) => {
+const TextInsert = ({ regions, onRegionUpdate, selectedRegion, onRegionSelect }: TextInsertProps) => {
   const [inputText, setInputText] = useState<string>('');
   const { 
     titledTexts, 
@@ -107,6 +108,11 @@ const TextInsert = ({ regions, onRegionUpdate, selectedRegion }: TextInsertProps
     
     toast.success(`Text unassigned from region ${region.name || regionId}`);
   };
+  
+  const handleAssignedTextClick = (regionId: string) => {
+    // Select the region when clicking on the assigned text box
+    onRegionSelect(regionId);
+  };
 
   // Get unassigned texts and texts that are assigned (for display)
   const unassignedTexts = titledTexts.filter(text => !text.assignedRegionId);
@@ -158,7 +164,7 @@ const TextInsert = ({ regions, onRegionUpdate, selectedRegion }: TextInsertProps
                       className="p-2 border rounded-md cursor-move border-gray-300 bg-white hover:border-blue-300 hover:bg-blue-50 transition-colors"
                     >
                       <p className="font-medium text-sm">{text.title}</p>
-                      <p className="text-xs line-clamp-2">{text.content}</p>
+                      <p className="text-xs whitespace-pre-wrap">{text.content}</p>
                     </div>
                   ))}
                 </div>
@@ -178,12 +184,16 @@ const TextInsert = ({ regions, onRegionUpdate, selectedRegion }: TextInsertProps
                     return (
                       <div
                         key={`assigned-${index}`}
-                        className="p-2 border rounded-md border-green-500 bg-green-50"
+                        className="p-2 border rounded-md border-green-500 bg-green-50 cursor-pointer"
+                        onClick={() => text.assignedRegionId && handleAssignedTextClick(text.assignedRegionId)}
                       >
                         <div className="flex justify-between items-center">
                           <p className="font-medium text-sm">{text.title}</p>
                           <Button
-                            onClick={() => text.assignedRegionId && handleUndoSpecificText(text.assignedRegionId)}
+                            onClick={(e) => {
+                              e.stopPropagation(); // Prevent triggering parent click
+                              text.assignedRegionId && handleUndoSpecificText(text.assignedRegionId);
+                            }}
                             size="sm"
                             variant="ghost"
                             className="h-6 px-2 text-xs text-blue-500 hover:text-blue-700"
@@ -192,7 +202,7 @@ const TextInsert = ({ regions, onRegionUpdate, selectedRegion }: TextInsertProps
                             Undo
                           </Button>
                         </div>
-                        <p className="text-xs">{text.content.substring(0, 50)}...</p>
+                        <p className="text-xs whitespace-pre-wrap">{text.content.substring(0, 50)}...</p>
                         {assignedRegion && (
                           <p className="text-xs mt-1 text-green-700">Assigned to: {assignedRegion.name || 'Unnamed Region'}</p>
                         )}

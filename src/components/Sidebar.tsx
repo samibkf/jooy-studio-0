@@ -1,3 +1,4 @@
+
 import React, { useRef, useState, useEffect } from 'react';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
@@ -34,7 +35,11 @@ const Sidebar = ({
   // Update local description when selected region changes
   useEffect(() => {
     setLocalDescription(selectedRegion?.description || '');
-    setActiveTab(selectedRegion ? 'edit' : 'insert');
+    
+    // Only change active tab when a region is selected
+    if (selectedRegion) {
+      setActiveTab('edit');
+    }
   }, [selectedRegion?.id, selectedRegion?.description]);
 
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -163,7 +168,12 @@ const Sidebar = ({
           )}
           
           <TabsContent value="insert">
-            <TextInsert regions={regions} onRegionUpdate={onRegionUpdate} selectedRegion={selectedRegion} />
+            <TextInsert 
+              regions={regions} 
+              onRegionUpdate={onRegionUpdate} 
+              selectedRegion={selectedRegion} 
+              onRegionSelect={onRegionSelect}
+            />
           </TabsContent>
         </Tabs>
       </div>

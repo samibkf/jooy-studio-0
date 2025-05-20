@@ -45,12 +45,17 @@ const DraggableText = ({ region, onRegionUpdate }: DraggableTextProps) => {
     const textIndex = parseInt(e.dataTransfer.getData('text/plain'), 10);
     
     if (!isNaN(textIndex) && textIndex >= 0 && textIndex < titledTexts.length) {
-      assignTextToRegion(textIndex, region.id);
+      const selectedText = titledTexts[textIndex];
       
-      onRegionUpdate({
-        ...region,
-        description: titledTexts[textIndex].content
-      });
+      // Only proceed if text is not already assigned
+      if (!selectedText.assignedRegionId) {
+        assignTextToRegion(textIndex, region.id);
+        
+        onRegionUpdate({
+          ...region,
+          description: titledTexts[textIndex].content
+        });
+      }
     }
   };
 
