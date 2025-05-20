@@ -47,21 +47,26 @@ const DraggableText = ({ region, onRegionUpdate }: DraggableTextProps) => {
     if (!isNaN(textIndex) && textIndex >= 0 && textIndex < titledTexts.length) {
       const selectedText = titledTexts[textIndex];
       
-      // Only proceed if text is not already assigned
-      if (!selectedText.assignedRegionId) {
-        assignTextToRegion(textIndex, region.id);
-        
-        onRegionUpdate({
-          ...region,
-          description: titledTexts[textIndex].content
-        });
-      }
+      // Modified: Allow drop regardless of whether the text is already assigned
+      // This allows for better drag-and-drop functionality
+      assignTextToRegion(textIndex, region.id);
+      
+      // Get the raw text content without markdown formatting
+      const plainContent = selectedText.content.replace(/\*\*(.*?)\*\*/g, '$1')
+        .replace(/---/g, ' ')
+        .replace(/\n/g, ' ')
+        .trim();
+      
+      onRegionUpdate({
+        ...region,
+        description: plainContent
+      });
     }
   };
 
   return (
     <div 
-      className="mt-2 p-2 border border-dashed border-gray-300 rounded-md bg-gray-50 transition-colors"
+      className="mt-2 p-2 border border-dashed border-gray-300 rounded-md bg-gray-50 transition-colors min-h-16"
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
@@ -83,7 +88,13 @@ const DraggableText = ({ region, onRegionUpdate }: DraggableTextProps) => {
       
       {assignedText && (
         <div className="mt-1 text-xs text-gray-500">
-          <span className="font-medium">{assignedText.title}:</span> {assignedText.content.substring(0, 50)}...
+          <span className="font-medium">{assignedText.title}:</span> 
+          {/* Display plain text without markdown formatting */}
+          {assignedText.content
+            .replace(/\*\*(.*?)\*\*/g, '$1')
+            .replace(/---/g, '')
+            .replace(/\n/g, ' ')
+            .substring(0, 50)}...
         </div>
       )}
     </div>

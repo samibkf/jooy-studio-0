@@ -30,14 +30,13 @@ const Sidebar = ({
   const [localDescription, setLocalDescription] = useState<string>('');
   const saveTimeoutRef = useRef<NodeJS.Timeout>();
   const { isRegionAssigned, undoRegionAssignment } = useTextAssignment();
-  const [activeTab, setActiveTab] = useState<string>(selectedRegion ? 'edit' : 'insert');
+  const [activeTab, setActiveTab] = useState<string>('insert');
   
   // Update local description when selected region changes
   useEffect(() => {
-    setLocalDescription(selectedRegion?.description || '');
-    
-    // Only change active tab when a region is selected
     if (selectedRegion) {
+      setLocalDescription(selectedRegion?.description || '');
+      // Only change to edit tab when a region is selected
       setActiveTab('edit');
     }
   }, [selectedRegion?.id, selectedRegion?.description]);
@@ -100,9 +99,18 @@ const Sidebar = ({
       <div className="flex flex-col flex-1 p-4 h-full">
         <Tabs defaultValue={activeTab} value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="mb-2">
-            {selectedRegion && <TabsTrigger value="edit">Edit Region</TabsTrigger>}
             <TabsTrigger value="insert">Insert Text</TabsTrigger>
+            {selectedRegion && <TabsTrigger value="edit">Edit Region</TabsTrigger>}
           </TabsList>
+          
+          <TabsContent value="insert" className="space-y-4">
+            <TextInsert 
+              regions={regions} 
+              onRegionUpdate={onRegionUpdate} 
+              selectedRegion={selectedRegion} 
+              onRegionSelect={onRegionSelect}
+            />
+          </TabsContent>
           
           {selectedRegion && (
             <TabsContent value="edit" className="space-y-4">
@@ -166,15 +174,6 @@ const Sidebar = ({
               </div>
             </TabsContent>
           )}
-          
-          <TabsContent value="insert">
-            <TextInsert 
-              regions={regions} 
-              onRegionUpdate={onRegionUpdate} 
-              selectedRegion={selectedRegion} 
-              onRegionSelect={onRegionSelect}
-            />
-          </TabsContent>
         </Tabs>
       </div>
       
