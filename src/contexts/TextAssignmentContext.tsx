@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Region } from '@/types/regions';
 import { parseTitledText } from '@/utils/textProcessing';
@@ -20,6 +19,8 @@ type TextAssignmentContextType = {
   getAssignedText: (regionId: string) => string | null;
   isRegionAssigned: (regionId: string) => boolean;
   resetAssignments: () => void;
+  activeTab: string;
+  setActiveTab: React.Dispatch<React.SetStateAction<string>>;
 };
 
 const LOCAL_STORAGE_KEY = 'textAssignments';
@@ -37,6 +38,7 @@ export const useTextAssignment = () => {
 export const TextAssignmentProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [titledTexts, setTitledTexts] = useState<TitledText[]>([]);
   const [originalTexts, setOriginalTexts] = useState<Record<string, string | null>>({});
+  const [activeTab, setActiveTab] = useState<string>('insert');
 
   // Load state from localStorage on initial render
   useEffect(() => {
@@ -89,6 +91,9 @@ export const TextAssignmentProvider: React.FC<{ children: React.ReactNode }> = (
     setTitledTexts(prevTexts => 
       prevTexts.map(text => ({ ...text, assignedRegionId: undefined }))
     );
+    
+    // Keep the active tab as 'insert' after undo all
+    setActiveTab('insert');
   };
 
   const undoRegionAssignment = (regionId: string) => {
@@ -99,16 +104,32 @@ export const TextAssignmentProvider: React.FC<{ children: React.ReactNode }> = (
           : text
       )
     );
+    
+    // Keep the active tab as 'insert' after undoing a specific assignment
+    setActiveTab('insert');
   };
 
   const assignTextToRegion = (textIndex: number, regionId: string) => {
-    setTitledTexts(prevTexts => 
-      prevTexts.map((text, index) => 
+    setTitledTexts(prevTexts => {
+      // First, check if there's already a text assigned to this region
+      const alreadyAssignedTextIndex = prevTexts.findIndex(t => t.assignedRegionId === regionId);
+      
+      // If so, unassign it first
+      if (alreadyAssignedTextIndex !== -1) {
+        prevTexts = prevTexts.map((t, idx) => 
+          idx === alreadyAssignedTextIndex 
+            ? { ...t, assignedRegionId: undefined } 
+            : t
+        );
+      }
+      
+      // Then assign the new text
+      return prevTexts.map((text, index) => 
         index === textIndex 
           ? { ...text, assignedRegionId: regionId } 
           : text
-      )
-    );
+      );
+    });
   };
 
   const getAssignedText = (regionId: string): string | null => {
@@ -130,7 +151,9 @@ export const TextAssignmentProvider: React.FC<{ children: React.ReactNode }> = (
     assignTextToRegion,
     getAssignedText,
     isRegionAssigned,
-    resetAssignments
+    resetAssignments,
+    activeTab,
+    setActiveTab
   };
 
   return (

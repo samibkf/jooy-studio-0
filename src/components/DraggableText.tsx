@@ -45,6 +45,11 @@ const DraggableText = ({ region, onRegionUpdate }: DraggableTextProps) => {
     const textIndex = parseInt(e.dataTransfer.getData('text/plain'), 10);
     
     if (!isNaN(textIndex) && textIndex >= 0 && textIndex < titledTexts.length) {
+      // If there's already a text assigned to this region, remove that assignment first
+      if (isRegionAssigned(region.id)) {
+        undoRegionAssignment(region.id);
+      }
+      
       assignTextToRegion(textIndex, region.id);
       
       onRegionUpdate({
@@ -56,7 +61,7 @@ const DraggableText = ({ region, onRegionUpdate }: DraggableTextProps) => {
 
   return (
     <div 
-      className="mt-2 p-2 border border-dashed border-gray-300 rounded-md bg-gray-50 transition-colors"
+      className="mt-2 p-2 border border-dashed border-gray-300 rounded-md bg-gray-50 transition-colors hover:border-blue-300"
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
@@ -78,7 +83,7 @@ const DraggableText = ({ region, onRegionUpdate }: DraggableTextProps) => {
       
       {assignedText && (
         <div className="mt-1 text-xs text-gray-500">
-          <span className="font-medium">{assignedText.title}:</span> {assignedText.content.substring(0, 50)}...
+          <span className="font-medium">{assignedText.title}:</span> {assignedText.content.substring(0, 50).replace(/[*\-_]/g, '')}...
         </div>
       )}
     </div>

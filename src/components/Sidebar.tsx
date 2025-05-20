@@ -1,3 +1,4 @@
+
 import React, { useRef, useState, useEffect } from 'react';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
@@ -28,14 +29,17 @@ const Sidebar = ({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [localDescription, setLocalDescription] = useState<string>('');
   const saveTimeoutRef = useRef<NodeJS.Timeout>();
-  const { isRegionAssigned, undoRegionAssignment } = useTextAssignment();
-  const [activeTab, setActiveTab] = useState<string>(selectedRegion ? 'edit' : 'insert');
+  const { isRegionAssigned, undoRegionAssignment, activeTab, setActiveTab } = useTextAssignment();
   
   // Update local description when selected region changes
   useEffect(() => {
     setLocalDescription(selectedRegion?.description || '');
-    setActiveTab(selectedRegion ? 'edit' : 'insert');
-  }, [selectedRegion?.id, selectedRegion?.description]);
+    
+    // Only update the active tab if the region is selected and we're not coming from an undo operation
+    if (selectedRegion && activeTab !== 'insert') {
+      setActiveTab('edit');
+    }
+  }, [selectedRegion?.id, selectedRegion?.description, setActiveTab]);
 
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const newDescription = e.target.value;
@@ -79,6 +83,9 @@ const Sidebar = ({
     });
     setLocalDescription('');
     toast.success('Text assignment undone');
+    
+    // Switch to Insert Text tab after undoing
+    setActiveTab('insert');
   };
 
   // Cleanup timeout on unmount
@@ -93,7 +100,7 @@ const Sidebar = ({
   return (
     <div className="h-full w-full flex flex-col bg-background border-l">
       <div className="flex flex-col flex-1 p-4 h-full">
-        <Tabs defaultValue={activeTab} value={activeTab} onValueChange={setActiveTab}>
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="mb-2">
             {selectedRegion && <TabsTrigger value="edit">Edit Region</TabsTrigger>}
             <TabsTrigger value="insert">Insert Text</TabsTrigger>
@@ -163,7 +170,12 @@ const Sidebar = ({
           )}
           
           <TabsContent value="insert">
-            <TextInsert regions={regions} onRegionUpdate={onRegionUpdate} selectedRegion={selectedRegion} />
+            <TextInsert 
+              regions={regions} 
+              onRegionUpdate={onRegionUpdate} 
+              selectedRegion={selectedRegion} 
+              onRegionSelect={onRegionSelect}
+            />
           </TabsContent>
         </Tabs>
       </div>
