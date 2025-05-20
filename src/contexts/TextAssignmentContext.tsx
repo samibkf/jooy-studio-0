@@ -102,35 +102,18 @@ export const TextAssignmentProvider: React.FC<{ children: React.ReactNode }> = (
   };
 
   const assignTextToRegion = (textIndex: number, regionId: string) => {
-    setTitledTexts(prevTexts => {
-      // First, check if any other text is already assigned to this region
-      // If so, unassign it
-      const updatedTexts = prevTexts.map(text => 
-        text.assignedRegionId === regionId
-          ? { ...text, assignedRegionId: undefined }
-          : text
-      );
-      
-      // Now assign the new text to the region
-      return updatedTexts.map((text, index) => 
+    setTitledTexts(prevTexts => 
+      prevTexts.map((text, index) => 
         index === textIndex 
           ? { ...text, assignedRegionId: regionId } 
           : text
-      );
-    });
+      )
+    );
   };
 
   const getAssignedText = (regionId: string): string | null => {
     const assignedText = titledTexts.find(text => text.assignedRegionId === regionId);
-    if (assignedText) {
-      // Return plain text without markdown formatting
-      return assignedText.content
-        .replace(/\*\*(.*?)\*\*/g, '$1')
-        .replace(/---/g, ' ')
-        .replace(/\n/g, ' ')
-        .trim();
-    }
-    return null;
+    return assignedText ? assignedText.content : null;
   };
 
   const isRegionAssigned = (regionId: string): boolean => {
