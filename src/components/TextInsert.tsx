@@ -11,11 +11,11 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 interface TextInsertProps {
   regions: Region[];
   onRegionUpdate: (region: Region) => void;
+  selectedRegion: Region | null;
 }
 
-const TextInsert = ({ regions, onRegionUpdate }: TextInsertProps) => {
+const TextInsert = ({ regions, onRegionUpdate, selectedRegion }: TextInsertProps) => {
   const [inputText, setInputText] = useState<string>('');
-  const [showDraggable, setShowDraggable] = useState(false);
   const { 
     titledTexts, 
     assignTextsToRegions, 
@@ -63,7 +63,6 @@ const TextInsert = ({ regions, onRegionUpdate }: TextInsertProps) => {
       });
       
       toast.success('Text assigned to regions');
-      setShowDraggable(true);
     }
   };
   
@@ -80,12 +79,16 @@ const TextInsert = ({ regions, onRegionUpdate }: TextInsertProps) => {
       }
     });
     
-    setShowDraggable(true);
     toast.success('Text assignments undone');
   };
 
   const handleDragStart = (e: React.DragEvent, textIndex: number) => {
     e.dataTransfer.setData('text/plain', textIndex.toString());
+    e.currentTarget.classList.add('opacity-50');
+  };
+
+  const handleDragEnd = (e: React.DragEvent) => {
+    e.currentTarget.classList.remove('opacity-50');
   };
 
   const handleUndoSpecificText = (regionId: string) => {
@@ -102,7 +105,6 @@ const TextInsert = ({ regions, onRegionUpdate }: TextInsertProps) => {
       description: null
     });
     
-    setShowDraggable(true);
     toast.success(`Text unassigned from region ${region.name || regionId}`);
   };
 
@@ -152,6 +154,7 @@ const TextInsert = ({ regions, onRegionUpdate }: TextInsertProps) => {
                       key={`unassigned-${index}`}
                       draggable={true}
                       onDragStart={(e) => handleDragStart(e, titledTexts.indexOf(text))}
+                      onDragEnd={handleDragEnd}
                       className="p-2 border rounded-md cursor-move border-gray-300 bg-white hover:border-blue-300 hover:bg-blue-50 transition-colors"
                     >
                       <p className="font-medium text-sm">{text.title}</p>

@@ -30,10 +30,12 @@ const Sidebar = ({
   const [localDescription, setLocalDescription] = useState<string>('');
   const saveTimeoutRef = useRef<NodeJS.Timeout>();
   const { isRegionAssigned, undoRegionAssignment } = useTextAssignment();
+  const [activeTab, setActiveTab] = useState<string>(selectedRegion ? 'edit' : 'insert');
   
   // Update local description when selected region changes
   useEffect(() => {
     setLocalDescription(selectedRegion?.description || '');
+    setActiveTab(selectedRegion ? 'edit' : 'insert');
   }, [selectedRegion?.id, selectedRegion?.description]);
 
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -91,14 +93,14 @@ const Sidebar = ({
 
   return (
     <div className="h-full w-full flex flex-col bg-background border-l">
-      {selectedRegion ? (
-        <div className="flex flex-col flex-1 p-4 h-full">
-          <Tabs defaultValue="edit">
-            <TabsList className="mb-2">
-              <TabsTrigger value="edit">Edit Region</TabsTrigger>
-              <TabsTrigger value="insert">Insert Text</TabsTrigger>
-            </TabsList>
-            
+      <div className="flex flex-col flex-1 p-4 h-full">
+        <Tabs defaultValue={activeTab} value={activeTab} onValueChange={setActiveTab}>
+          <TabsList className="mb-2">
+            {selectedRegion && <TabsTrigger value="edit">Edit Region</TabsTrigger>}
+            <TabsTrigger value="insert">Insert Text</TabsTrigger>
+          </TabsList>
+          
+          {selectedRegion && (
             <TabsContent value="edit" className="space-y-4">
               <div className="flex justify-between items-center">
                 <h3 className="text-lg font-medium">{selectedRegion.name || 'Unnamed Region'}</h3>
@@ -159,15 +161,30 @@ const Sidebar = ({
                 </div>
               </div>
             </TabsContent>
-            
-            <TabsContent value="insert">
-              <TextInsert regions={regions} onRegionUpdate={onRegionUpdate} />
-            </TabsContent>
-          </Tabs>
-        </div>
-      ) : (
-        <div className="flex-1 flex items-center justify-center p-4 text-muted-foreground">
-          <p>Select a region to view or edit its description</p>
+          )}
+          
+          <TabsContent value="insert">
+            <TextInsert regions={regions} onRegionUpdate={onRegionUpdate} selectedRegion={selectedRegion} />
+          </TabsContent>
+        </Tabs>
+      </div>
+      
+      {!selectedRegion && regions.length > 0 && (
+        <div className="p-4 border-t">
+          <h4 className="text-sm font-medium mb-2">Select a region</h4>
+          <div className="max-h-40 overflow-y-auto">
+            {regions.map((region) => (
+              <div 
+                key={region.id}
+                onClick={() => onRegionSelect(region.id)}
+                className={`p-2 hover:bg-accent rounded-md cursor-pointer text-sm transition-colors ${
+                  isRegionAssigned(region.id) ? 'border-l-4 border-green-500' : ''
+                }`}
+              >
+                {region.name || 'Unnamed Region'}
+              </div>
+            ))}
+          </div>
         </div>
       )}
     </div>

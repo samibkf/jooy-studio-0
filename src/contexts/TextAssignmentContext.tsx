@@ -1,5 +1,5 @@
 
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Region } from '@/types/regions';
 import { parseTitledText } from '@/utils/textProcessing';
 
@@ -22,6 +22,8 @@ type TextAssignmentContextType = {
   resetAssignments: () => void;
 };
 
+const LOCAL_STORAGE_KEY = 'textAssignments';
+
 const TextAssignmentContext = createContext<TextAssignmentContextType | null>(null);
 
 export const useTextAssignment = () => {
@@ -36,9 +38,34 @@ export const TextAssignmentProvider: React.FC<{ children: React.ReactNode }> = (
   const [titledTexts, setTitledTexts] = useState<TitledText[]>([]);
   const [originalTexts, setOriginalTexts] = useState<Record<string, string | null>>({});
 
+  // Load state from localStorage on initial render
+  useEffect(() => {
+    const savedState = localStorage.getItem(LOCAL_STORAGE_KEY);
+    if (savedState) {
+      try {
+        const { titledTexts: savedTitledTexts, originalTexts: savedOriginalTexts } = JSON.parse(savedState);
+        setTitledTexts(savedTitledTexts);
+        setOriginalTexts(savedOriginalTexts);
+      } catch (error) {
+        console.error('Error loading text assignments from localStorage:', error);
+      }
+    }
+  }, []);
+
+  // Save state to localStorage whenever it changes
+  useEffect(() => {
+    if (titledTexts.length > 0 || Object.keys(originalTexts).length > 0) {
+      localStorage.setItem(
+        LOCAL_STORAGE_KEY,
+        JSON.stringify({ titledTexts, originalTexts })
+      );
+    }
+  }, [titledTexts, originalTexts]);
+
   const resetAssignments = () => {
     setTitledTexts([]);
     setOriginalTexts({});
+    localStorage.removeItem(LOCAL_STORAGE_KEY);
   };
 
   const assignTextsToRegions = (text: string, regions: Region[]): TitledText[] => {
