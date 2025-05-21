@@ -26,13 +26,13 @@ const RegionOverlay: React.FC<RegionOverlayProps> = ({
 
   const hasText = isRegionAssigned(region.id);
   
-  // Update position when region or scale changes
+  // Update position when region changes
   useEffect(() => {
     setPosition({
       x: region.x,
       y: region.y
     });
-  }, [region.x, region.y, scale]);
+  }, [region.x, region.y]);
   
   const handleMouseDown = (e: React.MouseEvent) => {
     if (e.button !== 0) return; // Only handle left-click
@@ -99,8 +99,8 @@ const RegionOverlay: React.FC<RegionOverlayProps> = ({
         backgroundColor: bgColor,
         boxSizing: 'border-box',
         touchAction: 'none',
-        transform: `scale(${scale})`,
-        transformOrigin: 'top left'
+        transformOrigin: 'top left',
+        transform: `scale(${scale})`
       }}
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}

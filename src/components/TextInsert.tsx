@@ -149,7 +149,7 @@ const TextInsert = ({ regions, onRegionUpdate, selectedRegion, onRegionSelect }:
           value={inputText}
           onChange={(e) => setInputText(e.target.value)}
           placeholder="Paste your markdown text here..."
-          className="min-h-0 h-20"
+          className="min-h-0 h-12"
         />
         <div className="flex space-x-2">
           <Button 
@@ -165,7 +165,7 @@ const TextInsert = ({ regions, onRegionUpdate, selectedRegion, onRegionSelect }:
             className="flex-shrink-0"
             disabled={titledTexts.length === 0}
           >
-            <Undo2 className="h-4 w-4 mr-1" /> Undo All
+            <Undo2 className="h-4 w-4" />
           </Button>
         </div>
       </div>

@@ -88,7 +88,7 @@ const Sidebar = ({
   }, []);
 
   return (
-    <div className="h-full w-full flex flex-col bg-background border-l">
+    <div className="h-full w-full flex flex-col bg-background border-l" style={{ width: '320px' }}>
       <div className="flex flex-col flex-1 p-4 h-full overflow-y-auto">
         {/* Text Insert Section - Always visible */}
         <TextInsert 
@@ -127,18 +127,13 @@ const Sidebar = ({
               </div>
             </div>
             
-            <div className="text-sm text-muted-foreground my-2">
-              <p>Page: {selectedRegion.page}</p>
-              <p>Type: {selectedRegion.type}</p>
-            </div>
-
-            <label className="text-sm font-medium mb-1">Description</label>
+            <label className="text-sm font-medium mb-1 mt-4">Description</label>
             <Textarea 
               ref={textareaRef}
               value={localDescription} 
               onChange={handleChange}
               placeholder="Add a description..." 
-              className={`w-full min-h-0 h-24 resize-none ${
+              className={`w-full min-h-0 h-40 resize-none ${
                 isRegionAssigned(selectedRegion.id) ? 'border-green-500' : ''
               }`}
             />
