@@ -1,5 +1,5 @@
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Region } from '@/types/regions';
 import { useTextAssignment } from '@/contexts/TextAssignmentContext';
 
@@ -25,6 +25,14 @@ const RegionOverlay: React.FC<RegionOverlayProps> = ({
   const { isRegionAssigned } = useTextAssignment();
 
   const hasText = isRegionAssigned(region.id);
+  
+  // Update position when region or scale changes
+  useEffect(() => {
+    setPosition({
+      x: region.x,
+      y: region.y
+    });
+  }, [region.x, region.y, scale]);
   
   const handleMouseDown = (e: React.MouseEvent) => {
     if (e.button !== 0) return; // Only handle left-click
@@ -78,27 +86,21 @@ const RegionOverlay: React.FC<RegionOverlayProps> = ({
   const bgColor = isSelected ? 'rgba(37, 99, 235, 0.2)' : hasText ? 'rgba(34, 197, 94, 0.1)' : 'rgba(37, 99, 235, 0.1)';
   const borderWidth = isSelected ? '3px' : '2px';
 
-  // Update the DOM element position when the region coordinates change
-  React.useEffect(() => {
-    setPosition({
-      x: region.x,
-      y: region.y
-    });
-  }, [region.x, region.y]);
-
   return (
     <div
       ref={containerRef}
       className={`absolute cursor-move ${isSelected ? 'z-20' : 'z-10'}`}
       style={{
-        left: position.x,
-        top: position.y,
-        width: region.width,
-        height: region.height,
+        left: `${position.x}px`,
+        top: `${position.y}px`,
+        width: `${region.width}px`,
+        height: `${region.height}px`,
         border: `${borderWidth} solid ${borderColor}`,
         backgroundColor: bgColor,
         boxSizing: 'border-box',
-        touchAction: 'none'
+        touchAction: 'none',
+        transform: `scale(${scale})`,
+        transformOrigin: 'top left'
       }}
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}
@@ -113,7 +115,9 @@ const RegionOverlay: React.FC<RegionOverlayProps> = ({
           color: 'white',
           top: '3px',
           left: '3px',
-          borderRadius: '2px'
+          borderRadius: '2px',
+          transform: `scale(${1/scale})`,
+          transformOrigin: 'top left'
         }}
       >
         {region.name}

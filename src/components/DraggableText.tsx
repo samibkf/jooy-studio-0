@@ -42,10 +42,9 @@ const DraggableText = ({ region, onRegionUpdate }: DraggableTextProps) => {
             onClick={handleUndoText}
             size="sm"
             variant="ghost"
-            className="h-6 px-2 text-xs text-blue-500 hover:text-blue-700"
+            className="h-6 px-1.5 text-xs text-blue-500 hover:text-blue-700"
           >
-            <Undo2 className="h-3 w-3 mr-1" />
-            Undo
+            <Undo2 className="h-3.5 w-3.5" />
           </Button>
         )}
       </div>
