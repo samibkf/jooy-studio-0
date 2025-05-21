@@ -1,3 +1,4 @@
+
 import React, { useRef, useState, useEffect } from 'react';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
@@ -34,7 +35,7 @@ const Sidebar = ({
   // Update local description when selected region changes
   useEffect(() => {
     setLocalDescription(selectedRegion?.description || '');
-    setActiveTab(selectedRegion ? 'edit' : 'insert');
+    // Don't change tab when selected region changes - this allows us to stay on Insert Text tab
   }, [selectedRegion?.id, selectedRegion?.description]);
 
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -93,7 +94,7 @@ const Sidebar = ({
   return (
     <div className="h-full w-full flex flex-col bg-background border-l">
       <div className="flex flex-col flex-1 p-4 h-full">
-        <Tabs defaultValue={activeTab} value={activeTab} onValueChange={setActiveTab}>
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="mb-2">
             {selectedRegion && <TabsTrigger value="edit">Edit Region</TabsTrigger>}
             <TabsTrigger value="insert">Insert Text</TabsTrigger>
@@ -163,7 +164,12 @@ const Sidebar = ({
           )}
           
           <TabsContent value="insert">
-            <TextInsert regions={regions} onRegionUpdate={onRegionUpdate} selectedRegion={selectedRegion} />
+            <TextInsert 
+              regions={regions} 
+              onRegionUpdate={onRegionUpdate} 
+              selectedRegion={selectedRegion}
+              onRegionSelect={onRegionSelect} 
+            />
           </TabsContent>
         </Tabs>
       </div>

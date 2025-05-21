@@ -14,7 +14,6 @@ const DraggableText = ({ region, onRegionUpdate }: DraggableTextProps) => {
   const { 
     titledTexts,
     undoRegionAssignment,
-    assignTextToRegion,
     isRegionAssigned
   } = useTextAssignment();
 
@@ -29,40 +28,15 @@ const DraggableText = ({ region, onRegionUpdate }: DraggableTextProps) => {
     });
   };
 
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.currentTarget.classList.add('border-blue-500', 'bg-blue-50');
-  };
-
-  const handleDragLeave = (e: React.DragEvent) => {
-    e.currentTarget.classList.remove('border-blue-500', 'bg-blue-50');
-  };
-
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.currentTarget.classList.remove('border-blue-500', 'bg-blue-50');
-    
-    const textIndex = parseInt(e.dataTransfer.getData('text/plain'), 10);
-    
-    if (!isNaN(textIndex) && textIndex >= 0 && textIndex < titledTexts.length) {
-      assignTextToRegion(textIndex, region.id);
-      
-      onRegionUpdate({
-        ...region,
-        description: titledTexts[textIndex].content
-      });
-    }
-  };
-
   return (
     <div 
-      className="mt-2 p-2 border border-dashed border-gray-300 rounded-md bg-gray-50 transition-colors"
-      onDragOver={handleDragOver}
-      onDragLeave={handleDragLeave}
-      onDrop={handleDrop}
+      className="mt-2 p-2 border border-dashed rounded-md bg-gray-50 transition-colors"
+      style={{ borderColor: isRegionAssigned(region.id) ? '#10b981' : '#e5e7eb' }}
     >
       <div className="flex justify-between items-center mb-1">
-        <span className="text-xs font-medium">Drop Zone</span>
+        <span className="text-xs font-medium">
+          {isRegionAssigned(region.id) ? 'Assigned Text' : 'No Text Assigned'}
+        </span>
         {isRegionAssigned(region.id) && (
           <Button
             onClick={handleUndoText}
@@ -76,9 +50,13 @@ const DraggableText = ({ region, onRegionUpdate }: DraggableTextProps) => {
         )}
       </div>
       
-      {assignedText && (
-        <div className="mt-1 text-xs text-gray-500">
+      {assignedText ? (
+        <div className="mt-1 text-xs text-gray-700">
           <span className="font-medium">{assignedText.title}:</span> {assignedText.content.substring(0, 50)}...
+        </div>
+      ) : (
+        <div className="text-xs text-gray-500">
+          Assign text using the "Insert Text" tab
         </div>
       )}
     </div>

@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Region } from '@/types/regions';
 import { parseTitledText } from '@/utils/textProcessing';
@@ -20,6 +19,8 @@ type TextAssignmentContextType = {
   getAssignedText: (regionId: string) => string | null;
   isRegionAssigned: (regionId: string) => boolean;
   resetAssignments: () => void;
+  getUnassignedRegions: (regions: Region[]) => Region[];
+  selectRegionById: (regionId: string, callback: (regionId: string) => void) => void;
 };
 
 const LOCAL_STORAGE_KEY = 'textAssignments';
@@ -120,6 +121,18 @@ export const TextAssignmentProvider: React.FC<{ children: React.ReactNode }> = (
     return titledTexts.some(text => text.assignedRegionId === regionId);
   };
 
+  // New function to get regions that don't have text assigned to them
+  const getUnassignedRegions = (regions: Region[]): Region[] => {
+    return regions.filter(region => !isRegionAssigned(region.id));
+  };
+  
+  // New function to facilitate selecting a region when clicking on assigned text
+  const selectRegionById = (regionId: string, callback: (regionId: string) => void) => {
+    if (regionId) {
+      callback(regionId);
+    }
+  };
+
   const value = {
     titledTexts,
     originalTexts,
@@ -130,7 +143,9 @@ export const TextAssignmentProvider: React.FC<{ children: React.ReactNode }> = (
     assignTextToRegion,
     getAssignedText,
     isRegionAssigned,
-    resetAssignments
+    resetAssignments,
+    getUnassignedRegions,
+    selectRegionById
   };
 
   return (
