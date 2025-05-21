@@ -104,7 +104,7 @@ const Sidebar = ({
               </div>
             </div>
             
-            <label className="text-sm font-medium mb-1 mt-4">Text</label>
+            <label className="text-sm font-medium mb-1 mt-4">Text:</label>
             <Textarea ref={textareaRef} value={localDescription} onChange={handleChange} placeholder="Add a description..." className={`w-full min-h-0 h-40 resize-none ${isRegionAssigned(selectedRegion.id) ? 'border-green-500' : ''}`} />
           </>}
       </div>
