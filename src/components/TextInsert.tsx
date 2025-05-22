@@ -1,3 +1,4 @@
+
 import React, { useState, useRef } from 'react';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
@@ -7,12 +8,14 @@ import { Region } from '@/types/regions';
 import { useTextAssignment } from '@/contexts/TextAssignmentContext';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+
 interface TextInsertProps {
   regions: Region[];
   onRegionUpdate: (region: Region) => void;
   selectedRegion: Region | null;
   onRegionSelect: (regionId: string) => void;
 }
+
 const TextInsert = ({
   regions,
   onRegionUpdate,
@@ -32,6 +35,7 @@ const TextInsert = ({
     getUnassignedRegionsByPage
   } = useTextAssignment();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
   const handleInsertText = () => {
     if (!inputText.trim()) {
       toast.error('Please enter some text to insert');
@@ -68,6 +72,7 @@ const TextInsert = ({
       toast.success('Text assigned to regions');
     }
   };
+
   const handleUndo = () => {
     undoAllAssignments();
 
@@ -82,6 +87,7 @@ const TextInsert = ({
     });
     toast.success('Text assignments undone');
   };
+
   const handleUndoSpecificText = (regionId: string) => {
     // Find the region
     const region = regions.find(r => r.id === regionId);
@@ -97,6 +103,7 @@ const TextInsert = ({
     });
     toast.success(`Text unassigned from region ${region.name || regionId}`);
   };
+
   const handleAssignToRegion = (textIndex: number, regionId: string) => {
     // Find the text and region
     const text = titledTexts[textIndex];
@@ -114,8 +121,21 @@ const TextInsert = ({
     setActiveTextIndex(null); // Close the popover
     toast.success(`Assigned "${text.title}" to region ${region.name}`);
   };
+
   const handleRegionSelect = (regionId: string) => {
     onRegionSelect(regionId);
+    
+    // Add a small delay to ensure the region is selected before scrolling
+    setTimeout(() => {
+      const regionElement = document.getElementById(`region-${regionId}`);
+      if (regionElement) {
+        // Scroll the region into view with smooth scrolling
+        regionElement.scrollIntoView({
+          behavior: 'smooth',
+          block: 'center'
+        });
+      }
+    }, 100);
   };
 
   // Get unassigned texts and texts that are assigned (for display)
@@ -125,6 +145,7 @@ const TextInsert = ({
   // Get unassigned regions for the popover, filtered by current page
   const currentPage = selectedRegion?.page || 1;
   const unassignedRegionsByPage = getUnassignedRegionsByPage(regions, currentPage);
+  
   return <div className="space-y-3">
       <div className="space-y-2">
         <label className="text-sm font-medium">Insert Text:</label>
@@ -186,7 +207,7 @@ const TextInsert = ({
                   {assignedTexts.map((text, index) => {
               // Find which region this text is assigned to
               const assignedRegion = regions.find(r => r.id === text.assignedRegionId);
-              return <div key={`assigned-${index}`} className="p-2 border rounded-md border-green-500 bg-green-50 cursor-pointer" onClick={() => text.assignedRegionId && handleRegionSelect(text.assignedRegionId)}>
+              return <div key={`assigned-${index}`} className="p-2 border rounded-md border-green-500 bg-green-50 cursor-pointer hover:bg-green-100 transition-colors" onClick={() => text.assignedRegionId && handleRegionSelect(text.assignedRegionId)}>
                         <div className="flex justify-between items-center">
                           <p className="font-medium text-sm">{text.title}</p>
                           <Button onClick={e => {
@@ -206,4 +227,5 @@ const TextInsert = ({
         </div>}
     </div>;
 };
+
 export default TextInsert;

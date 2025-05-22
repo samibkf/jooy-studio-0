@@ -114,13 +114,16 @@ const RegionOverlay: React.FC<RegionOverlayProps> = ({
         boxSizing: 'border-box',
         touchAction: 'none',
         transformOrigin: 'top left',
-        transform: `scale(${scale})`
+        transform: `scale(${scale})`,
+        // Add a data attribute for easy identification when scrolling
+        ...(isSelected && { 'data-selected-region': 'true' })
       }}
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
       onMouseLeave={handleMouseUp}
       onClick={(e) => e.stopPropagation()}
+      id={`region-${region.id}`}
     >
       <div
         className="absolute px-1 text-xs font-semibold"
