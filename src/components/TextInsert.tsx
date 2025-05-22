@@ -1,3 +1,4 @@
+
 import React, { useState, useRef } from 'react';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
@@ -115,6 +116,19 @@ const TextInsert = ({
     toast.success(`Assigned "${text.title}" to region ${region.name}`);
   };
   const handleRegionSelect = (regionId: string) => {
+    // Find the region element and add a data attribute to indicate it should be scrolled into view
+    const region = regions.find(r => r.id === regionId);
+    if (region) {
+      // Set a timeout to ensure the DOM has been updated with the selected region
+      setTimeout(() => {
+        const regionElement = document.querySelector(`[data-region-id="${regionId}"]`);
+        if (regionElement) {
+          regionElement.setAttribute('data-scroll-into-view', 'true');
+        }
+      }, 50);
+    }
+    
+    // Select the region
     onRegionSelect(regionId);
   };
 
@@ -163,7 +177,6 @@ const TextInsert = ({
                                 {unassignedRegionsByPage.map(region => <div key={region.id} className="p-2 hover:bg-muted rounded-md cursor-pointer flex items-center justify-between" onClick={() => handleAssignToRegion(textIndex, region.id)}>
                                     <div>
                                       <p className="font-medium">{region.name || 'Unnamed Region'}</p>
-                                      <p className="text-xs text-muted-foreground">Page: {region.page}</p>
                                     </div>
                                     <ArrowRight className="h-4 w-4" />
                                   </div>)}
