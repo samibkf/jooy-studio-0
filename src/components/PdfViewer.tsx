@@ -13,7 +13,7 @@ interface PdfViewerProps {
   onRegionDelete: (regionId: string) => void;
   isSelectionMode?: boolean;
   currentSelectionType?: string | null;
-  onCurrentSelectionTypeChange?: (type: string | null) => void;
+  onCurrentSelectionTypeChange?: React.Dispatch<React.SetStateAction<string | null>>;
 }
 
 const PdfViewer: React.FC<PdfViewerProps> = ({
