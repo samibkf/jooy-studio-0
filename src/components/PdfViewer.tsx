@@ -4,50 +4,66 @@ import { Region } from '@/types/regions';
 import RegionOverlay from './RegionOverlay';
 
 interface PdfViewerProps {
-  documentUrl: string;
+  file: File | null;
   regions: Region[];
-  selectedRegion: Region | null;
+  selectedRegionId?: string | null;
   onRegionSelect: (regionId: string) => void;
   onRegionUpdate: (region: Region) => void;
   onRegionCreate: (region: Region) => void;
   onRegionDelete: (regionId: string) => void;
-  currentPage: number;
-  totalPages: number;
-  onPageChange: (page: number) => void;
-  scale: number;
-  onScaleChange: (scale: number) => void;
+  isSelectionMode?: boolean;
+  currentSelectionType?: string | null;
+  onCurrentSelectionTypeChange?: (type: string | null) => void;
 }
 
 const PdfViewer: React.FC<PdfViewerProps> = ({
-  documentUrl,
+  file,
   regions,
-  selectedRegion,
+  selectedRegionId,
   onRegionSelect,
   onRegionUpdate,
   onRegionCreate,
   onRegionDelete,
-  currentPage,
-  totalPages,
-  onPageChange,
-  scale,
-  onScaleChange
+  isSelectionMode,
+  currentSelectionType,
+  onCurrentSelectionTypeChange
 }) => {
+  const [documentUrl, setDocumentUrl] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [scale, setScale] = useState(1);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // Generate URL for the file when it changes
+  useEffect(() => {
+    if (file) {
+      const url = URL.createObjectURL(file);
+      setDocumentUrl(url);
+      return () => URL.revokeObjectURL(url);
+    } else {
+      setDocumentUrl(null);
+    }
+  }, [file]);
+
   // Find all regions for the current page
   const regionsForCurrentPage = regions.filter(region => region.page === currentPage);
+  const selectedRegion = selectedRegionId ? regions.find(r => r.id === selectedRegionId) : null;
 
   // Add data-region-id attribute to help with scrolling to selected regions
   return (
-    <div className="relative h-full w-full overflow-auto bg-gray-100">
+    <div ref={containerRef} className="relative h-full w-full overflow-auto bg-gray-100">
       {/* PDF Document Display */}
       <div className="pdf-container">
-        <img 
-          src={documentUrl} 
-          alt="PDF Page" 
-          style={{
-            transform: `scale(${scale})`,
-            transformOrigin: 'top left'
-          }}
-        />
+        {documentUrl && (
+          <img 
+            src={documentUrl} 
+            alt="PDF Page" 
+            style={{
+              transform: `scale(${scale})`,
+              transformOrigin: 'top left'
+            }}
+          />
+        )}
       </div>
       
       {/* Region Overlays */}
