@@ -1,4 +1,3 @@
-
 import React, { useRef, useState, useEffect } from 'react';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
@@ -83,7 +82,7 @@ const Sidebar = ({
     };
   }, []);
   return <div className="h-full w-full flex flex-col bg-background border-l" style={{
-    width: '420px' // Increased from 320px to 420px for more space
+    width: '320px'
   }}>
       <div className="flex flex-col flex-1 p-4 h-full overflow-y-auto px-[24px] py-[8px] rounded-none">
         {/* Text Insert Section - Always visible */}
@@ -106,7 +105,7 @@ const Sidebar = ({
             </div>
             
             <label className="text-sm font-medium mb-1 mt-4">Text:</label>
-            <Textarea ref={textareaRef} value={localDescription} onChange={handleChange} placeholder="Add a description..." className={`w-full min-h-0 h-64 resize-none ${isRegionAssigned(selectedRegion.id) ? 'border-green-500' : ''}`} />
+            <Textarea ref={textareaRef} value={localDescription} onChange={handleChange} placeholder="Add a description..." className={`w-full min-h-0 h-40 resize-none ${isRegionAssigned(selectedRegion.id) ? 'border-green-500' : ''}`} />
           </>}
       </div>
       

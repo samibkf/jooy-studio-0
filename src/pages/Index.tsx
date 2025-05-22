@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
@@ -789,10 +790,10 @@ const Index = () => {
               <PdfViewer
                 file={selectedDocument?.fileAvailable ? selectedDocument.file : null}
                 regions={selectedDocument?.regions || []}
-                selectedRegionId={selectedRegionId}
-                onRegionSelect={setSelectedRegionId}
                 onRegionCreate={handleRegionCreate}
                 onRegionUpdate={handleRegionUpdate}
+                selectedRegionId={selectedRegionId}
+                onRegionSelect={setSelectedRegionId}
                 onRegionDelete={handleRegionDelete}
                 isSelectionMode={!!currentSelectionType}
                 currentSelectionType={currentSelectionType}
@@ -806,13 +807,13 @@ const Index = () => {
               variant="ghost"
               size="icon"
               className="fixed z-20 top-20 bg-background shadow-md border rounded-full"
-              style={{ right: isSidebarCollapsed ? '16px' : '410px' }}
+              style={{ right: isSidebarCollapsed ? '16px' : '310px' }}
               onClick={toggleSidebar}
             >
               {isSidebarCollapsed ? <ChevronLeft /> : <ChevronRight />}
             </Button>
             
-            <div className={`transition-all duration-300 ${isSidebarCollapsed ? 'w-0 opacity-0 overflow-hidden' : 'w-[400px]'}`}>
+            <div className={`transition-all duration-300 ${isSidebarCollapsed ? 'w-0 opacity-0 overflow-hidden' : 'w-[300px]'}`}>
               <div className="h-full">
                 <Sidebar
                   selectedRegion={selectedDocument?.regions.find(r => r.id === selectedRegionId) || null}

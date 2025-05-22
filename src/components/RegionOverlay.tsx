@@ -33,15 +33,6 @@ const RegionOverlay: React.FC<RegionOverlayProps> = ({
       y: region.y
     });
   }, [region.x, region.y]);
-
-  // Scroll region into view if it's selected and has the data-scroll-into-view attribute
-  useEffect(() => {
-    if (isSelected && containerRef.current && containerRef.current.hasAttribute('data-scroll-into-view')) {
-      containerRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      // Remove the attribute after scrolling to prevent continuous scrolling
-      containerRef.current.removeAttribute('data-scroll-into-view');
-    }
-  }, [isSelected]);
   
   const handleMouseDown = (e: React.MouseEvent) => {
     if (e.button !== 0) return; // Only handle left-click
@@ -90,23 +81,9 @@ const RegionOverlay: React.FC<RegionOverlayProps> = ({
     }
   };
 
-  // Set different border and background colors based on selection and text assignment status
-  const getBorderColor = () => {
-    if (isSelected) {
-      return hasText ? 'rgba(148, 87, 235, 0.8)' : '#2563eb'; // Purple for selected with text, blue for selected without text
-    }
-    return hasText ? 'rgba(34, 197, 94, 0.8)' : 'rgba(37, 99, 235, 0.8)'; // Green for unselected with text, blue for unselected without text
-  };
-
-  const getBgColor = () => {
-    if (isSelected) {
-      return hasText ? 'rgba(148, 87, 235, 0.2)' : 'rgba(37, 99, 235, 0.2)'; // Light purple for selected with text, light blue for selected without text
-    }
-    return hasText ? 'rgba(34, 197, 94, 0.1)' : 'rgba(37, 99, 235, 0.1)'; // Light green for unselected with text, light blue for unselected without text
-  };
-
-  const borderColor = getBorderColor();
-  const bgColor = getBgColor();
+  // Set correct border and background colors based on selection and assignment
+  const borderColor = isSelected ? '#2563eb' : hasText ? 'rgba(34, 197, 94, 0.8)' : 'rgba(37, 99, 235, 0.8)';
+  const bgColor = isSelected ? 'rgba(37, 99, 235, 0.2)' : hasText ? 'rgba(34, 197, 94, 0.1)' : 'rgba(37, 99, 235, 0.1)';
   const borderWidth = isSelected ? '3px' : '2px';
 
   return (
