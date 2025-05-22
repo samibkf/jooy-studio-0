@@ -82,8 +82,22 @@ const RegionOverlay: React.FC<RegionOverlayProps> = ({
   };
 
   // Set correct border and background colors based on selection and assignment
-  const borderColor = isSelected ? '#2563eb' : hasText ? 'rgba(34, 197, 94, 0.8)' : 'rgba(37, 99, 235, 0.8)';
-  const bgColor = isSelected ? 'rgba(37, 99, 235, 0.2)' : hasText ? 'rgba(34, 197, 94, 0.1)' : 'rgba(37, 99, 235, 0.1)';
+  const getBorderColor = () => {
+    if (isSelected) {
+      return hasText ? 'rgba(34, 197, 94, 0.9)' : 'rgba(37, 99, 235, 0.9)';
+    }
+    return hasText ? 'rgba(34, 197, 94, 0.8)' : 'rgba(37, 99, 235, 0.8)';
+  };
+  
+  const getBackgroundColor = () => {
+    if (isSelected) {
+      return hasText ? 'rgba(34, 197, 94, 0.2)' : 'rgba(37, 99, 235, 0.2)';
+    }
+    return hasText ? 'rgba(34, 197, 94, 0.1)' : 'rgba(37, 99, 235, 0.1)';
+  };
+  
+  const borderColor = getBorderColor();
+  const bgColor = getBackgroundColor();
   const borderWidth = isSelected ? '3px' : '2px';
 
   return (

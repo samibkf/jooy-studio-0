@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 import TextInsert from './TextInsert';
 import { useTextAssignment } from '@/contexts/TextAssignmentContext';
 import { Separator } from '@/components/ui/separator';
+
 interface SidebarProps {
   selectedRegion: Region | null;
   regions: Region[];
@@ -14,6 +15,7 @@ interface SidebarProps {
   onRegionDelete: (regionId: string) => void;
   onRegionSelect: (regionId: string) => void;
 }
+
 const Sidebar = ({
   selectedRegion,
   regions,
@@ -82,7 +84,7 @@ const Sidebar = ({
     };
   }, []);
   return <div className="h-full w-full flex flex-col bg-background border-l" style={{
-    width: '320px'
+    width: '400px'
   }}>
       <div className="flex flex-col flex-1 p-4 h-full overflow-y-auto px-[24px] py-[8px] rounded-none">
         {/* Text Insert Section - Always visible */}
@@ -115,4 +117,5 @@ const Sidebar = ({
         </div>}
     </div>;
 };
+
 export default Sidebar;

@@ -807,13 +807,13 @@ const Index = () => {
               variant="ghost"
               size="icon"
               className="fixed z-20 top-20 bg-background shadow-md border rounded-full"
-              style={{ right: isSidebarCollapsed ? '16px' : '310px' }}
+              style={{ right: isSidebarCollapsed ? '16px' : '390px' }}
               onClick={toggleSidebar}
             >
               {isSidebarCollapsed ? <ChevronLeft /> : <ChevronRight />}
             </Button>
             
-            <div className={`transition-all duration-300 ${isSidebarCollapsed ? 'w-0 opacity-0 overflow-hidden' : 'w-[300px]'}`}>
+            <div className={`transition-all duration-300 ${isSidebarCollapsed ? 'w-0 opacity-0 overflow-hidden' : 'w-[400px]'}`}>
               <div className="h-full">
                 <Sidebar
                   selectedRegion={selectedDocument?.regions.find(r => r.id === selectedRegionId) || null}
