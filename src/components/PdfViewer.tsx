@@ -4,6 +4,7 @@ import { Region } from '@/types/regions';
 import RegionOverlay from './RegionOverlay';
 import { ChevronLeft, ChevronRight, ZoomIn, ZoomOut, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { v4 as uuidv4 } from 'uuid';
 
 interface PdfViewerProps {
   file: File | null;
@@ -118,6 +119,7 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
       const y = Math.min(startPos.y, currentPos.y);
       
       onRegionCreate({
+        id: uuidv4(), // Add the id property here
         page: currentPage,
         x,
         y,
