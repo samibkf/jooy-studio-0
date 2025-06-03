@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Region } from '@/types/regions';
 import { useTextAssignment } from '@/contexts/TextAssignmentContext';
@@ -84,14 +83,14 @@ const RegionOverlay: React.FC<RegionOverlayProps> = ({
   // Set correct border and background colors based on selection and assignment
   const getBorderColor = () => {
     if (isSelected) {
-      return hasText ? 'rgba(34, 197, 94, 0.9)' : 'rgba(37, 99, 235, 0.9)';
+      return hasText ? 'rgba(21, 128, 61, 0.95)' : 'rgba(37, 99, 235, 0.9)'; // Dark green for selected with text
     }
     return hasText ? 'rgba(34, 197, 94, 0.8)' : 'rgba(37, 99, 235, 0.8)';
   };
   
   const getBackgroundColor = () => {
     if (isSelected) {
-      return hasText ? 'rgba(34, 197, 94, 0.2)' : 'rgba(37, 99, 235, 0.2)';
+      return hasText ? 'rgba(21, 128, 61, 0.25)' : 'rgba(37, 99, 235, 0.2)'; // Darker green background for selected with text
     }
     return hasText ? 'rgba(34, 197, 94, 0.1)' : 'rgba(37, 99, 235, 0.1)';
   };
@@ -105,16 +104,15 @@ const RegionOverlay: React.FC<RegionOverlayProps> = ({
       ref={containerRef}
       className={`absolute cursor-move ${isSelected ? 'z-20' : 'z-10'}`}
       style={{
-        left: `${position.x}px`,
-        top: `${position.y}px`,
-        width: `${region.width}px`,
-        height: `${region.height}px`,
-        border: `${borderWidth} solid ${borderColor}`,
+        left: `${position.x * scale}px`,
+        top: `${position.y * scale}px`,
+        width: `${region.width * scale}px`,
+        height: `${region.height * scale}px`,
+        border: `${Math.max(1, parseInt(borderWidth) * scale)}px solid ${borderColor}`,
         backgroundColor: bgColor,
         boxSizing: 'border-box',
         touchAction: 'none',
         transformOrigin: 'top left',
-        transform: `scale(${scale})`,
         // Add a data attribute for easy identification when scrolling
         ...(isSelected && { 'data-selected-region': 'true' })
       }}
@@ -128,13 +126,13 @@ const RegionOverlay: React.FC<RegionOverlayProps> = ({
       <div
         className="absolute px-1 text-xs font-semibold"
         style={{
-          backgroundColor: hasText ? 'rgba(34, 197, 94, 0.8)' : 'rgba(37, 99, 235, 0.8)',
+          backgroundColor: hasText ? (isSelected ? 'rgba(21, 128, 61, 0.9)' : 'rgba(34, 197, 94, 0.8)') : 'rgba(37, 99, 235, 0.8)',
           color: 'white',
           top: '3px',
           left: '3px',
           borderRadius: '2px',
-          transform: `scale(${1/scale})`,
-          transformOrigin: 'top left'
+          fontSize: `${Math.max(10, 12 * scale)}px`,
+          padding: `${Math.max(1, 2 * scale)}px ${Math.max(2, 4 * scale)}px`
         }}
       >
         {region.name}

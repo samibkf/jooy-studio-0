@@ -1,4 +1,3 @@
-
 import React, { useState, useRef } from 'react';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
@@ -146,10 +145,17 @@ const TextInsert = ({
   const currentPage = selectedRegion?.page || 1;
   const unassignedRegionsByPage = getUnassignedRegionsByPage(regions, currentPage);
   
-  return <div className="space-y-3">
+  return (
+    <div className="space-y-3">
       <div className="space-y-2">
         <label className="text-sm font-medium">Insert Text:</label>
-        <Textarea ref={textareaRef} value={inputText} onChange={e => setInputText(e.target.value)} placeholder="Paste your markdown text here..." className="min-h-0 h-12" />
+        <Textarea 
+          ref={textareaRef} 
+          value={inputText} 
+          onChange={e => setInputText(e.target.value)} 
+          placeholder="Paste your markdown text here..." 
+          className="min-h-0 h-24" 
+        />
         <div className="flex space-x-2">
           <Button onClick={handleInsertText} className="flex-1" disabled={!inputText.trim()}>
             Insert
@@ -225,7 +231,8 @@ const TextInsert = ({
               </ScrollArea>
             </div>}
         </div>}
-    </div>;
+    </div>
+  );
 };
 
 export default TextInsert;
