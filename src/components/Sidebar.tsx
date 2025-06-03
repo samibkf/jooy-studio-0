@@ -1,3 +1,4 @@
+
 import React, { useRef, useState, useEffect } from 'react';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
@@ -14,6 +15,7 @@ interface SidebarProps {
   onRegionUpdate: (updatedRegion: Region) => void;
   onRegionDelete: (regionId: string) => void;
   onRegionSelect: (regionId: string) => void;
+  documentId: string | null;
 }
 
 const Sidebar = ({
@@ -21,7 +23,8 @@ const Sidebar = ({
   regions,
   onRegionUpdate,
   onRegionDelete,
-  onRegionSelect
+  onRegionSelect,
+  documentId
 }: SidebarProps) => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [localDescription, setLocalDescription] = useState<string>('');
@@ -35,6 +38,7 @@ const Sidebar = ({
   useEffect(() => {
     setLocalDescription(selectedRegion?.description || '');
   }, [selectedRegion?.id, selectedRegion?.description]);
+
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const newDescription = e.target.value;
     setLocalDescription(newDescription);
@@ -57,6 +61,7 @@ const Sidebar = ({
       }
     }, 1000);
   };
+
   const handleDelete = () => {
     if (!selectedRegion) return;
     if (confirm('Are you sure you want to delete this region?')) {
@@ -64,9 +69,10 @@ const Sidebar = ({
       toast.success('Region deleted');
     }
   };
+
   const handleUndoRegionText = () => {
-    if (!selectedRegion) return;
-    undoRegionAssignment(selectedRegion.id);
+    if (!selectedRegion || !documentId) return;
+    undoRegionAssignment(selectedRegion.id, documentId);
     onRegionUpdate({
       ...selectedRegion,
       description: null
@@ -83,23 +89,34 @@ const Sidebar = ({
       }
     };
   }, []);
-  return <div className="h-full w-full flex flex-col bg-background border-l" style={{
-    width: '400px'
-  }}>
+
+  return (
+    <div className="h-full w-full flex flex-col bg-background border-l" style={{
+      width: '400px'
+    }}>
       <div className="flex flex-col flex-1 p-4 h-full overflow-y-auto px-[24px] py-[8px] rounded-none">
         {/* Text Insert Section - Always visible */}
-        <TextInsert regions={regions} onRegionUpdate={onRegionUpdate} selectedRegion={selectedRegion} onRegionSelect={onRegionSelect} />
+        <TextInsert 
+          regions={regions} 
+          onRegionUpdate={onRegionUpdate} 
+          selectedRegion={selectedRegion} 
+          onRegionSelect={onRegionSelect}
+          documentId={documentId}
+        />
         
         {/* Selected Region Info - Only visible when a region is selected */}
-        {selectedRegion && <>
+        {selectedRegion && (
+          <>
             <Separator className="my-4" />
             
             <div className="flex justify-between items-center">
               <h3 className="text-lg font-medium">{selectedRegion.name || 'Unnamed Region'}</h3>
               <div className="flex space-x-2">
-                {isRegionAssigned(selectedRegion.id) && <Button variant="outline" size="sm" onClick={handleUndoRegionText} className="text-blue-600 hover:text-blue-800">
+                {documentId && isRegionAssigned(selectedRegion.id, documentId) && (
+                  <Button variant="outline" size="sm" onClick={handleUndoRegionText} className="text-blue-600 hover:text-blue-800">
                     <Undo2 className="h-4 w-4" />
-                  </Button>}
+                  </Button>
+                )}
                 <Button variant="outline" size="sm" onClick={handleDelete} className="text-destructive hover:text-destructive">
                   <Trash2 className="h-4 w-4" />
                 </Button>
@@ -107,15 +124,27 @@ const Sidebar = ({
             </div>
             
             <label className="text-sm font-medium mb-1 mt-4">Text:</label>
-            <Textarea ref={textareaRef} value={localDescription} onChange={handleChange} placeholder="Add a description..." className={`w-full min-h-0 h-40 resize-none ${isRegionAssigned(selectedRegion.id) ? 'border-green-500' : ''}`} />
-          </>}
+            <Textarea 
+              ref={textareaRef} 
+              value={localDescription} 
+              onChange={handleChange} 
+              placeholder="Add a description..." 
+              className={`w-full min-h-0 h-24 resize-none ${
+                documentId && isRegionAssigned(selectedRegion.id, documentId) ? 'border-green-500' : ''
+              }`} 
+            />
+          </>
+        )}
       </div>
       
       {/* Select Region Message - Visible when no region is selected */}
-      {!selectedRegion && regions.length > 0 && <div className="p-4 border-t text-center">
+      {!selectedRegion && regions.length > 0 && (
+        <div className="p-4 border-t text-center">
           <p className="text-sm text-muted-foreground">Select a region to edit its details</p>
-        </div>}
-    </div>;
+        </div>
+      )}
+    </div>
+  );
 };
 
 export default Sidebar;
