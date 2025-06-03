@@ -8,6 +8,7 @@ interface RegionOverlayProps {
   onSelect: () => void;
   onUpdate: (region: Region) => void;
   scale: number;
+  documentId: string;
 }
 
 const RegionOverlay: React.FC<RegionOverlayProps> = ({
@@ -15,7 +16,8 @@ const RegionOverlay: React.FC<RegionOverlayProps> = ({
   isSelected,
   onSelect,
   onUpdate,
-  scale
+  scale,
+  documentId
 }) => {
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
@@ -23,7 +25,7 @@ const RegionOverlay: React.FC<RegionOverlayProps> = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const { isRegionAssigned } = useTextAssignment();
 
-  const hasText = isRegionAssigned(region.id);
+  const hasText = isRegionAssigned(region.id, documentId);
   
   // Update position when region changes
   useEffect(() => {

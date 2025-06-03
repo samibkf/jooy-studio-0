@@ -22,6 +22,7 @@ interface PdfViewerProps {
   isSelectionMode: boolean;
   currentSelectionType: 'area' | null;
   onCurrentSelectionTypeChange: (type: 'area' | null) => void;
+  documentId: string | null;
 }
 
 const PdfViewer: React.FC<PdfViewerProps> = ({
@@ -34,7 +35,8 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
   onRegionDelete,
   isSelectionMode,
   currentSelectionType,
-  onCurrentSelectionTypeChange
+  onCurrentSelectionTypeChange,
+  documentId
 }) => {
   const [pdf, setPdf] = useState<PDFDocumentProxy | null>(null);
   const [currentPage, setCurrentPage] = useState(0);
@@ -62,6 +64,7 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
   const [isCopyingPage, setIsCopyingPage] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const [pageInputValue, setPageInputValue] = useState('');
   
   const getNextRegionNumber = (pageNumber: number): number => {
     const pageRegions = regions.filter(region => region.page === pageNumber);
@@ -365,6 +368,28 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
     setPreventCreateRegion(false);
   }, [currentPage]);
   
+  const handleGoToPage = () => {
+    const pageNum = parseInt(pageInputValue);
+    if (pageNum >= 1 && pageNum <= totalPages) {
+      setCurrentPage(pageNum - 1);
+      setPageInputValue('');
+      // Clear selection state when changing pages
+      setSelectionPoint(null);
+      setSelectionRect({ x: 0, y: 0, width: 0, height: 0 });
+      setIsSelecting(false);
+      setPreventCreateRegion(false);
+      setIsDoubleClickMode(false);
+    } else {
+      toast.error(`Please enter a page number between 1 and ${totalPages}`);
+    }
+  };
+
+  const handlePageInputKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleGoToPage();
+    }
+  };
+
   if (!file) {
     return <div className="flex flex-col items-center justify-center h-[calc(100vh-72px)] bg-muted">
         <div className="text-center p-10">
@@ -419,9 +444,28 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
                 <ArrowLeft className="h-4 w-4" />
                 <span className="sr-only">Previous page</span>
               </Button>
-              <span className="text-sm min-w-[100px] text-center">
-                Page {currentPage + 1} of {totalPages}
-              </span>
+              
+              <div className="flex items-center space-x-2">
+                <span className="text-sm min-w-[100px] text-center">
+                  Page {currentPage + 1} of {totalPages}
+                </span>
+                <div className="flex items-center space-x-1">
+                  <input
+                    type="number"
+                    min="1"
+                    max={totalPages}
+                    value={pageInputValue}
+                    onChange={(e) => setPageInputValue(e.target.value)}
+                    onKeyPress={handlePageInputKeyPress}
+                    placeholder="Go to..."
+                    className="w-20 px-2 py-1 text-xs border rounded text-center"
+                  />
+                  <Button variant="outline" size="sm" onClick={handleGoToPage} disabled={!pageInputValue.trim()}>
+                    Go
+                  </Button>
+                </div>
+              </div>
+              
               <Button variant="outline" size="icon" onClick={handleNextPage} disabled={currentPage >= totalPages - 1}>
                 <ArrowRight className="h-4 w-4" />
                 <span className="sr-only">Next page</span>
@@ -450,7 +494,17 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
             display: 'block'
           }} />
             
-            {pageRegions.map(region => <RegionOverlay key={region.id} region={region} isSelected={region.id === selectedRegionId} onSelect={() => onRegionSelect(region.id)} onUpdate={onRegionUpdate} scale={scale} />)}
+            {pageRegions.map(region => 
+              <RegionOverlay 
+                key={region.id} 
+                region={region} 
+                isSelected={region.id === selectedRegionId} 
+                onSelect={() => onRegionSelect(region.id)} 
+                onUpdate={onRegionUpdate} 
+                scale={scale} 
+                documentId={documentId || ''}
+              />
+            )}
             
             {isSelecting && <div className="region-selection" style={{
             left: selectionRect.x,

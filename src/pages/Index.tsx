@@ -798,6 +798,7 @@ const Index = () => {
                 isSelectionMode={!!currentSelectionType}
                 currentSelectionType={currentSelectionType}
                 onCurrentSelectionTypeChange={setCurrentSelectionType}
+                documentId={selectedDocumentId}
               />
             )}
           </div>
@@ -821,6 +822,7 @@ const Index = () => {
                   onRegionUpdate={handleRegionUpdate}
                   onRegionDelete={handleRegionDelete}
                   onRegionSelect={setSelectedRegionId}
+                  documentId={selectedDocumentId}
                 />
               </div>
             </div>
