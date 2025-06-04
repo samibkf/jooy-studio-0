@@ -16,6 +16,7 @@ import { useAuth } from '@/contexts/AuthProvider';
 import { supabase, initializeStorage } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
+import { pdfCacheService } from '@/services/pdfCacheService';
 
 const Index = () => {
   const [documents, setDocuments] = useState<DocumentData[]>([]);
@@ -111,66 +112,79 @@ const Index = () => {
             created_at: r.created_at
           }));
           
-          // First try multiple paths to see which one works
-          const filePaths = [
-            `${authState.user.id}/${doc.id}.pdf`,
-            `${doc.user_id || authState.user.id}/${doc.id}.pdf`,
-            `public/${doc.id}.pdf`
-          ];
+          // Try to get PDF from cache first
+          let pdfFile: File | null = await pdfCacheService.getCachedPDF(doc.id);
+          let fileFound = !!pdfFile;
           
-          let fileFound = false;
-          let pdfFile: File | null = null;
-
-          // Try each path with direct download
-          for (const path of filePaths) {
-            if (fileFound) continue;
+          if (!pdfFile) {
+            console.log(`PDF not in cache for document ${doc.name}, downloading...`);
             
-            console.log(`Attempting to download PDF file directly: ${path}`);
-            try {
-              const { data: fileData, error: downloadError } = await supabase.storage
-                .from('pdfs')
-                .download(path);
+            // Try multiple paths to download the file
+            const filePaths = [
+              `${authState.user.id}/${doc.id}.pdf`,
+              `${doc.user_id || authState.user.id}/${doc.id}.pdf`,
+              `public/${doc.id}.pdf`
+            ];
 
-              if (!downloadError && fileData) {
-                pdfFile = new File([fileData], doc.name, { type: 'application/pdf' });
-                fileFound = true;
-                console.log(`Successfully loaded document ${doc.name} with direct download from ${path}`);
-                break;
-              }
-            } catch (downloadError) {
-              console.warn(`Direct download failed for ${path}:`, downloadError);
-            }
-          }
-          
-          // If direct download failed, try with signed URLs
-          if (!fileFound) {
+            // Try each path with direct download
             for (const path of filePaths) {
               if (fileFound) continue;
               
+              console.log(`Attempting to download PDF file directly: ${path}`);
               try {
-                console.log(`Trying signed URL for: ${path}`);
-                const { data: signedUrlData, error: signedUrlError } = await supabase.storage
+                const { data: fileData, error: downloadError } = await supabase.storage
                   .from('pdfs')
-                  .createSignedUrl(path, 3600);
+                  .download(path);
 
-                if (!signedUrlError && signedUrlData?.signedUrl) {
-                  try {
-                    const response = await fetch(signedUrlData.signedUrl);
-                    if (response.ok) {
-                      const blob = await response.blob();
-                      pdfFile = new File([blob], doc.name, { type: 'application/pdf' });
-                      fileFound = true;
-                      console.log(`Successfully loaded document ${doc.name} with signed URL from ${path}`);
-                      break;
-                    }
-                  } catch (fetchError) {
-                    console.warn(`Fetch from signed URL failed for ${path}:`, fetchError);
-                  }
+                if (!downloadError && fileData) {
+                  pdfFile = new File([fileData], doc.name, { type: 'application/pdf' });
+                  fileFound = true;
+                  
+                  // Cache the PDF for future use
+                  await pdfCacheService.cachePDF(doc.id, pdfFile);
+                  console.log(`Successfully loaded and cached document ${doc.name} from ${path}`);
+                  break;
                 }
-              } catch (signedUrlError) {
-                console.warn(`Failed to get signed URL for ${path}:`, signedUrlError);
+              } catch (downloadError) {
+                console.warn(`Direct download failed for ${path}:`, downloadError);
               }
             }
+            
+            // If direct download failed, try with signed URLs
+            if (!fileFound) {
+              for (const path of filePaths) {
+                if (fileFound) continue;
+                
+                try {
+                  console.log(`Trying signed URL for: ${path}`);
+                  const { data: signedUrlData, error: signedUrlError } = await supabase.storage
+                    .from('pdfs')
+                    .createSignedUrl(path, 3600);
+
+                  if (!signedUrlError && signedUrlData?.signedUrl) {
+                    try {
+                      const response = await fetch(signedUrlData.signedUrl);
+                      if (response.ok) {
+                        const blob = await response.blob();
+                        pdfFile = new File([blob], doc.name, { type: 'application/pdf' });
+                        fileFound = true;
+                        
+                        // Cache the PDF for future use
+                        await pdfCacheService.cachePDF(doc.id, pdfFile);
+                        console.log(`Successfully loaded and cached document ${doc.name} with signed URL from ${path}`);
+                        break;
+                      }
+                    } catch (fetchError) {
+                      console.warn(`Fetch from signed URL failed for ${path}:`, fetchError);
+                    }
+                  }
+                } catch (signedUrlError) {
+                  console.warn(`Failed to get signed URL for ${path}:`, signedUrlError);
+                }
+              }
+            }
+          } else {
+            console.log(`Using cached PDF for document ${doc.name}`);
           }
           
           // Add the document with or without the file
@@ -204,6 +218,9 @@ const Index = () => {
           duration: 8000
         });
       }
+      
+      // Clean expired cache entries in the background
+      pdfCacheService.clearExpiredCache().catch(console.error);
       
     } catch (loadError) {
       console.error('Error loading documents:', loadError);
@@ -257,6 +274,9 @@ const Index = () => {
         toast.error('Failed to upload PDF file: ' + uploadError.message, { id: 'pdf-upload' });
         return;
       }
+      
+      // Cache the uploaded file
+      await pdfCacheService.cachePDF(documentId, file);
       
       if (reuploadDocId) {
         // Update existing document

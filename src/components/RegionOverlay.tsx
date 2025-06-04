@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { Region } from '@/types/regions';
 import { useTextAssignment } from '@/contexts/TextAssignmentContext';
@@ -23,10 +24,18 @@ const RegionOverlay: React.FC<RegionOverlayProps> = ({
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [position, setPosition] = useState({ x: region.x, y: region.y });
   const containerRef = useRef<HTMLDivElement>(null);
-  const { isRegionAssigned } = useTextAssignment();
+  const { isRegionAssigned, isReady } = useTextAssignment();
 
-  const hasText = isRegionAssigned(region.id, documentId);
+  // Wait for context to be ready before determining color state
+  const [hasText, setHasText] = useState(false);
   
+  useEffect(() => {
+    if (isReady && documentId) {
+      const assigned = isRegionAssigned(region.id, documentId);
+      setHasText(assigned);
+    }
+  }, [isReady, region.id, documentId, isRegionAssigned]);
+
   // Update position when region changes
   useEffect(() => {
     setPosition({
@@ -100,6 +109,44 @@ const RegionOverlay: React.FC<RegionOverlayProps> = ({
   const borderColor = getBorderColor();
   const bgColor = getBackgroundColor();
   const borderWidth = isSelected ? '3px' : '2px';
+
+  // Show loading state while context is initializing
+  if (!isReady) {
+    return (
+      <div
+        ref={containerRef}
+        className={`absolute cursor-move ${isSelected ? 'z-20' : 'z-10'}`}
+        style={{
+          left: `${position.x * scale}px`,
+          top: `${position.y * scale}px`,
+          width: `${region.width * scale}px`,
+          height: `${region.height * scale}px`,
+          border: `${Math.max(1, parseInt(borderWidth) * scale)}px solid rgba(156, 163, 175, 0.5)`,
+          backgroundColor: 'rgba(156, 163, 175, 0.1)',
+          boxSizing: 'border-box',
+          touchAction: 'none',
+          transformOrigin: 'top left',
+        }}
+        onClick={(e) => e.stopPropagation()}
+        id={`region-${region.id}`}
+      >
+        <div
+          className="absolute px-1 text-xs font-semibold"
+          style={{
+            backgroundColor: 'rgba(156, 163, 175, 0.5)',
+            color: 'white',
+            top: '3px',
+            left: '3px',
+            borderRadius: '2px',
+            fontSize: `${Math.max(10, 12 * scale)}px`,
+            padding: `${Math.max(1, 2 * scale)}px ${Math.max(2, 4 * scale)}px`
+          }}
+        >
+          {region.name}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div

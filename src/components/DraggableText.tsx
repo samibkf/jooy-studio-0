@@ -15,14 +15,30 @@ const DraggableText = ({ region, onRegionUpdate, documentId }: DraggableTextProp
   const { 
     getCurrentDocumentTexts,
     undoRegionAssignment,
-    isRegionAssigned
+    isRegionAssigned,
+    isReady
   } = useTextAssignment();
+
+  // Wait for context to be ready
+  if (!isReady) {
+    return (
+      <div className="mt-2 p-2 border border-dashed rounded-md bg-gray-50 transition-colors">
+        <div className="flex justify-between items-center mb-1">
+          <span className="text-xs font-medium">Loading...</span>
+        </div>
+        <div className="text-xs text-gray-500">
+          Initializing text assignments...
+        </div>
+      </div>
+    );
+  }
 
   // Get texts for current document only
   const titledTexts = getCurrentDocumentTexts(documentId);
 
   // Find the text assigned to this region
   const assignedText = titledTexts.find(text => text.assignedRegionId === region.id);
+  const regionAssigned = isRegionAssigned(region.id, documentId);
 
   const handleUndoText = () => {
     undoRegionAssignment(region.id, documentId);
@@ -35,13 +51,13 @@ const DraggableText = ({ region, onRegionUpdate, documentId }: DraggableTextProp
   return (
     <div 
       className="mt-2 p-2 border border-dashed rounded-md bg-gray-50 transition-colors"
-      style={{ borderColor: isRegionAssigned(region.id, documentId) ? '#10b981' : '#e5e7eb' }}
+      style={{ borderColor: regionAssigned ? '#10b981' : '#e5e7eb' }}
     >
       <div className="flex justify-between items-center mb-1">
         <span className="text-xs font-medium">
-          {isRegionAssigned(region.id, documentId) ? 'Assigned Text' : 'No Text Assigned'}
+          {regionAssigned ? 'Assigned Text' : 'No Text Assigned'}
         </span>
-        {isRegionAssigned(region.id, documentId) && (
+        {regionAssigned && (
           <Button
             onClick={handleUndoText}
             size="sm"
