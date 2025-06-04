@@ -15,13 +15,25 @@ class PDFCacheService {
   private storeName = 'pdfs';
   private version = 1;
   private cacheExpiryMs = 7 * 24 * 60 * 60 * 1000; // 7 days
+  private dbInstance: IDBDatabase | null = null;
 
   async initDB(): Promise<IDBDatabase> {
+    if (this.dbInstance && !this.dbInstance.objectStoreNames.contains('closed')) {
+      return this.dbInstance;
+    }
+
     return new Promise((resolve, reject) => {
       const request = indexedDB.open(this.dbName, this.version);
       
-      request.onerror = () => reject(request.error);
-      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => {
+        console.error('IndexedDB error:', request.error);
+        reject(request.error);
+      };
+      
+      request.onsuccess = () => {
+        this.dbInstance = request.result;
+        resolve(request.result);
+      };
       
       request.onupgradeneeded = () => {
         const db = request.result;
@@ -42,11 +54,16 @@ class PDFCacheService {
       return new Promise((resolve, reject) => {
         const request = store.get(documentId);
         
-        request.onerror = () => reject(request.error);
+        request.onerror = () => {
+          console.error('Error getting cached PDF:', request.error);
+          reject(request.error);
+        };
+        
         request.onsuccess = () => {
           const result = request.result as CachedPDF | undefined;
           
           if (!result) {
+            console.log(`No cached PDF found for document: ${documentId}`);
             resolve(null);
             return;
           }
@@ -54,12 +71,14 @@ class PDFCacheService {
           // Check if cache is expired
           const now = Date.now();
           if (now - result.timestamp > this.cacheExpiryMs) {
+            console.log(`Cache expired for document: ${documentId}`);
             // Cache expired, remove it
             this.removeCachedPDF(documentId);
             resolve(null);
             return;
           }
           
+          console.log(`Using cached PDF for document: ${documentId}`);
           resolve(result.file);
         };
       });
@@ -85,8 +104,15 @@ class PDFCacheService {
       return new Promise((resolve, reject) => {
         const request = store.put(cachedPDF);
         
-        request.onerror = () => reject(request.error);
-        request.onsuccess = () => resolve(true);
+        request.onerror = () => {
+          console.error('Error caching PDF:', request.error);
+          reject(request.error);
+        };
+        
+        request.onsuccess = () => {
+          console.log(`Successfully cached PDF for document: ${documentId}`);
+          resolve(true);
+        };
       });
     } catch (error) {
       console.error('Error caching PDF:', error);
@@ -103,8 +129,15 @@ class PDFCacheService {
       return new Promise((resolve, reject) => {
         const request = store.delete(documentId);
         
-        request.onerror = () => reject(request.error);
-        request.onsuccess = () => resolve(true);
+        request.onerror = () => {
+          console.error('Error removing cached PDF:', request.error);
+          reject(request.error);
+        };
+        
+        request.onsuccess = () => {
+          console.log(`Successfully removed cached PDF for document: ${documentId}`);
+          resolve(true);
+        };
       });
     } catch (error) {
       console.error('Error removing cached PDF:', error);
@@ -125,13 +158,19 @@ class PDFCacheService {
       return new Promise((resolve, reject) => {
         const request = index.openCursor(range);
         
-        request.onerror = () => reject(request.error);
+        request.onerror = () => {
+          console.error('Error clearing expired cache:', request.error);
+          reject(request.error);
+        };
+        
         request.onsuccess = () => {
           const cursor = request.result;
           if (cursor) {
+            console.log(`Removing expired cache for document: ${cursor.value.id}`);
             cursor.delete();
             cursor.continue();
           } else {
+            console.log('Finished clearing expired cache');
             resolve();
           }
         };
@@ -139,6 +178,11 @@ class PDFCacheService {
     } catch (error) {
       console.error('Error clearing expired cache:', error);
     }
+  }
+
+  async isCached(documentId: string): Promise<boolean> {
+    const cachedFile = await this.getCachedPDF(documentId);
+    return cachedFile !== null;
   }
 }
 

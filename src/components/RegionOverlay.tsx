@@ -24,17 +24,18 @@ const RegionOverlay: React.FC<RegionOverlayProps> = ({
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [position, setPosition] = useState({ x: region.x, y: region.y });
   const containerRef = useRef<HTMLDivElement>(null);
-  const { isRegionAssigned, isReady } = useTextAssignment();
+  const { isRegionAssigned, isReady, isLoading } = useTextAssignment();
 
-  // Wait for context to be ready before determining color state
+  // Track assignment state with detailed logging
   const [hasText, setHasText] = useState(false);
   
   useEffect(() => {
-    if (isReady && documentId) {
+    if (isReady && documentId && !isLoading) {
       const assigned = isRegionAssigned(region.id, documentId);
+      console.log(`Region ${region.id} (${region.name}) assignment check: ${assigned}`);
       setHasText(assigned);
     }
-  }, [isReady, region.id, documentId, isRegionAssigned]);
+  }, [isReady, isLoading, region.id, documentId, isRegionAssigned]);
 
   // Update position when region changes
   useEffect(() => {
@@ -111,7 +112,7 @@ const RegionOverlay: React.FC<RegionOverlayProps> = ({
   const borderWidth = isSelected ? '3px' : '2px';
 
   // Show loading state while context is initializing
-  if (!isReady) {
+  if (!isReady || isLoading) {
     return (
       <div
         ref={containerRef}
@@ -142,7 +143,7 @@ const RegionOverlay: React.FC<RegionOverlayProps> = ({
             padding: `${Math.max(1, 2 * scale)}px ${Math.max(2, 4 * scale)}px`
           }}
         >
-          {region.name}
+          Loading...
         </div>
       </div>
     );

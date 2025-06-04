@@ -48,56 +48,68 @@ export const TextAssignmentProvider: React.FC<{ children: React.ReactNode }> = (
   const [isLoading, setIsLoading] = useState(true);
   const [isReady, setIsReady] = useState(false);
 
+  // Initialize state from localStorage synchronously
+  const initializeFromStorage = () => {
+    try {
+      console.log('Initializing text assignments from localStorage...');
+      const savedState = localStorage.getItem(LOCAL_STORAGE_KEY);
+      
+      if (savedState) {
+        try {
+          const parsedState = JSON.parse(savedState);
+          console.log('Raw localStorage data:', parsedState);
+          
+          // Validate the structure
+          if (typeof parsedState === 'object' && parsedState !== null) {
+            const validatedState: Record<string, DocumentAssignments> = {};
+            
+            Object.entries(parsedState).forEach(([docId, assignment]) => {
+              if (assignment && typeof assignment === 'object') {
+                const typedAssignment = assignment as DocumentAssignments;
+                if (Array.isArray(typedAssignment.titledTexts)) {
+                  validatedState[docId] = {
+                    titledTexts: typedAssignment.titledTexts.map(text => ({
+                      title: text.title || '',
+                      content: text.content || '',
+                      assignedRegionId: text.assignedRegionId
+                    })),
+                    originalTexts: typedAssignment.originalTexts || {}
+                  };
+                  console.log(`Loaded assignments for document ${docId}:`, validatedState[docId]);
+                }
+              }
+            });
+            
+            setDocumentAssignments(validatedState);
+            console.log('Successfully loaded text assignments:', validatedState);
+          }
+        } catch (parseError) {
+          console.error('Error parsing text assignments from localStorage:', parseError);
+          // Don't clear corrupted data immediately, let user know
+          console.warn('Corrupted data detected, but keeping it for recovery');
+        }
+      } else {
+        console.log('No existing text assignments found in localStorage');
+      }
+    } catch (error) {
+      console.error('Error loading text assignments:', error);
+    }
+  };
+
   // Load state from localStorage on initial render
   useEffect(() => {
     const loadStoredData = async () => {
-      try {
-        setIsLoading(true);
-        
-        // Add a small delay to ensure DOM is ready
-        await new Promise(resolve => setTimeout(resolve, 100));
-        
-        const savedState = localStorage.getItem(LOCAL_STORAGE_KEY);
-        if (savedState) {
-          try {
-            const parsedState = JSON.parse(savedState);
-            
-            // Validate the structure
-            if (typeof parsedState === 'object' && parsedState !== null) {
-              // Validate each document assignment
-              const validatedState: Record<string, DocumentAssignments> = {};
-              
-              Object.entries(parsedState).forEach(([docId, assignment]) => {
-                if (assignment && typeof assignment === 'object') {
-                  const typedAssignment = assignment as DocumentAssignments;
-                  if (Array.isArray(typedAssignment.titledTexts)) {
-                    validatedState[docId] = {
-                      titledTexts: typedAssignment.titledTexts.map(text => ({
-                        title: text.title || '',
-                        content: text.content || '',
-                        assignedRegionId: text.assignedRegionId
-                      })),
-                      originalTexts: typedAssignment.originalTexts || {}
-                    };
-                  }
-                }
-              });
-              
-              setDocumentAssignments(validatedState);
-              console.log('Loaded text assignments from localStorage:', validatedState);
-            }
-          } catch (parseError) {
-            console.error('Error parsing text assignments from localStorage:', parseError);
-            // Clear corrupted data
-            localStorage.removeItem(LOCAL_STORAGE_KEY);
-          }
-        }
-      } catch (error) {
-        console.error('Error loading text assignments:', error);
-      } finally {
-        setIsLoading(false);
-        setIsReady(true);
-      }
+      setIsLoading(true);
+      
+      // Initialize synchronously first
+      initializeFromStorage();
+      
+      // Add a small delay to ensure DOM is ready, then mark as ready
+      await new Promise(resolve => setTimeout(resolve, 50));
+      
+      setIsLoading(false);
+      setIsReady(true);
+      console.log('Text assignment context is now ready');
     };
 
     loadStoredData();
@@ -108,23 +120,22 @@ export const TextAssignmentProvider: React.FC<{ children: React.ReactNode }> = (
     if (!isReady) return;
     
     try {
-      if (Object.keys(documentAssignments).length > 0) {
-        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(documentAssignments));
-        console.log('Saved text assignments to localStorage');
-      }
+      const dataToSave = JSON.stringify(documentAssignments);
+      localStorage.setItem(LOCAL_STORAGE_KEY, dataToSave);
+      console.log('Saved text assignments to localStorage:', documentAssignments);
     } catch (error) {
       console.error('Error saving text assignments to localStorage:', error);
     }
   }, [documentAssignments, isReady]);
 
   const getCurrentDocumentTexts = (documentId: string): TitledText[] => {
-    if (!isReady) return [];
-    return documentAssignments[documentId]?.titledTexts || [];
+    const result = documentAssignments[documentId]?.titledTexts || [];
+    console.log(`Getting texts for document ${documentId}:`, result);
+    return result;
   };
 
   const setTitledTexts = (documentId: string, texts: TitledText[]) => {
-    if (!isReady) return;
-    
+    console.log(`Setting texts for document ${documentId}:`, texts);
     setDocumentAssignments(prev => ({
       ...prev,
       [documentId]: {
@@ -135,23 +146,22 @@ export const TextAssignmentProvider: React.FC<{ children: React.ReactNode }> = (
   };
 
   const resetAssignments = (documentId?: string) => {
-    if (!isReady) return;
-    
     if (documentId) {
+      console.log(`Resetting assignments for document: ${documentId}`);
       setDocumentAssignments(prev => {
         const newState = { ...prev };
         delete newState[documentId];
         return newState;
       });
     } else {
+      console.log('Resetting all assignments');
       setDocumentAssignments({});
       localStorage.removeItem(LOCAL_STORAGE_KEY);
     }
   };
 
   const assignTextsToRegions = (text: string, regions: Region[], documentId: string): TitledText[] => {
-    if (!isReady) return [];
-    
+    console.log(`Assigning texts to regions for document ${documentId}`);
     const parsedTexts = parseTitledText(text);
     const newTitledTexts = [...parsedTexts];
     const newOriginalTexts: Record<string, string | null> = {};
@@ -169,13 +179,12 @@ export const TextAssignmentProvider: React.FC<{ children: React.ReactNode }> = (
       }
     }));
     
-    // Return the texts for immediate use
+    console.log(`Processed ${newTitledTexts.length} texts for document ${documentId}`);
     return newTitledTexts;
   };
 
   const undoAllAssignments = (documentId: string) => {
-    if (!isReady) return;
-    
+    console.log(`Undoing all assignments for document: ${documentId}`);
     setDocumentAssignments(prev => ({
       ...prev,
       [documentId]: {
@@ -189,8 +198,7 @@ export const TextAssignmentProvider: React.FC<{ children: React.ReactNode }> = (
   };
 
   const undoRegionAssignment = (regionId: string, documentId: string) => {
-    if (!isReady) return;
-    
+    console.log(`Undoing assignment for region ${regionId} in document ${documentId}`);
     setDocumentAssignments(prev => ({
       ...prev,
       [documentId]: {
@@ -205,8 +213,7 @@ export const TextAssignmentProvider: React.FC<{ children: React.ReactNode }> = (
   };
 
   const assignTextToRegion = (textIndex: number, regionId: string, documentId: string) => {
-    if (!isReady) return;
-    
+    console.log(`Assigning text ${textIndex} to region ${regionId} in document ${documentId}`);
     setDocumentAssignments(prev => ({
       ...prev,
       [documentId]: {
@@ -221,29 +228,25 @@ export const TextAssignmentProvider: React.FC<{ children: React.ReactNode }> = (
   };
 
   const getAssignedText = (regionId: string, documentId: string): string | null => {
-    if (!isReady) return null;
-    
     const assignedText = (documentAssignments[documentId]?.titledTexts || []).find(text => text.assignedRegionId === regionId);
-    return assignedText ? assignedText.content : null;
+    const result = assignedText ? assignedText.content : null;
+    console.log(`Getting assigned text for region ${regionId}:`, result ? 'found' : 'not found');
+    return result;
   };
 
   const isRegionAssigned = (regionId: string, documentId: string): boolean => {
-    if (!isReady) return false;
-    
-    return (documentAssignments[documentId]?.titledTexts || []).some(text => text.assignedRegionId === regionId);
+    const assigned = (documentAssignments[documentId]?.titledTexts || []).some(text => text.assignedRegionId === regionId);
+    console.log(`Checking if region ${regionId} is assigned: ${assigned}`);
+    return assigned;
   };
 
   // Get regions that don't have text assigned to them
   const getUnassignedRegions = (regions: Region[], documentId: string): Region[] => {
-    if (!isReady) return regions;
-    
     return regions.filter(region => !isRegionAssigned(region.id, documentId));
   };
   
   // Get unassigned regions from a specific page
   const getUnassignedRegionsByPage = (regions: Region[], pageNumber: number, documentId: string): Region[] => {
-    if (!isReady) return regions.filter(region => region.page === pageNumber);
-    
     return regions.filter(region => 
       !isRegionAssigned(region.id, documentId) && region.page === pageNumber
     );

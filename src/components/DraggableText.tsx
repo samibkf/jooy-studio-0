@@ -16,18 +16,19 @@ const DraggableText = ({ region, onRegionUpdate, documentId }: DraggableTextProp
     getCurrentDocumentTexts,
     undoRegionAssignment,
     isRegionAssigned,
-    isReady
+    isReady,
+    isLoading
   } = useTextAssignment();
 
-  // Wait for context to be ready
-  if (!isReady) {
+  // Wait for context to be ready and not loading
+  if (!isReady || isLoading) {
     return (
       <div className="mt-2 p-2 border border-dashed rounded-md bg-gray-50 transition-colors">
         <div className="flex justify-between items-center mb-1">
-          <span className="text-xs font-medium">Loading...</span>
+          <span className="text-xs font-medium">Loading assignments...</span>
         </div>
         <div className="text-xs text-gray-500">
-          Initializing text assignments...
+          Checking text assignments...
         </div>
       </div>
     );
@@ -40,7 +41,10 @@ const DraggableText = ({ region, onRegionUpdate, documentId }: DraggableTextProp
   const assignedText = titledTexts.find(text => text.assignedRegionId === region.id);
   const regionAssigned = isRegionAssigned(region.id, documentId);
 
+  console.log(`DraggableText for region ${region.id}: assigned=${regionAssigned}, hasText=${!!assignedText}`);
+
   const handleUndoText = () => {
+    console.log(`Undoing text assignment for region ${region.id}`);
     undoRegionAssignment(region.id, documentId);
     onRegionUpdate({
       ...region,

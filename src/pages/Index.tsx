@@ -27,6 +27,8 @@ const Index = () => {
   const [retryCount, setRetryCount] = useState<Record<string, number>>({});
   const [storageInitialized, setStorageInitialized] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
+  const [documentsLoaded, setDocumentsLoaded] = useState(false);
 
   const {
     selectedRegionId,
@@ -44,6 +46,11 @@ const Index = () => {
   const navigate = useNavigate();
 
   const loadDocuments = async () => {
+    if (documentsLoaded && !isInitialLoad) {
+      console.log('Documents already loaded, skipping reload');
+      return;
+    }
+
     setIsLoading(true);
     try {
       console.log("Loading documents for user:", authState.user.id);
@@ -75,6 +82,7 @@ const Index = () => {
       
       if (!dbDocuments || dbDocuments.length === 0) {
         console.log("No documents found for user");
+        setDocumentsLoaded(true);
         setIsLoading(false);
         return;
       }
@@ -112,11 +120,13 @@ const Index = () => {
             created_at: r.created_at
           }));
           
-          // Try to get PDF from cache first
+          // PRIORITIZE CACHE: Try to get PDF from cache FIRST
           let pdfFile: File | null = await pdfCacheService.getCachedPDF(doc.id);
           let fileFound = !!pdfFile;
           
-          if (!pdfFile) {
+          if (pdfFile) {
+            console.log(`Using cached PDF for document ${doc.name}`);
+          } else {
             console.log(`PDF not in cache for document ${doc.name}, downloading...`);
             
             // Try multiple paths to download the file
@@ -183,8 +193,6 @@ const Index = () => {
                 }
               }
             }
-          } else {
-            console.log(`Using cached PDF for document ${doc.name}`);
           }
           
           // Add the document with or without the file
@@ -210,10 +218,11 @@ const Index = () => {
 
       setDocuments(validDocuments);
       setRegionsCache(newCache);
+      setDocumentsLoaded(true);
       
       console.log("Processed documents:", validDocuments.length, "Documents with issues:", documentWithIssues);
       
-      if (documentWithIssues > 0) {
+      if (documentWithIssues > 0 && isInitialLoad) {
         toast.warning(`${documentWithIssues} document(s) have PDF access issues. You may need to re-upload them.`, {
           duration: 8000
         });
@@ -227,6 +236,7 @@ const Index = () => {
       toast.error('Failed to load documents');
     } finally {
       setIsLoading(false);
+      setIsInitialLoad(false);
     }
   };
 
@@ -685,6 +695,20 @@ const Index = () => {
         return;
       }
       
+      // First check cache again
+      let pdfFile = await pdfCacheService.getCachedPDF(selectedDocumentId);
+      
+      if (pdfFile) {
+        console.log('Found document in cache during retry');
+        setDocuments(prev => 
+          prev.map(d => 
+            d.id === selectedDocumentId ? { ...d, file: pdfFile!, fileAvailable: true, uploadRequired: false } : d
+          )
+        );
+        toast.success('Document loaded from cache', { id: 'retry-load' });
+        return;
+      }
+      
       const filePath = `${authState.user.id}/${selectedDocumentId}.pdf`;
       
       // Try direct download first
@@ -712,29 +736,23 @@ const Index = () => {
         }
         
         const blob = await response.blob();
-        const file = new File([blob], doc.name, { type: 'application/pdf' });
-        
-        // Update document with file
-        setDocuments(prev => 
-          prev.map(d => 
-            d.id === selectedDocumentId ? { ...d, file, fileAvailable: true } : d
-          )
-        );
-        
-        toast.success('Document loaded successfully', { id: 'retry-load' });
+        pdfFile = new File([blob], doc.name, { type: 'application/pdf' });
       } else {
         // Direct download succeeded
-        const file = new File([fileData], doc.name, { type: 'application/pdf' });
-        
-        // Update document with file
-        setDocuments(prev => 
-          prev.map(d => 
-            d.id === selectedDocumentId ? { ...d, file, fileAvailable: true } : d
-          )
-        );
-        
-        toast.success('Document loaded successfully', { id: 'retry-load' });
+        pdfFile = new File([fileData], doc.name, { type: 'application/pdf' });
       }
+      
+      // Cache the successfully loaded file
+      await pdfCacheService.cachePDF(selectedDocumentId, pdfFile);
+      
+      // Update document with file
+      setDocuments(prev => 
+        prev.map(d => 
+          d.id === selectedDocumentId ? { ...d, file: pdfFile!, fileAvailable: true, uploadRequired: false } : d
+        )
+      );
+      
+      toast.success('Document loaded successfully', { id: 'retry-load' });
     } catch (error) {
       console.error('Error retrying document load:', error);
       toast.error('Failed to reload document', { id: 'retry-load' });
