@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Document, Page, pdfjs } from 'react-pdf';
 import 'react-pdf/dist/esm/Page/AnnotationLayer.css';
@@ -9,6 +10,7 @@ import { Button } from './ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
+
 pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.js`;
 
 interface PdfViewerProps {
@@ -71,7 +73,7 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
   };
 
   const goToPage = (page: number) => {
-    if (page >= 1 && page <= numPages) {
+    if (page >= 1 && page <= (numPages || 1)) {
       setCurrentPage(page);
       onPageChange?.(page);
     }
@@ -144,7 +146,7 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
     setEndPosition(null);
   };
 
-  const getOverlayStyle = () => {
+  const getOverlayStyle = (): React.CSSProperties => {
     if (!isDrawing || !startPosition || !endPosition) return { display: 'none' };
 
     const startX = Math.min(startPosition.x, endPosition.x);
@@ -153,14 +155,14 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
     const height = Math.abs(startPosition.y - endPosition.y);
 
     return {
-      position: 'absolute',
+      position: 'absolute' as const,
       left: `${startX * scale}px`,
       top: `${startY * scale}px`,
       width: `${width * scale}px`,
       height: `${height * scale}px`,
       border: '2px dashed #2563eb',
       backgroundColor: 'rgba(37, 99, 235, 0.2)',
-      pointerEvents: 'none',
+      pointerEvents: 'none' as const,
     };
   };
 
