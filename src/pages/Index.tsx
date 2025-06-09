@@ -761,7 +761,7 @@ const Index = () => {
   };
 
   const handlePageChange = (page: number) => {
-    setCurrentPage(page);
+    setCurrentPage(page); // page is now consistently 1-based from PdfViewer
   };
 
   return (
