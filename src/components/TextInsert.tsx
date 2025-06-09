@@ -15,6 +15,7 @@ interface TextInsertProps {
   selectedRegion: Region | null;
   onRegionSelect: (regionId: string) => void;
   documentId: string | null;
+  currentPage: number;
 }
 
 const TextInsert = ({
@@ -22,7 +23,8 @@ const TextInsert = ({
   onRegionUpdate,
   selectedRegion,
   onRegionSelect,
-  documentId
+  documentId,
+  currentPage
 }: TextInsertProps) => {
   const [inputText, setInputText] = useState<string>('');
   const [activeTextIndex, setActiveTextIndex] = useState<number | null>(null);

@@ -29,6 +29,7 @@ const Index = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
   const [documentsLoaded, setDocumentsLoaded] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1); // Add current page state
 
   const {
     selectedRegionId,
@@ -374,6 +375,7 @@ const Index = () => {
     }
     
     setSelectedDocumentId(documentId);
+    setCurrentPage(1); // Reset to page 1 when switching documents
     resetStates();
   };
 
@@ -759,6 +761,10 @@ const Index = () => {
     }
   };
 
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
+
   return (
     <ProtectedRoute>
       <div className="flex flex-col h-screen">
@@ -836,6 +842,7 @@ const Index = () => {
                 currentSelectionType={currentSelectionType}
                 onCurrentSelectionTypeChange={setCurrentSelectionType}
                 documentId={selectedDocumentId}
+                onPageChange={handlePageChange}
               />
             )}
           </div>
@@ -860,6 +867,7 @@ const Index = () => {
                   onRegionDelete={handleRegionDelete}
                   onRegionSelect={setSelectedRegionId}
                   documentId={selectedDocumentId}
+                  currentPage={currentPage}
                 />
               </div>
             </div>
