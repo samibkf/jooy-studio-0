@@ -141,10 +141,10 @@ const Index = () => {
           } else {
             console.log(`PDF not in cache for document ${doc.name}, downloading...`);
             
-            // Updated file paths - PDFs now stored in user-specific folders
+            // Updated file paths - PDFs now stored in root, with fallbacks
             const filePaths = [
-              `${authState.user.id}/${doc.id}.pdf`, // New structure: user_id/document_id.pdf
-              `${doc.id}.pdf`, // Fallback for files stored in root
+              `${doc.id}.pdf`, // Primary: Store in root
+              `${authState.user.id}/${doc.id}.pdf`, // Fallback for user folders
               `public/${doc.id}.pdf` // Legacy fallback
             ];
 
@@ -296,8 +296,8 @@ const Index = () => {
 
       toast.loading('Uploading PDF file...', { id: 'pdf-upload' });
       
-      // Store PDF in user-specific folder with 5-letter ID (fixed structure)
-      const filePath = `${authState.user.id}/${documentId}.pdf`;
+      // Store PDF in bucket root with 5-letter ID
+      const filePath = `${documentId}.pdf`;
       console.log(`Uploading PDF to ${filePath}`);
       
       const { error: uploadError } = await supabase.storage
@@ -444,10 +444,10 @@ const Index = () => {
     try {
       console.log('Attempting to delete document:', documentId);
 
-      // Delete PDF from user-specific folder
+      // Delete PDF from bucket root
       const { error: storageError } = await supabase.storage
         .from('pdfs')
-        .remove([`${authState.user.id}/${documentId}.pdf`]);
+        .remove([`${documentId}.pdf`]);
 
       if (storageError) {
         console.error('Error deleting file from storage:', storageError);
@@ -752,7 +752,7 @@ const Index = () => {
         return;
       }
       
-      const filePath = `${authState.user.id}/${selectedDocumentId}.pdf`;
+      const filePath = `${selectedDocumentId}.pdf`;
       
       // Try direct download first
       const { data: fileData, error: downloadError } = await supabase.storage
