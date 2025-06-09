@@ -1,4 +1,3 @@
-
 import React, { useState, useRef } from 'react';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
@@ -38,9 +37,6 @@ const TextInsert = ({
     getUnassignedRegionsByPage
   } = useTextAssignment();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-
-  // Get current page from selected region or default to 1
-  const currentPage = selectedRegion?.page || 1;
 
   // Get texts for current document and current page only
   const titledTexts = documentId ? getCurrentPageTexts(documentId, currentPage) : [];
