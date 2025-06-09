@@ -1,4 +1,3 @@
-
 import React, { useState, useRef } from 'react';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
@@ -40,7 +39,7 @@ const TextInsert = ({
   // Get texts for current document only
   const titledTexts = documentId ? getCurrentDocumentTexts(documentId) : [];
 
-  const handleInsertText = () => {
+  const handleInsertText = async () => {
     if (!inputText.trim()) {
       toast.error('Please enter some text to insert');
       return;
@@ -52,7 +51,7 @@ const TextInsert = ({
     }
 
     // Process the input text and get titled sections
-    const processedTexts = assignTextsToRegions(inputText, regions, documentId);
+    const processedTexts = await assignTextsToRegions(inputText, regions, documentId);
 
     // Sort regions by their name to ensure proper assignment order
     const sortedRegions = [...regions].sort((a, b) => {
