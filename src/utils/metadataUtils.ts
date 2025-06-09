@@ -83,7 +83,8 @@ export const uploadMetadata = async (
   
   try {
     const metadataJson = JSON.stringify(metadata, null, 2);
-    const fileName = `${userId}/${documentId}.json`;
+    // Store metadata directly in bucket root using document ID only
+    const fileName = `${documentId}.json`;
 
     const { error } = await supabase.storage
       .from('data')
@@ -112,7 +113,8 @@ export const updateMetadata = async (
   console.warn('updateMetadata is deprecated. Use useDocumentMetadata hook instead.');
   
   try {
-    const fileName = `${userId}/${documentId}.json`;
+    // Store metadata directly in bucket root using document ID only
+    const fileName = `${documentId}.json`;
     
     const { data: existingData } = await supabase.storage
       .from('data')
@@ -155,7 +157,8 @@ export const deleteMetadata = async (documentId: string, userId: string): Promis
   console.warn('deleteMetadata is deprecated. Use useDocumentMetadata hook instead.');
   
   try {
-    const fileName = `${userId}/${documentId}.json`;
+    // Store metadata directly in bucket root using document ID only
+    const fileName = `${documentId}.json`;
     
     const { error } = await supabase.storage
       .from('data')

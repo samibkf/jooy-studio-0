@@ -93,7 +93,8 @@ export const useDocumentMetadata = ({
 
     try {
       const metadataJson = JSON.stringify(metadata, null, 2);
-      const fileName = `${authState.user.id}/${docId}.json`;
+      // Store metadata directly in bucket root using document ID only
+      const fileName = `${docId}.json`;
 
       const { error } = await supabase.storage
         .from('data')
