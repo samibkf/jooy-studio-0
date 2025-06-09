@@ -1,17 +1,15 @@
-
-import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { Document, Page, pdfjs } from 'react-pdf';
-import 'react-pdf/dist/esm/Page/AnnotationLayer.css';
-import 'react-pdf/dist/esm/Page/TextLayer.css';
+import React, { useState, useRef, useEffect } from 'react';
+import * as pdfjsLib from 'pdfjs-dist';
+import { PDFDocumentProxy } from 'pdfjs-dist';
 import { Region } from '@/types/regions';
 import RegionOverlay from './RegionOverlay';
-import { Plus, RectangleHorizontal, TextCursor } from 'lucide-react';
-import { Button } from './ui/button';
-import { Separator } from '@/components/ui/separator';
-import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
-
-pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.js`;
+import { Button } from '@/components/ui/button';
+import { toast } from 'sonner';
+import { ArrowLeft, ArrowRight, MousePointer, Copy } from 'lucide-react';
+import { Toggle } from '@/components/ui/toggle';
+import { TooltipProvider, TooltipTrigger, TooltipContent, Tooltip } from '@/components/ui/tooltip';
+import { ScrollArea } from '@/components/ui/scroll-area';
+pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
 
 interface PdfViewerProps {
   file: File | null;
@@ -22,10 +20,9 @@ interface PdfViewerProps {
   onRegionSelect: (regionId: string | null) => void;
   onRegionDelete: (regionId: string) => void;
   isSelectionMode: boolean;
-  currentSelectionType: string | null;
-  onCurrentSelectionTypeChange: (type: string | null) => void;
+  currentSelectionType: 'area' | null;
+  onCurrentSelectionTypeChange: (type: 'area' | null) => void;
   documentId: string | null;
-  onPageChange?: (page: number) => void;
 }
 
 const PdfViewer: React.FC<PdfViewerProps> = ({
@@ -39,277 +36,490 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
   isSelectionMode,
   currentSelectionType,
   onCurrentSelectionTypeChange,
-  documentId,
-  onPageChange
+  documentId
 }) => {
-  const [numPages, setNumPages] = useState<number | null>(null);
-  const [currentPage, setCurrentPage] = useState<number>(1);
-  const [scale, setScale] = useState<number>(1.5);
-  const [isDrawing, setIsDrawing] = useState(false);
-  const [startPosition, setStartPosition] = useState<{ x: number; y: number } | null>(null);
-  const [endPosition, setEndPosition] = useState<{ x: number; y: number } | null>(null);
+  const [pdf, setPdf] = useState<PDFDocumentProxy | null>(null);
+  const [currentPage, setCurrentPage] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+  const [scale, setScale] = useState(1.0);
+  const [isSelecting, setIsSelecting] = useState(false);
+  const [selectionStart, setSelectionStart] = useState({
+    x: 0,
+    y: 0
+  });
+  const [selectionRect, setSelectionRect] = useState({
+    x: 0,
+    y: 0,
+    width: 0,
+    height: 0
+  });
+  const [selectionPoint, setSelectionPoint] = useState<{
+    x: number;
+    y: number;
+  } | null>(null);
+  const [isDoubleClickMode, setIsDoubleClickMode] = useState(false);
+  const [preventCreateRegion, setPreventCreateRegion] = useState(false);
+  const [isTemporarilyBlocked, setIsTemporarilyBlocked] = useState(false);
+  const [creationTimeoutId, setCreationTimeoutId] = useState<number | null>(null);
+  const [isCopyingPage, setIsCopyingPage] = useState(false);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const pdfViewerRef = useRef<HTMLDivElement>(null);
-
-  // Load regions for current page
-  const currentPageRegions = regions.filter(region => region.page === currentPage);
-
-  const onDocumentLoadSuccess = ({ numPages }: { numPages: number }) => {
-    setNumPages(numPages);
+  const [pageInputValue, setPageInputValue] = useState('');
+  
+  const getNextRegionNumber = (pageNumber: number): number => {
+    const pageRegions = regions.filter(region => region.page === pageNumber);
+    if (pageRegions.length === 0) {
+      return 1;
+    }
+    const regionNumbers = pageRegions.map(region => {
+      const parts = region.name.split('_');
+      return parts.length > 1 ? parseInt(parts[1], 10) : 0;
+    }).filter(num => !isNaN(num));
+    return Math.max(...regionNumbers, 0) + 1;
   };
-
-  const goToPrevPage = () => {
-    if (currentPage > 1) {
-      setCurrentPage(currentPage - 1);
-      onPageChange?.(currentPage - 1);
+  
+  useEffect(() => {
+    if (!file) return;
+    const loadPdf = async () => {
+      try {
+        const fileArrayBuffer = await file.arrayBuffer();
+        const loadingTask = pdfjsLib.getDocument({
+          data: fileArrayBuffer
+        });
+        const pdfDocument = await loadingTask.promise;
+        setPdf(pdfDocument);
+        setTotalPages(pdfDocument.numPages);
+        setCurrentPage(0);
+        toast.success(`PDF loaded with ${pdfDocument.numPages} pages`);
+      } catch (error) {
+        console.error('Error loading PDF:', error);
+        toast.error('Failed to load PDF');
+      }
+    };
+    loadPdf();
+  }, [file]);
+  
+  useEffect(() => {
+    if (!pdf || !canvasRef.current) return;
+    const renderPage = async () => {
+      try {
+        const page = await pdf.getPage(currentPage + 1);
+        const viewport = page.getViewport({
+          scale
+        });
+        const canvas = canvasRef.current!;
+        const canvasContext = canvas.getContext('2d');
+        if (!canvasContext) return;
+        canvas.width = viewport.width;
+        canvas.height = viewport.height;
+        await page.render({
+          canvasContext,
+          viewport
+        }).promise;
+      } catch (error) {
+        console.error('Error rendering page:', error);
+        toast.error('Failed to render page');
+      }
+    };
+    renderPage();
+  }, [pdf, currentPage, scale]);
+  
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.key === 'Delete' || e.key === 'Backspace') && selectedRegionId && document.activeElement instanceof HTMLElement && !['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) {
+        onRegionDelete(selectedRegionId);
+        toast.success('Region deleted');
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [selectedRegionId, onRegionDelete]);
+  
+  // Clear the timeout when component unmounts
+  useEffect(() => {
+    return () => {
+      if (creationTimeoutId !== null) {
+        window.clearTimeout(creationTimeoutId);
+      }
+    };
+  }, [creationTimeoutId]);
+  
+  const createRegion = (rect: {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  }) => {
+    if (rect.width > 10 && rect.height > 10) {
+      const nextNumber = getNextRegionNumber(currentPage + 1);
+      const regionName = `${currentPage + 1}_${nextNumber}`;
+      const newRegion: Omit<Region, 'id'> = {
+        page: currentPage + 1,
+        x: rect.x,
+        y: rect.y,
+        width: rect.width,
+        height: rect.height,
+        type: 'area',
+        name: regionName,
+        description: ''
+      };
+      
+      // Create region
+      onRegionCreate(newRegion);
+      
+      // Block further region creation temporarily
+      setIsTemporarilyBlocked(true);
+      const timeoutId = window.setTimeout(() => {
+        setIsTemporarilyBlocked(false);
+      }, 500);
+      setCreationTimeoutId(timeoutId);
     }
   };
-
-  const goToNextPage = () => {
-    if (numPages && currentPage < numPages) {
-      setCurrentPage(currentPage + 1);
-      onPageChange?.(currentPage + 1);
+  
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (!isSelectionMode && !isDoubleClickMode || !containerRef.current || isTemporarilyBlocked) return;
+    const rect = containerRef.current.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    if (selectionPoint) {
+      const currentRect = {
+        x: selectionRect.x,
+        y: selectionRect.y,
+        width: selectionRect.width,
+        height: selectionRect.height
+      };
+      
+      // Reset selection
+      setSelectionRect({
+        x: 0,
+        y: 0,
+        width: 0,
+        height: 0
+      });
+      setSelectionPoint(null);
+      setIsSelecting(false);
+      setIsDoubleClickMode(false);
+      
+      // Create region outside of the render flow
+      createRegion(currentRect);
+    } else {
+      setSelectionPoint({
+        x,
+        y
+      });
+      setSelectionRect({
+        x,
+        y,
+        width: 0,
+        height: 0
+      });
+      setIsSelecting(true);
     }
   };
-
-  const goToPage = (page: number) => {
-    if (page >= 1 && page <= (numPages || 1)) {
-      setCurrentPage(page);
-      onPageChange?.(page);
-    }
-  };
-
-  const handleScaleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setScale(parseFloat(event.target.value));
-  };
-
-  const startDrawing = (event: React.MouseEvent) => {
-    if (!isSelectionMode || currentSelectionType === null || !containerRef.current || event.button !== 0) return; // Only left click
-    
-    setIsDrawing(true);
-    const container = containerRef.current;
-    const rect = container.getBoundingClientRect();
-    
-    setStartPosition({
-      x: (event.clientX - rect.left) / scale,
-      y: (event.clientY - rect.top) / scale
-    });
-    
-    setEndPosition({
-      x: (event.clientX - rect.left) / scale,
-      y: (event.clientY - rect.top) / scale
-    });
-  };
-
-  const drawRectangle = (event: React.MouseEvent) => {
-    if (!isDrawing || !containerRef.current) return;
-    
-    const container = containerRef.current;
-    const rect = container.getBoundingClientRect();
-    
-    setEndPosition({
-      x: (event.clientX - rect.left) / scale,
-      y: (event.clientY - rect.top) / scale
-    });
-  };
-
-  const stopDrawing = () => {
-    if (!isDrawing || !startPosition || !endPosition) return;
-    setIsDrawing(false);
-
-    const startX = Math.min(startPosition.x, endPosition.x);
-    const startY = Math.min(startPosition.y, endPosition.y);
-    const width = Math.abs(startPosition.x - endPosition.x);
-    const height = Math.abs(startPosition.y - endPosition.y);
-
-    // Validate that the region is not too small
-    if (width < 10 || height < 10) {
-      console.warn('Region is too small to be created.');
-      setStartPosition(null);
-      setEndPosition(null);
+  
+  const handleDoubleClick = (e: React.MouseEvent) => {
+    if (!containerRef.current || isTemporarilyBlocked) return;
+    if (isSelectionMode) {
+      setIsDoubleClickMode(false);
+      setSelectionPoint(null);
+      setSelectionRect({
+        x: 0,
+        y: 0,
+        width: 0,
+        height: 0
+      });
+      setIsSelecting(false);
+      onCurrentSelectionTypeChange(null);
       return;
     }
-
-    const newRegion: Omit<Region, 'id'> = {
-      page: currentPage,
-      x: startX,
-      y: startY,
-      width: width,
-      height: height,
-      type: currentSelectionType || 'text',
-      name: 'Region ' + (regions.length + 1),
-      description: null
-    };
-
-    onRegionCreate(newRegion);
-    setStartPosition(null);
-    setEndPosition(null);
+    const rect = containerRef.current.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    setIsDoubleClickMode(true);
+    setSelectionPoint({
+      x,
+      y
+    });
+    setSelectionRect({
+      x,
+      y,
+      width: 0,
+      height: 0
+    });
+    setIsSelecting(true);
+    onCurrentSelectionTypeChange('area');
   };
-
-  const getOverlayStyle = (): React.CSSProperties => {
-    if (!isDrawing || !startPosition || !endPosition) return { display: 'none' };
-
-    const startX = Math.min(startPosition.x, endPosition.x);
-    const startY = Math.min(startPosition.y, endPosition.y);
-    const width = Math.abs(startPosition.x - endPosition.x);
-    const height = Math.abs(startPosition.y - endPosition.y);
-
-    return {
-      position: 'absolute' as const,
-      left: `${startX * scale}px`,
-      top: `${startY * scale}px`,
-      width: `${width * scale}px`,
-      height: `${height * scale}px`,
-      border: '2px dashed #2563eb',
-      backgroundColor: 'rgba(37, 99, 235, 0.2)',
-      pointerEvents: 'none' as const,
-    };
+  
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isSelecting || !containerRef.current || !selectionPoint) return;
+    const rect = containerRef.current.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    setSelectionRect({
+      x: Math.min(x, selectionPoint.x),
+      y: Math.min(y, selectionPoint.y),
+      width: Math.abs(x - selectionPoint.x),
+      height: Math.abs(y - selectionPoint.y)
+    });
   };
-
-  const toggleSelectionMode = (type: string | null) => {
-    if (isDrawing) {
-      setIsDrawing(false);
-      setStartPosition(null);
-      setEndPosition(null);
+  
+  const handleMouseUp = () => {
+    return;
+  };
+  
+  const handleNextPage = () => {
+    if (currentPage < totalPages - 1) {
+      setCurrentPage(prev => prev + 1);
+      window.getSelection()?.removeAllRanges();
+      setSelectionPoint(null);
+      setSelectionRect({
+        x: 0,
+        y: 0,
+        width: 0,
+        height: 0
+      });
+      setIsSelecting(false);
+      setPreventCreateRegion(false);
+      setIsDoubleClickMode(false);
     }
-    onCurrentSelectionTypeChange(type);
+  };
+  
+  const handlePrevPage = () => {
+    if (currentPage > 0) {
+      setCurrentPage(prev => prev - 1);
+      window.getSelection()?.removeAllRanges();
+      setSelectionPoint(null);
+      setSelectionRect({
+        x: 0,
+        y: 0,
+        width: 0,
+        height: 0
+      });
+      setIsSelecting(false);
+      setPreventCreateRegion(false);
+      setIsDoubleClickMode(false);
+    }
+  };
+  
+  const handleZoomIn = () => {
+    setScale(prev => Math.min(prev + 0.1, 3.0));
+  };
+  
+  const handleZoomOut = () => {
+    setScale(prev => Math.max(prev - 0.1, 0.5));
+  };
+  
+  const handleEscKey = (e: KeyboardEvent) => {
+    if (e.key === 'Escape' && selectionPoint) {
+      setSelectionPoint(null);
+      setSelectionRect({
+        x: 0,
+        y: 0,
+        width: 0,
+        height: 0
+      });
+      setIsSelecting(false);
+    }
+  };
+  
+  // Function to copy the current page as an image to clipboard
+  const copyPageToClipboard = async () => {
+    if (!canvasRef.current) {
+      toast.error('Canvas not available');
+      return;
+    }
+    
+    try {
+      setIsCopyingPage(true);
+      
+      // Simply copy the current PDF page without any regions or annotations
+      // Get the canvas element that contains the PDF page
+      const canvas = canvasRef.current;
+      
+      // Convert to blob
+      const blob = await new Promise<Blob>((resolve) => {
+        canvas.toBlob((blob) => {
+          if (blob) resolve(blob);
+          else toast.error('Failed to create image blob');
+        }, 'image/png');
+      });
+      
+      // Create ClipboardItem and write to clipboard
+      const clipboardItem = new ClipboardItem({ 'image/png': blob });
+      await navigator.clipboard.write([clipboardItem]);
+      
+      toast.success('Page copied to clipboard');
+    } catch (error) {
+      console.error('Error copying to clipboard:', error);
+      toast.error('Failed to copy page: ' + (error instanceof Error ? error.message : 'Unknown error'));
+    } finally {
+      setIsCopyingPage(false);
+    }
+  };
+  
+  useEffect(() => {
+    window.addEventListener('keydown', handleEscKey);
+    return () => window.removeEventListener('keydown', handleEscKey);
+  }, [selectionPoint]);
+  
+  const pageRegions = regions.filter(region => region.page === currentPage + 1);
+  
+  useEffect(() => {
+    setPreventCreateRegion(false);
+  }, [currentPage]);
+  
+  const handleGoToPage = () => {
+    const pageNum = parseInt(pageInputValue);
+    if (pageNum >= 1 && pageNum <= totalPages) {
+      setCurrentPage(pageNum - 1);
+      setPageInputValue('');
+      // Clear selection state when changing pages
+      setSelectionPoint(null);
+      setSelectionRect({ x: 0, y: 0, width: 0, height: 0 });
+      setIsSelecting(false);
+      setPreventCreateRegion(false);
+      setIsDoubleClickMode(false);
+    } else {
+      toast.error(`Please enter a page number between 1 and ${totalPages}`);
+    }
   };
 
-  const isRegionSelected = useCallback((regionId: string) => {
-    return selectedRegionId === regionId;
-  }, [selectedRegionId]);
+  const handlePageInputKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleGoToPage();
+    }
+  };
 
-  return (
-    <div className="flex flex-col h-full">
-      {/* Toolbar */}
-      <div className="flex items-center justify-between p-2 border-b">
-        <div className="flex items-center space-x-2">
-          <Button
-            variant={currentSelectionType === 'text' ? 'default' : 'outline'}
-            onClick={() => toggleSelectionMode('text')}
-            disabled={isDrawing}
-          >
-            <TextCursor className="h-4 w-4 mr-2" />
-            Text
-          </Button>
-          <Button
-            variant={currentSelectionType === 'image' ? 'default' : 'outline'}
-            onClick={() => toggleSelectionMode('image')}
-            disabled={isDrawing}
-          >
-            <RectangleHorizontal className="h-4 w-4 mr-2" />
-            Image
-          </Button>
-          <Button
-            variant="ghost"
-            onClick={() => toggleSelectionMode(null)}
-            disabled={!isSelectionMode}
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Create Region
-          </Button>
+  if (!file) {
+    return <div className="flex flex-col items-center justify-center h-[calc(100vh-72px)] bg-muted">
+        <div className="text-center p-10">
+          <h2 className="font-bold mb-2 text-3xl">Welcome to Jooy Studio</h2>
+          <p className="text-muted-foreground text-lg">Interactive Books Start Here</p>
         </div>
-
-        <div className="flex items-center space-x-4">
-          <div className="flex items-center space-x-2">
-            <Label htmlFor="scale" className="text-sm">
-              Scale:
-            </Label>
-            <Input
-              type="number"
-              id="scale"
-              value={scale}
-              onChange={handleScaleChange}
-              min="0.5"
-              max="3"
-              step="0.1"
-              className="w-16 text-sm"
-            />
-          </div>
-          <div>
-            Page {currentPage} / {numPages}
-          </div>
-          <div className="flex items-center space-x-2">
-            <Button onClick={goToPrevPage} disabled={currentPage <= 1} size="icon">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 20 20"
-                fill="currentColor"
-                className="w-5 h-5"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M12.79 5.23a.75.75 0 01-.02 1.06L8.832 10l3.938 3.71a.75.75 0 11-1.04 1.08l-4.5-4.25a.75.75 0 010-1.08l4.5-4.25a.75.75 0 011.06.02z"
-                  clipRule="evenodd"
-                />
-              </svg>
-            </Button>
-            <Button onClick={goToNextPage} disabled={numPages ? currentPage >= numPages : true} size="icon">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 20 20"
-                fill="currentColor"
-                className="w-5 h-5"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z"
-                  clipRule="evenodd"
-                />
-              </svg>
-            </Button>
-          </div>
-        </div>
-      </div>
-
-      <Separator />
-
-      {/* PDF Viewer */}
-      <div
-        className="flex-1 overflow-auto relative"
-        ref={containerRef}
-        onMouseDown={startDrawing}
-        onMouseMove={drawRectangle}
-        onMouseUp={stopDrawing}
-        onMouseLeave={stopDrawing}
-      >
-        <div
-          ref={pdfViewerRef}
-          style={{
-            transformOrigin: 'top left',
-            transform: `scale(${scale})`,
-          }}
-        >
-          {file ? (
-            <Document file={file} onLoadSuccess={onDocumentLoadSuccess}>
-              <Page pageNumber={currentPage} renderTextLayer={false} renderAnnotationLayer={false} />
-            </Document>
-          ) : (
-            <div className="flex items-center justify-center h-full">
-              No PDF loaded
+      </div>;
+  }
+  
+  return <div className="flex flex-col h-full w-full">
+      <div className="bg-white border-b border-gray-200 p-2 w-full sticky top-0 z-10">
+        <div className="flex items-center justify-between max-w-[1200px] mx-auto">
+          <div className="flex items-center space-x-6">
+            <div className="flex items-center space-x-2">
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Toggle pressed={currentSelectionType === 'area'} onPressedChange={() => onCurrentSelectionTypeChange(currentSelectionType === 'area' ? null : 'area')} aria-label="Toggle area selection tool" className={`${currentSelectionType === 'area' ? 'bg-blue-100 ring-2 ring-primary' : ''}`}>
+                      <MousePointer className="h-4 w-4" />
+                      <span className="sr-only">Area Selection</span>
+                    </Toggle>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Draw custom area regions</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+              
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button 
+                      variant="outline" 
+                      size="icon" 
+                      onClick={copyPageToClipboard} 
+                      disabled={isCopyingPage || !canvasRef.current}
+                      className="h-9 w-9"
+                    >
+                      <Copy className="h-4 w-4" />
+                      <span className="sr-only">Copy Page</span>
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Copy page as image</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             </div>
-          )}
+
+            <div className="flex items-center space-x-4">
+              <Button variant="outline" size="icon" onClick={handlePrevPage} disabled={currentPage <= 0}>
+                <ArrowLeft className="h-4 w-4" />
+                <span className="sr-only">Previous page</span>
+              </Button>
+              
+              <div className="flex items-center space-x-2">
+                <span className="text-sm min-w-[100px] text-center">
+                  Page {currentPage + 1} of {totalPages}
+                </span>
+                <div className="flex items-center space-x-1">
+                  <input
+                    type="number"
+                    min="1"
+                    max={totalPages}
+                    value={pageInputValue}
+                    onChange={(e) => setPageInputValue(e.target.value)}
+                    onKeyPress={handlePageInputKeyPress}
+                    placeholder="Go to..."
+                    className="w-20 px-2 py-1 text-xs border rounded text-center"
+                  />
+                  <Button variant="outline" size="sm" onClick={handleGoToPage} disabled={!pageInputValue.trim()}>
+                    Go
+                  </Button>
+                </div>
+              </div>
+              
+              <Button variant="outline" size="icon" onClick={handleNextPage} disabled={currentPage >= totalPages - 1}>
+                <ArrowRight className="h-4 w-4" />
+                <span className="sr-only">Next page</span>
+              </Button>
+            </div>
+
+            <div className="flex items-center space-x-2">
+              <Button variant="outline" size="sm" onClick={handleZoomOut} disabled={scale <= 0.5}>
+                -
+              </Button>
+              <span className="text-sm w-16 text-center">
+                {Math.round(scale * 100)}%
+              </span>
+              <Button variant="outline" size="sm" onClick={handleZoomIn} disabled={scale >= 3}>
+                +
+              </Button>
+            </div>
+          </div>
         </div>
-
-        {/* Drawing Overlay */}
-        <div style={getOverlayStyle()} />
-
-        {/* Region Overlays */}
-        {file &&
-          currentPageRegions.map((region) => (
-            <RegionOverlay
-              key={region.id}
-              region={region}
-              isSelected={isRegionSelected(region.id)}
-              onSelect={() => onRegionSelect(region.id)}
-              onUpdate={onRegionUpdate}
-              scale={scale}
-              documentId={documentId || ''}
-            />
-          ))}
       </div>
-    </div>
-  );
+      
+      <ScrollArea className="flex-1 w-full h-[calc(100%-72px)]">
+        <div className="flex justify-center p-4">
+          <div ref={containerRef} className={`pdf-page relative ${currentSelectionType === 'area' || isDoubleClickMode ? 'cursor-crosshair' : ''}`} onMouseDown={handleMouseDown} onMouseMove={handleMouseMove} onMouseUp={handleMouseUp} onMouseLeave={handleMouseUp} onDoubleClick={handleDoubleClick}>
+            <canvas ref={canvasRef} style={{
+            display: 'block'
+          }} />
+            
+            {pageRegions.map(region => 
+              <RegionOverlay 
+                key={region.id} 
+                region={region} 
+                isSelected={region.id === selectedRegionId} 
+                onSelect={() => onRegionSelect(region.id)} 
+                onUpdate={onRegionUpdate} 
+                scale={scale} 
+                documentId={documentId || ''}
+              />
+            )}
+            
+            {isSelecting && <div className="region-selection" style={{
+            left: selectionRect.x,
+            top: selectionRect.y,
+            width: selectionRect.width,
+            height: selectionRect.height,
+            position: 'absolute',
+            border: '2px solid #2563eb',
+            backgroundColor: 'rgba(37, 99, 235, 0.1)',
+            pointerEvents: 'none'
+          }} />}
+          </div>
+        </div>
+      </ScrollArea>
+    </div>;
 };
 
 export default PdfViewer;
