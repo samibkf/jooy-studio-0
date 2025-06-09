@@ -5,6 +5,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthProvider';
 import { toast } from 'sonner';
 
+const LOCAL_STORAGE_KEY = 'textAssignments';
+
 type TitledText = {
   title: string;
   content: string;
@@ -408,6 +410,13 @@ export const TextAssignmentProvider: React.FC<{ children: React.ReactNode }> = (
     } finally {
       setIsLoading(false);
     }
+  };
+
+  // Get all texts for a document
+  const getCurrentDocumentTexts = (documentId: string): TitledText[] => {
+    const allTexts = documentAssignments[documentId]?.titledTexts || [];
+    console.log(`📄 Getting all texts for document ${documentId}: ${allTexts.length} texts found`);
+    return allTexts;
   };
 
   // New function to get texts filtered by page
