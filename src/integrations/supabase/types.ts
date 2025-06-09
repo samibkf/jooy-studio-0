@@ -62,6 +62,33 @@ export type Database = {
           },
         ]
       }
+      document_texts: {
+        Row: {
+          content: string
+          created_at: string
+          document_id: string
+          id: string
+          title: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          document_id: string
+          id?: string
+          title: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          document_id?: string
+          id?: string
+          title?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       documents: {
         Row: {
           created_at: string

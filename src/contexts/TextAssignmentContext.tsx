@@ -51,6 +51,96 @@ export const TextAssignmentProvider: React.FC<{ children: React.ReactNode }> = (
   const [isReady, setIsReady] = useState(false);
   const { authState } = useAuth();
 
+  // Load all document texts from database
+  const loadDocumentTextsFromDatabase = async (documentId: string) => {
+    if (!authState.user) {
+      return [];
+    }
+    
+    try {
+      console.log('Loading document texts from database for document:', documentId);
+      
+      const { data: texts, error } = await supabase
+        .from('document_texts')
+        .select('*')
+        .eq('user_id', authState.user.id)
+        .eq('document_id', documentId)
+        .order('created_at', { ascending: true });
+
+      if (error) {
+        console.error('Error loading document texts from database:', error);
+        throw error;
+      }
+
+      if (!texts || texts.length === 0) {
+        console.log('No document texts found in database for document:', documentId);
+        return [];
+      }
+
+      // Convert database texts to TitledText format
+      const titledTexts = texts.map(text => ({
+        title: text.title,
+        content: text.content
+      }));
+
+      console.log(`Successfully loaded ${titledTexts.length} document texts from database`);
+      return titledTexts;
+      
+    } catch (error) {
+      console.error('Error loading document texts from database:', error);
+      return [];
+    }
+  };
+
+  // Save document texts to database
+  const saveDocumentTextsToDatabase = async (documentId: string, texts: TitledText[]) => {
+    if (!authState.user) {
+      console.error('Cannot save document texts: no user logged in');
+      return false;
+    }
+    
+    try {
+      console.log(`Saving ${texts.length} document texts to database for document:`, documentId);
+      
+      // First, delete existing texts for this document
+      const { error: deleteError } = await supabase
+        .from('document_texts')
+        .delete()
+        .eq('user_id', authState.user.id)
+        .eq('document_id', documentId);
+
+      if (deleteError) {
+        console.error('Error deleting existing document texts:', deleteError);
+        return false;
+      }
+
+      // Then insert new texts
+      if (texts.length > 0) {
+        const textsToInsert = texts.map(text => ({
+          user_id: authState.user.id,
+          document_id: documentId,
+          title: text.title,
+          content: text.content
+        }));
+
+        const { error: insertError } = await supabase
+          .from('document_texts')
+          .insert(textsToInsert);
+
+        if (insertError) {
+          console.error('Error inserting document texts:', insertError);
+          return false;
+        }
+      }
+
+      console.log(`Successfully saved ${texts.length} document texts to database`);
+      return true;
+    } catch (error) {
+      console.error('Error saving document texts to database:', error);
+      return false;
+    }
+  };
+
   // Load assignments from database
   const loadAssignmentsFromDatabase = async () => {
     if (!authState.user) {
@@ -79,23 +169,30 @@ export const TextAssignmentProvider: React.FC<{ children: React.ReactNode }> = (
       // Group assignments by document
       const assignmentsByDocument: Record<string, DocumentAssignments> = {};
       
-      assignments.forEach(assignment => {
-        const docId = assignment.document_id;
+      // First, get all unique document IDs from assignments
+      const documentIds = [...new Set(assignments.map(a => a.document_id))];
+      
+      // Load document texts for each document and merge with assignments
+      for (const docId of documentIds) {
+        const documentTexts = await loadDocumentTextsFromDatabase(docId);
+        const documentAssignments = assignments.filter(a => a.document_id === docId);
         
-        if (!assignmentsByDocument[docId]) {
-          assignmentsByDocument[docId] = {
-            titledTexts: [],
-            originalTexts: {}
+        // Create titled texts with assignment info
+        const titledTexts = documentTexts.map(text => {
+          const assignment = documentAssignments.find(
+            a => a.text_title === text.title && a.text_content === text.content
+          );
+          return {
+            ...text,
+            assignedRegionId: assignment?.region_id
           };
-        }
-        
-        // Add this assignment as a titled text
-        assignmentsByDocument[docId].titledTexts.push({
-          title: assignment.text_title,
-          content: assignment.text_content,
-          assignedRegionId: assignment.region_id
         });
-      });
+        
+        assignmentsByDocument[docId] = {
+          titledTexts,
+          originalTexts: {}
+        };
+      }
 
       console.log('Successfully loaded text assignments from database:', assignmentsByDocument);
       return assignmentsByDocument;
@@ -187,6 +284,10 @@ export const TextAssignmentProvider: React.FC<{ children: React.ReactNode }> = (
         if (assignment && typeof assignment === 'object') {
           const typedAssignment = assignment as DocumentAssignments;
           if (Array.isArray(typedAssignment.titledTexts)) {
+            // Save all texts to document_texts table
+            await saveDocumentTextsToDatabase(docId, typedAssignment.titledTexts);
+            
+            // Save assignments to text_assignments table
             for (const text of typedAssignment.titledTexts) {
               if (text.assignedRegionId) {
                 await saveAssignmentToDatabase(docId, text.assignedRegionId, text.title, text.content);
@@ -268,17 +369,29 @@ export const TextAssignmentProvider: React.FC<{ children: React.ReactNode }> = (
       // Remove from database
       if (authState.user) {
         try {
-          const { error } = await supabase
+          // Remove assignments
+          const { error: assignmentError } = await supabase
             .from('text_assignments')
             .delete()
             .eq('user_id', authState.user.id)
             .eq('document_id', documentId);
           
-          if (error) {
-            console.error('Error removing assignments from database:', error);
+          if (assignmentError) {
+            console.error('Error removing assignments from database:', assignmentError);
+          }
+
+          // Remove document texts
+          const { error: textsError } = await supabase
+            .from('document_texts')
+            .delete()
+            .eq('user_id', authState.user.id)
+            .eq('document_id', documentId);
+          
+          if (textsError) {
+            console.error('Error removing document texts from database:', textsError);
           }
         } catch (error) {
-          console.error('Error removing assignments from database:', error);
+          console.error('Error removing data from database:', error);
         }
       }
       
@@ -294,16 +407,27 @@ export const TextAssignmentProvider: React.FC<{ children: React.ReactNode }> = (
       // Remove from database
       if (authState.user) {
         try {
-          const { error } = await supabase
+          // Remove all assignments
+          const { error: assignmentError } = await supabase
             .from('text_assignments')
             .delete()
             .eq('user_id', authState.user.id);
           
-          if (error) {
-            console.error('Error removing all assignments from database:', error);
+          if (assignmentError) {
+            console.error('Error removing all assignments from database:', assignmentError);
+          }
+
+          // Remove all document texts
+          const { error: textsError } = await supabase
+            .from('document_texts')
+            .delete()
+            .eq('user_id', authState.user.id);
+          
+          if (textsError) {
+            console.error('Error removing all document texts from database:', textsError);
           }
         } catch (error) {
-          console.error('Error removing all assignments from database:', error);
+          console.error('Error removing all data from database:', error);
         }
       }
       
@@ -312,7 +436,7 @@ export const TextAssignmentProvider: React.FC<{ children: React.ReactNode }> = (
     }
   };
 
-  const assignTextsToRegions = (text: string, regions: Region[], documentId: string): TitledText[] => {
+  const assignTextsToRegions = async (text: string, regions: Region[], documentId: string): Promise<TitledText[]> => {
     console.log(`Assigning texts to regions for document ${documentId}`);
     const parsedTexts = parseTitledText(text);
     const newTitledTexts = [...parsedTexts];
@@ -322,6 +446,9 @@ export const TextAssignmentProvider: React.FC<{ children: React.ReactNode }> = (
     regions.forEach(region => {
       newOriginalTexts[region.id] = region.description;
     });
+
+    // Save texts to database
+    await saveDocumentTextsToDatabase(documentId, newTitledTexts);
     
     setDocumentAssignments(prev => ({
       ...prev,
