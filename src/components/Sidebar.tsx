@@ -31,10 +31,25 @@ const Sidebar = ({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [localDescription, setLocalDescription] = useState<string>('');
   const saveTimeoutRef = useRef<NodeJS.Timeout>();
-  const {
-    isRegionAssigned,
-    undoRegionAssignment
-  } = useTextAssignment();
+  
+  // Add error boundary for the context hook
+  const textAssignmentContext = useTextAssignment();
+  
+  // Guard against undefined context
+  if (!textAssignmentContext) {
+    console.error('TextAssignmentContext is not available');
+    return (
+      <div className="h-full w-full flex flex-col bg-background border-l" style={{ width: '400px' }}>
+        <div className="flex flex-col flex-1 p-4 h-full overflow-y-auto px-[24px] py-[8px] rounded-none">
+          <div className="flex items-center justify-center h-full">
+            <p className="text-muted-foreground">Loading...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const { isRegionAssigned, undoRegionAssignment } = textAssignmentContext;
 
   // Update local description when selected region changes
   useEffect(() => {
