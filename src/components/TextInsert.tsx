@@ -14,6 +14,7 @@ interface TextInsertProps {
   selectedRegion: Region | null;
   onRegionSelect: (regionId: string) => void;
   documentId: string | null;
+  currentPage: number;
 }
 
 const TextInsert = ({
@@ -21,7 +22,8 @@ const TextInsert = ({
   onRegionUpdate,
   selectedRegion,
   onRegionSelect,
-  documentId
+  documentId,
+  currentPage
 }: TextInsertProps) => {
   const [inputText, setInputText] = useState<string>('');
   const [activeTextIndex, setActiveTextIndex] = useState<number | null>(null);
@@ -36,8 +38,13 @@ const TextInsert = ({
   } = useTextAssignment();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // Get texts for current document only
-  const titledTexts = documentId ? getCurrentDocumentTexts(documentId) : [];
+  // Get texts for current document and filter by current page only
+  const allDocumentTexts = documentId ? getCurrentDocumentTexts(documentId) : [];
+  const titledTexts = allDocumentTexts.filter(text => {
+    // If text doesn't have a page property, assume it belongs to page 1
+    const textPage = (text as any).page || 1;
+    return textPage === currentPage;
+  });
 
   const handleInsertText = async () => {
     if (!inputText.trim()) {
@@ -50,11 +57,19 @@ const TextInsert = ({
       return;
     }
 
-    // Process the input text and get titled sections
-    const processedTexts = await assignTextsToRegions(inputText, regions, documentId);
+    // Filter regions to only current page
+    const currentPageRegions = regions.filter(region => region.page === currentPage);
+
+    if (currentPageRegions.length === 0) {
+      toast.error(`No regions available on page ${currentPage}`);
+      return;
+    }
+
+    // Process the input text and get titled sections for current page
+    const processedTexts = await assignTextsToRegions(inputText, currentPageRegions, documentId, currentPage);
 
     // Sort regions by their name to ensure proper assignment order
-    const sortedRegions = [...regions].sort((a, b) => {
+    const sortedRegions = [...currentPageRegions].sort((a, b) => {
       const aName = a.name.split('_').map(Number);
       const bName = b.name.split('_').map(Number);
       if (aName[0] !== bName[0]) {
@@ -77,25 +92,28 @@ const TextInsert = ({
           });
         }
       });
-      toast.success('Text assigned to regions');
+      toast.success(`Text assigned to ${processedTexts.length} regions on page ${currentPage}`);
+      setInputText(''); // Clear input after successful assignment
     }
   };
 
   const handleUndo = () => {
     if (!documentId) return;
 
-    undoAllAssignments(documentId);
-
-    // Reset region descriptions to original
-    regions.forEach(region => {
+    // Only undo assignments for current page
+    const currentPageRegions = regions.filter(region => region.page === currentPage);
+    
+    currentPageRegions.forEach(region => {
       if (isRegionAssigned(region.id, documentId)) {
+        undoRegionAssignment(region.id, documentId);
         onRegionUpdate({
           ...region,
           description: null
         });
       }
     });
-    toast.success('Text assignments undone');
+    
+    toast.success(`Text assignments undone for page ${currentPage}`);
   };
 
   const handleUndoSpecificText = (regionId: string) => {
@@ -104,6 +122,12 @@ const TextInsert = ({
     // Find the region
     const region = regions.find(r => r.id === regionId);
     if (!region) return;
+
+    // Only allow undo if region is on current page
+    if (region.page !== currentPage) {
+      toast.error('Cannot undo assignment from a different page');
+      return;
+    }
 
     // Undo the assignment
     undoRegionAssignment(regionId, documentId);
@@ -124,8 +148,21 @@ const TextInsert = ({
     const region = regions.find(r => r.id === regionId);
     if (!text || !region) return;
 
+    // Ensure region is on current page
+    if (region.page !== currentPage) {
+      toast.error('Cannot assign text to a region on a different page');
+      return;
+    }
+
+    // Find the actual index in the full document texts array
+    const actualTextIndex = allDocumentTexts.findIndex(t => 
+      t.title === text.title && t.content === text.content
+    );
+
+    if (actualTextIndex === -1) return;
+
     // Assign text to region
-    assignTextToRegion(textIndex, regionId, documentId);
+    assignTextToRegion(actualTextIndex, regionId, documentId);
 
     // Update region description
     onRegionUpdate({
@@ -152,18 +189,20 @@ const TextInsert = ({
     }, 100);
   };
 
-  // Get unassigned texts and texts that are assigned (for display)
+  // Get unassigned texts and texts that are assigned (for current page only)
   const unassignedTexts = titledTexts.filter(text => !text.assignedRegionId);
   const assignedTexts = titledTexts.filter(text => text.assignedRegionId);
 
-  // Get unassigned regions for the popover, filtered by current page
-  const currentPage = selectedRegion?.page || 1;
+  // Get unassigned regions for the current page only
   const unassignedRegionsByPage = documentId ? getUnassignedRegionsByPage(regions, currentPage, documentId) : [];
   
   return (
     <div className="space-y-3">
       <div className="space-y-2">
-        <label className="text-sm font-medium">Insert Text:</label>
+        <div className="flex justify-between items-center">
+          <label className="text-sm font-medium">Insert Text:</label>
+          <span className="text-xs text-muted-foreground">Page {currentPage}</span>
+        </div>
         <Textarea 
           ref={textareaRef} 
           value={inputText} 
@@ -173,23 +212,26 @@ const TextInsert = ({
         />
         <div className="flex space-x-2">
           <Button onClick={handleInsertText} className="flex-1" disabled={!inputText.trim()}>
-            Insert
+            Insert to Page {currentPage}
           </Button>
-          <Button onClick={handleUndo} variant="outline" className="flex-shrink-0" disabled={titledTexts.length === 0}>
+          <Button onClick={handleUndo} variant="outline" className="flex-shrink-0" disabled={assignedTexts.length === 0}>
             <Undo2 className="h-4 w-4" />
           </Button>
         </div>
       </div>
       
-      {titledTexts.length > 0 && <div className="space-y-3">
+      {titledTexts.length > 0 && (
+        <div className="space-y-3">
           {/* Unassigned Texts Section */}
-          {unassignedTexts.length > 0 && <div className="space-y-2">
-              <p className="text-sm font-medium">Unassigned Texts:</p>
+          {unassignedTexts.length > 0 && (
+            <div className="space-y-2">
+              <p className="text-sm font-medium">Unassigned Texts (Page {currentPage}):</p>
               <ScrollArea className="h-[150px] border rounded-md p-2">
                 <div className="space-y-2">
                   {unassignedTexts.map((text, index) => {
-              const textIndex = titledTexts.indexOf(text);
-              return <Popover key={`unassigned-${index}`} open={activeTextIndex === textIndex} onOpenChange={open => setActiveTextIndex(open ? textIndex : null)}>
+                    const textIndex = titledTexts.indexOf(text);
+                    return (
+                      <Popover key={`unassigned-${index}`} open={activeTextIndex === textIndex} onOpenChange={open => setActiveTextIndex(open ? textIndex : null)}>
                         <PopoverTrigger asChild>
                           <div className="p-2 border rounded-md cursor-pointer border-gray-300 bg-white hover:border-blue-300 hover:bg-blue-50 transition-colors">
                             <p className="font-medium text-sm">{text.title}</p>
@@ -201,51 +243,66 @@ const TextInsert = ({
                             <p className="font-medium">Assign to Region (Page {currentPage}):</p>
                           </div>
                           <ScrollArea className="h-[200px]">
-                            {unassignedRegionsByPage.length > 0 ? <div className="p-1">
-                                {unassignedRegionsByPage.map(region => <div key={region.id} className="p-2 hover:bg-muted rounded-md cursor-pointer flex items-center justify-between" onClick={() => handleAssignToRegion(textIndex, region.id)}>
+                            {unassignedRegionsByPage.length > 0 ? (
+                              <div className="p-1">
+                                {unassignedRegionsByPage.map(region => (
+                                  <div key={region.id} className="p-2 hover:bg-muted rounded-md cursor-pointer flex items-center justify-between" onClick={() => handleAssignToRegion(textIndex, region.id)}>
                                     <div>
                                       <p className="font-medium">{region.name || 'Unnamed Region'}</p>
                                       <p className="text-xs text-muted-foreground">Page: {region.page}</p>
                                     </div>
                                     <ArrowRight className="h-4 w-4" />
-                                  </div>)}
-                              </div> : <div className="p-4 text-center text-muted-foreground">
+                                  </div>
+                                ))}
+                              </div>
+                            ) : (
+                              <div className="p-4 text-center text-muted-foreground">
                                 No unassigned regions on page {currentPage}
-                              </div>}
+                              </div>
+                            )}
                           </ScrollArea>
                         </PopoverContent>
-                      </Popover>;
-            })}
+                      </Popover>
+                    );
+                  })}
                 </div>
               </ScrollArea>
-            </div>}
+            </div>
+          )}
           
           {/* Assigned Texts Section */}
-          {assignedTexts.length > 0 && <div className="space-y-2">
-              <p className="text-sm font-medium">Assigned Texts:</p>
+          {assignedTexts.length > 0 && (
+            <div className="space-y-2">
+              <p className="text-sm font-medium">Assigned Texts (Page {currentPage}):</p>
               <ScrollArea className="h-[150px] border rounded-md p-2">
                 <div className="space-y-2">
                   {assignedTexts.map((text, index) => {
-              // Find which region this text is assigned to
-              const assignedRegion = regions.find(r => r.id === text.assignedRegionId);
-              return <div key={`assigned-${index}`} className="p-2 border rounded-md border-green-500 bg-green-50 cursor-pointer hover:bg-green-100 transition-colors" onClick={() => text.assignedRegionId && handleRegionSelect(text.assignedRegionId)}>
+                    // Find which region this text is assigned to
+                    const assignedRegion = regions.find(r => r.id === text.assignedRegionId);
+                    return (
+                      <div key={`assigned-${index}`} className="p-2 border rounded-md border-green-500 bg-green-50 cursor-pointer hover:bg-green-100 transition-colors" onClick={() => text.assignedRegionId && handleRegionSelect(text.assignedRegionId)}>
                         <div className="flex justify-between items-center">
                           <p className="font-medium text-sm">{text.title}</p>
                           <Button onClick={e => {
-                    e.stopPropagation(); // Prevent region selection when undoing
-                    text.assignedRegionId && handleUndoSpecificText(text.assignedRegionId);
-                  }} size="sm" variant="ghost" className="h-6 px-1.5 text-xs text-blue-500 hover:text-blue-700">
+                            e.stopPropagation(); // Prevent region selection when undoing
+                            text.assignedRegionId && handleUndoSpecificText(text.assignedRegionId);
+                          }} size="sm" variant="ghost" className="h-6 px-1.5 text-xs text-blue-500 hover:text-blue-700">
                             <Undo2 className="h-3.5 w-3.5" />
                           </Button>
                         </div>
                         <p className="text-xs">{text.content.substring(0, 50)}...</p>
-                        {assignedRegion && <p className="text-xs mt-1 text-green-700">Assigned to: {assignedRegion.name || 'Unnamed Region'}</p>}
-                      </div>;
-            })}
+                        {assignedRegion && (
+                          <p className="text-xs mt-1 text-green-700">Assigned to: {assignedRegion.name || 'Unnamed Region'}</p>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               </ScrollArea>
-            </div>}
-        </div>}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 };

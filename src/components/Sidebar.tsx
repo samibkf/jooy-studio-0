@@ -16,6 +16,7 @@ interface SidebarProps {
   onRegionDelete: (regionId: string) => void;
   onRegionSelect: (regionId: string) => void;
   documentId: string | null;
+  currentPage: number;
 }
 
 const Sidebar = ({
@@ -24,7 +25,8 @@ const Sidebar = ({
   onRegionUpdate,
   onRegionDelete,
   onRegionSelect,
-  documentId
+  documentId,
+  currentPage
 }: SidebarProps) => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [localDescription, setLocalDescription] = useState<string>('');
@@ -102,6 +104,7 @@ const Sidebar = ({
           selectedRegion={selectedRegion} 
           onRegionSelect={onRegionSelect}
           documentId={documentId}
+          currentPage={currentPage}
         />
         
         {/* Selected Region Info - Only visible when a region is selected */}

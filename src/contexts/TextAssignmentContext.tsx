@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Region } from '@/types/regions';
 import { parseTitledText } from '@/utils/textProcessing';
@@ -19,7 +18,7 @@ type DocumentAssignments = {
 type TextAssignmentContextType = {
   getCurrentDocumentTexts: (documentId: string) => TitledText[];
   setTitledTexts: (documentId: string, texts: TitledText[]) => void;
-  assignTextsToRegions: (text: string, regions: Region[], documentId: string) => Promise<TitledText[]>;
+  assignTextsToRegions: (text: string, regions: Region[], documentId: string, page?: number) => Promise<TitledText[]>;
   undoAllAssignments: (documentId: string) => void;
   undoRegionAssignment: (regionId: string, documentId: string) => void;
   assignTextToRegion: (textIndex: number, regionId: string, documentId: string) => void;
@@ -92,26 +91,41 @@ export const TextAssignmentProvider: React.FC<{ children: React.ReactNode }> = (
     }
   };
 
-  // Save document texts to database
-  const saveDocumentTextsToDatabase = async (documentId: string, texts: TitledText[]) => {
+  // Save document texts to database with page information
+  const saveDocumentTextsToDatabase = async (documentId: string, texts: TitledText[], page?: number) => {
     if (!authState.user) {
       console.error('Cannot save document texts: no user logged in');
       return false;
     }
     
     try {
-      console.log(`Saving ${texts.length} document texts to database for document:`, documentId);
+      console.log(`Saving ${texts.length} document texts to database for document:`, documentId, page ? `page ${page}` : '');
       
-      // First, delete existing texts for this document
-      const { error: deleteError } = await supabase
-        .from('document_texts')
-        .delete()
-        .eq('user_id', authState.user.id)
-        .eq('document_id', documentId);
+      // If page is specified, only delete texts for that page
+      if (page) {
+        const { error: deleteError } = await supabase
+          .from('document_texts')
+          .delete()
+          .eq('user_id', authState.user.id)
+          .eq('document_id', documentId)
+          .eq('page', page);
 
-      if (deleteError) {
-        console.error('Error deleting existing document texts:', deleteError);
-        return false;
+        if (deleteError) {
+          console.error('Error deleting existing document texts for page:', deleteError);
+          return false;
+        }
+      } else {
+        // Delete all texts for this document
+        const { error: deleteError } = await supabase
+          .from('document_texts')
+          .delete()
+          .eq('user_id', authState.user.id)
+          .eq('document_id', documentId);
+
+        if (deleteError) {
+          console.error('Error deleting existing document texts:', deleteError);
+          return false;
+        }
       }
 
       // Then insert new texts
@@ -120,7 +134,8 @@ export const TextAssignmentProvider: React.FC<{ children: React.ReactNode }> = (
           user_id: authState.user.id,
           document_id: documentId,
           title: text.title,
-          content: text.content
+          content: text.content,
+          page: (text as any).page || page || 1
         }));
 
         const { error: insertError } = await supabase
@@ -436,10 +451,16 @@ export const TextAssignmentProvider: React.FC<{ children: React.ReactNode }> = (
     }
   };
 
-  const assignTextsToRegions = async (text: string, regions: Region[], documentId: string): Promise<TitledText[]> => {
-    console.log(`Assigning texts to regions for document ${documentId}`);
+  const assignTextsToRegions = async (text: string, regions: Region[], documentId: string, page?: number): Promise<TitledText[]> => {
+    console.log(`Assigning texts to regions for document ${documentId}`, page ? `on page ${page}` : '');
     const parsedTexts = parseTitledText(text);
-    const newTitledTexts = [...parsedTexts];
+    
+    // Add page information to parsed texts
+    const newTitledTexts = parsedTexts.map(parsedText => ({
+      ...parsedText,
+      page: page || 1
+    })) as TitledText[];
+    
     const newOriginalTexts: Record<string, string | null> = {};
     
     // Store original descriptions for undo capability
@@ -447,18 +468,27 @@ export const TextAssignmentProvider: React.FC<{ children: React.ReactNode }> = (
       newOriginalTexts[region.id] = region.description;
     });
 
-    // Save texts to database
-    await saveDocumentTextsToDatabase(documentId, newTitledTexts);
+    // Save texts to database with page information
+    await saveDocumentTextsToDatabase(documentId, newTitledTexts, page);
     
-    setDocumentAssignments(prev => ({
-      ...prev,
-      [documentId]: {
-        titledTexts: newTitledTexts,
-        originalTexts: newOriginalTexts
-      }
-    }));
+    // Update local state - merge with existing texts from other pages
+    setDocumentAssignments(prev => {
+      const existingTexts = prev[documentId]?.titledTexts || [];
+      // Remove any existing texts from the same page to avoid duplicates
+      const textsFromOtherPages = existingTexts.filter(t => (t as any).page !== page);
+      // Combine with new texts
+      const allTexts = [...textsFromOtherPages, ...newTitledTexts];
+      
+      return {
+        ...prev,
+        [documentId]: {
+          titledTexts: allTexts,
+          originalTexts: newOriginalTexts
+        }
+      };
+    });
     
-    console.log(`Processed ${newTitledTexts.length} texts for document ${documentId}`);
+    console.log(`Processed ${newTitledTexts.length} texts for document ${documentId}`, page ? `on page ${page}` : '');
     return newTitledTexts;
   };
 
