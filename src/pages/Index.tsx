@@ -41,8 +41,8 @@ const Index = () => {
     resetStates
   } = useDocumentState(document?.id || null);
   
-  // Fix the useMetadataSync hook call
-  useMetadataSync(document, setDocument, setDocuments, regionsCache, setRegionsCache);
+  // Fix the useMetadataSync hook call - it expects only 1 argument (the document)
+  useMetadataSync(document);
 
   // Load documents on user authentication
   useEffect(() => {
@@ -79,8 +79,8 @@ const Index = () => {
                     };
                   }
 
-                  // Check if the file is cached (assuming pdfCacheService has a method to check)
-                  const cachedFile = await pdfCacheService.getCachedFile?.(doc.id);
+                  // Check if the file is cached - use correct method name
+                  const cachedFile = await pdfCacheService.getCachedPDF(doc.id);
                   if (!cachedFile) {
                     return {
                       ...doc,
@@ -228,7 +228,7 @@ const Index = () => {
       setDocuments(prevDocuments => [...prevDocuments, newDocument]);
       setDocument(newDocument);
 
-      // Upload metadata first
+      // Upload metadata first - pass the document ID as string
       await uploadMetadata(newDocument, authState.user.id, documentId);
 
       // Upload the PDF file
@@ -277,8 +277,8 @@ const Index = () => {
         return;
       }
 
-      // Generate initial metadata
-      await generateMetadata(newDocument, authState.user.id, documentId);
+      // Generate initial metadata - pass the document ID as string
+      await generateMetadata(documentId, authState.user.id, documentId);
 
       toast.success(`${documentName} uploaded successfully!`);
     } catch (error) {
@@ -351,6 +351,25 @@ const Index = () => {
     setSelectedRegionId(regionId);
   };
 
+  const handleRegionCreate = (region: Omit<Region, 'id'>) => {
+    // Implementation for creating a new region
+    console.log('Creating region:', region);
+  };
+
+  const handleRegionUpdate = (region: Region) => {
+    // Implementation for updating a region
+    console.log('Updating region:', region);
+  };
+
+  const handleRegionDelete = (regionId: string) => {
+    // Implementation for deleting a region
+    console.log('Deleting region:', regionId);
+  };
+
+  const handlePageChange = (page: number) => {
+    console.log('Page changed to:', page);
+  };
+
   return (
     <ProtectedRoute>
       <div className="flex flex-col h-screen">
@@ -371,31 +390,30 @@ const Index = () => {
 
         <div className="flex flex-grow">
           <Sidebar
-            open={isSidebarOpen}
-            toggleSidebar={toggleSidebar}
-            documents={documents}
-            selectedDocument={document}
-            onDocumentSelect={handleDocumentSelect}
-            isUploadModalOpen={isUploadModalOpen}
-            onCloseModal={handleCloseModal}
-            onFileUpload={handleFileUpload}
-            uploadError={uploadError}
+            selectedRegion={regionsCache[document?.id || '']?.find(r => r.id === selectedRegionId) || null}
+            regions={regionsCache[document?.id || ''] || []}
+            onRegionUpdate={handleRegionUpdate}
+            onRegionDelete={handleRegionDelete}
+            onRegionSelect={handleRegionSelect}
+            documentId={document?.id || null}
+            currentPage={1}
           />
 
           <div className="flex-grow flex items-center justify-center">
             {document ? (
               <PdfViewer
-                documentId={document.id}
                 file={document.file}
-                pdfViewerRef={pdfViewerRef}
+                regions={regionsCache[document.id] || []}
+                onRegionCreate={handleRegionCreate}
+                onRegionUpdate={handleRegionUpdate}
                 selectedRegionId={selectedRegionId}
                 onRegionSelect={handleRegionSelect}
-                currentSelectionType={currentSelectionType}
-                setCurrentSelectionType={setCurrentSelectionType}
+                onRegionDelete={handleRegionDelete}
                 isSelectionMode={isSelectionMode}
-                setIsSelectionMode={setIsSelectionMode}
-                regionsCache={regionsCache}
-                setRegionsCache={setRegionsCache}
+                currentSelectionType={currentSelectionType}
+                onCurrentSelectionTypeChange={setCurrentSelectionType}
+                documentId={document.id}
+                onPageChange={handlePageChange}
               />
             ) : (
               <div className="text-gray-500">No document selected. Please upload or select a document.</div>
