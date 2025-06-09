@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Region } from '@/types/regions';
 import { parseTitledText } from '@/utils/textProcessing';
@@ -9,6 +8,7 @@ type TitledText = {
   title: string;
   content: string;
   assignedRegionId?: string;
+  page?: number;
 };
 
 type DocumentAssignments = {
@@ -18,8 +18,9 @@ type DocumentAssignments = {
 
 type TextAssignmentContextType = {
   getCurrentDocumentTexts: (documentId: string) => TitledText[];
+  getCurrentPageTexts: (documentId: string, pageNumber: number) => TitledText[];
   setTitledTexts: (documentId: string, texts: TitledText[]) => void;
-  assignTextsToRegions: (text: string, regions: Region[], documentId: string) => Promise<TitledText[]>;
+  assignTextsToRegions: (text: string, regions: Region[], documentId: string, currentPage: number) => Promise<TitledText[]>;
   undoAllAssignments: (documentId: string) => void;
   undoRegionAssignment: (regionId: string, documentId: string) => void;
   assignTextToRegion: (textIndex: number, regionId: string, documentId: string) => void;
@@ -77,10 +78,11 @@ export const TextAssignmentProvider: React.FC<{ children: React.ReactNode }> = (
         return [];
       }
 
-      // Convert database texts to TitledText format
+      // Convert database texts to TitledText format, including page information
       const titledTexts = texts.map(text => ({
         title: text.title,
-        content: text.content
+        content: text.content,
+        page: text.page || 1 // Default to page 1 for backward compatibility
       }));
 
       console.log(`Successfully loaded ${titledTexts.length} document texts from database`);
@@ -120,7 +122,8 @@ export const TextAssignmentProvider: React.FC<{ children: React.ReactNode }> = (
           user_id: authState.user.id,
           document_id: documentId,
           title: text.title,
-          content: text.content
+          content: text.content,
+          page: text.page || 1 // Ensure page is always set
         }));
 
         const { error: insertError } = await supabase
@@ -351,6 +354,14 @@ export const TextAssignmentProvider: React.FC<{ children: React.ReactNode }> = (
     return result;
   };
 
+  // New function to get texts filtered by page
+  const getCurrentPageTexts = (documentId: string, pageNumber: number): TitledText[] => {
+    const allTexts = documentAssignments[documentId]?.titledTexts || [];
+    const pageTexts = allTexts.filter(text => text.page === pageNumber);
+    console.log(`Getting texts for document ${documentId}, page ${pageNumber}:`, pageTexts.length, 'texts found');
+    return pageTexts;
+  };
+
   const setTitledTexts = (documentId: string, texts: TitledText[]) => {
     console.log(`Setting texts for document ${documentId}:`, texts.length, 'texts');
     setDocumentAssignments(prev => ({
@@ -436,10 +447,11 @@ export const TextAssignmentProvider: React.FC<{ children: React.ReactNode }> = (
     }
   };
 
-  const assignTextsToRegions = async (text: string, regions: Region[], documentId: string): Promise<TitledText[]> => {
-    console.log(`Assigning texts to regions for document ${documentId}`);
+  const assignTextsToRegions = async (text: string, regions: Region[], documentId: string, currentPage: number): Promise<TitledText[]> => {
+    console.log(`Assigning texts to regions for document ${documentId}, page ${currentPage}`);
     const parsedTexts = parseTitledText(text);
-    const newTitledTexts = [...parsedTexts];
+    // Add page information to each text
+    const newTitledTexts = parsedTexts.map(text => ({ ...text, page: currentPage }));
     const newOriginalTexts: Record<string, string | null> = {};
     
     // Store original descriptions for undo capability
@@ -448,17 +460,23 @@ export const TextAssignmentProvider: React.FC<{ children: React.ReactNode }> = (
     });
 
     // Save texts to database
-    await saveDocumentTextsToDatabase(documentId, newTitledTexts);
+    await saveDocumentTextsToDatabase(documentId, [
+      ...(documentAssignments[documentId]?.titledTexts || []),
+      ...newTitledTexts
+    ]);
     
     setDocumentAssignments(prev => ({
       ...prev,
       [documentId]: {
-        titledTexts: newTitledTexts,
+        titledTexts: [
+          ...(prev[documentId]?.titledTexts || []),
+          ...newTitledTexts
+        ],
         originalTexts: newOriginalTexts
       }
     }));
     
-    console.log(`Processed ${newTitledTexts.length} texts for document ${documentId}`);
+    console.log(`Processed ${newTitledTexts.length} texts for document ${documentId}, page ${currentPage}`);
     return newTitledTexts;
   };
 
@@ -582,6 +600,7 @@ export const TextAssignmentProvider: React.FC<{ children: React.ReactNode }> = (
 
   const value = {
     getCurrentDocumentTexts,
+    getCurrentPageTexts,
     setTitledTexts,
     assignTextsToRegions,
     undoAllAssignments,
