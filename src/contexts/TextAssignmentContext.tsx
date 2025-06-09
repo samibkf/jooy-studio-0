@@ -3,6 +3,7 @@ import { Region } from '@/types/regions';
 import { parseTitledText } from '@/utils/textProcessing';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthProvider';
+import { toast } from 'sonner';
 
 type TitledText = {
   title: string;
@@ -30,11 +31,10 @@ type TextAssignmentContextType = {
   getUnassignedRegions: (regions: Region[], documentId: string) => Region[];
   getUnassignedRegionsByPage: (regions: Region[], pageNumber: number, documentId: string) => Region[];
   selectRegionById: (regionId: string, callback: (regionId: string) => void) => void;
+  refreshAssignments: (documentId: string) => Promise<void>;
   isLoading: boolean;
   isReady: boolean;
 };
-
-const LOCAL_STORAGE_KEY = 'textAssignmentsByDocument';
 
 const TextAssignmentContext = createContext<TextAssignmentContextType | null>(null);
 
@@ -52,14 +52,28 @@ export const TextAssignmentProvider: React.FC<{ children: React.ReactNode }> = (
   const [isReady, setIsReady] = useState(false);
   const { authState } = useAuth();
 
-  // Load all document texts from database
+  // Enhanced error handling wrapper
+  const withErrorHandling = async <T,>(operation: () => Promise<T>, operationName: string): Promise<T | null> => {
+    try {
+      const result = await operation();
+      console.log(`✅ ${operationName} completed successfully`);
+      return result;
+    } catch (error) {
+      console.error(`❌ ${operationName} failed:`, error);
+      toast.error(`Failed to ${operationName.toLowerCase()}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      return null;
+    }
+  };
+
+  // Load document texts with enhanced error handling and page validation
   const loadDocumentTextsFromDatabase = async (documentId: string) => {
     if (!authState.user) {
+      console.log('No user authenticated, skipping database load');
       return [];
     }
     
-    try {
-      console.log('Loading document texts from database for document:', documentId);
+    const result = await withErrorHandling(async () => {
+      console.log(`📥 Loading document texts for document: ${documentId}`);
       
       const { data: texts, error } = await supabase
         .from('document_texts')
@@ -68,114 +82,118 @@ export const TextAssignmentProvider: React.FC<{ children: React.ReactNode }> = (
         .eq('document_id', documentId)
         .order('created_at', { ascending: true });
 
-      if (error) {
-        console.error('Error loading document texts from database:', error);
-        throw error;
-      }
+      if (error) throw error;
 
       if (!texts || texts.length === 0) {
-        console.log('No document texts found in database for document:', documentId);
+        console.log(`📭 No document texts found for document: ${documentId}`);
         return [];
       }
 
-      // Convert database texts to TitledText format, including page information
+      // Convert database texts to TitledText format with page validation
       const titledTexts = texts.map(text => ({
         title: text.title,
         content: text.content,
-        page: text.page || 1 // Default to page 1 for backward compatibility
+        page: text.page && text.page > 0 ? text.page : 1 // Ensure valid page number
       }));
 
-      console.log(`Successfully loaded ${titledTexts.length} document texts from database`);
+      console.log(`📚 Loaded ${titledTexts.length} texts, pages: ${[...new Set(titledTexts.map(t => t.page))].sort().join(', ')}`);
       return titledTexts;
       
-    } catch (error) {
-      console.error('Error loading document texts from database:', error);
-      return [];
-    }
+    }, 'Load document texts');
+
+    return result || [];
   };
 
-  // Save document texts to database
+  // Enhanced save with transaction-like behavior
   const saveDocumentTextsToDatabase = async (documentId: string, texts: TitledText[]) => {
     if (!authState.user) {
-      console.error('Cannot save document texts: no user logged in');
+      console.error('❌ Cannot save document texts: no user logged in');
       return false;
     }
     
-    try {
-      console.log(`Saving ${texts.length} document texts to database for document:`, documentId);
+    const result = await withErrorHandling(async () => {
+      console.log(`💾 Saving ${texts.length} document texts for document: ${documentId}`);
       
-      // First, delete existing texts for this document
+      // Validate texts before saving
+      const validTexts = texts.filter(text => {
+        if (!text.title || !text.content) {
+          console.warn('⚠️ Skipping text with missing title or content:', text);
+          return false;
+        }
+        if (!text.page || text.page < 1) {
+          console.warn('⚠️ Fixing invalid page number for text:', text.title);
+          text.page = 1;
+        }
+        return true;
+      });
+
+      if (validTexts.length !== texts.length) {
+        console.warn(`⚠️ Filtered out ${texts.length - validTexts.length} invalid texts`);
+      }
+
+      // Delete existing texts for this document
       const { error: deleteError } = await supabase
         .from('document_texts')
         .delete()
         .eq('user_id', authState.user.id)
         .eq('document_id', documentId);
 
-      if (deleteError) {
-        console.error('Error deleting existing document texts:', deleteError);
-        return false;
-      }
+      if (deleteError) throw deleteError;
 
-      // Then insert new texts
-      if (texts.length > 0) {
-        const textsToInsert = texts.map(text => ({
+      // Insert new texts if any exist
+      if (validTexts.length > 0) {
+        const textsToInsert = validTexts.map(text => ({
           user_id: authState.user.id,
           document_id: documentId,
           title: text.title,
           content: text.content,
-          page: text.page || 1 // Ensure page is always set
+          page: text.page || 1
         }));
 
         const { error: insertError } = await supabase
           .from('document_texts')
           .insert(textsToInsert);
 
-        if (insertError) {
-          console.error('Error inserting document texts:', insertError);
-          return false;
-        }
+        if (insertError) throw insertError;
       }
 
-      console.log(`Successfully saved ${texts.length} document texts to database`);
+      console.log(`✅ Saved ${validTexts.length} texts to database`);
       return true;
-    } catch (error) {
-      console.error('Error saving document texts to database:', error);
-      return false;
-    }
+    }, 'Save document texts');
+
+    return result !== null;
   };
 
-  // Load assignments from database
+  // Enhanced assignment loading with better state synchronization
   const loadAssignmentsFromDatabase = async () => {
     if (!authState.user) {
       console.log('No user found, skipping database load');
       return {};
     }
     
-    try {
-      console.log('Loading text assignments from database for user:', authState.user.id);
+    const result = await withErrorHandling(async () => {
+      console.log(`📥 Loading text assignments for user: ${authState.user.id}`);
       
       const { data: assignments, error } = await supabase
         .from('text_assignments')
         .select('*')
         .eq('user_id', authState.user.id);
 
-      if (error) {
-        console.error('Error loading text assignments from database:', error);
-        throw error;
-      }
+      if (error) throw error;
 
       if (!assignments || assignments.length === 0) {
-        console.log('No text assignments found in database');
+        console.log('📭 No text assignments found');
         return {};
       }
 
       // Group assignments by document
       const assignmentsByDocument: Record<string, DocumentAssignments> = {};
       
-      // First, get all unique document IDs from assignments
+      // Get all unique document IDs
       const documentIds = [...new Set(assignments.map(a => a.document_id))];
+      console.log(`📋 Found assignments for ${documentIds.length} documents`);
       
-      // Load document texts for each document and merge with assignments
+      // Load document texts and merge with assignments
       for (const docId of documentIds) {
         const documentTexts = await loadDocumentTextsFromDatabase(docId);
         const documentAssignments = assignments.filter(a => a.document_id === docId);
@@ -195,26 +213,26 @@ export const TextAssignmentProvider: React.FC<{ children: React.ReactNode }> = (
           titledTexts,
           originalTexts: {}
         };
+
+        console.log(`📄 Document ${docId}: ${titledTexts.length} texts, ${documentAssignments.length} assignments`);
       }
 
-      console.log('Successfully loaded text assignments from database:', assignmentsByDocument);
       return assignmentsByDocument;
       
-    } catch (error) {
-      console.error('Error loading assignments from database:', error);
-      return {};
-    }
+    }, 'Load assignments from database');
+
+    return result || {};
   };
 
-  // Save assignment to database
-  const saveAssignmentToDatabase = async (documentId: string, regionId: string, title: string, content: string) => {
+  // Enhanced assignment saving with retry logic
+  const saveAssignmentToDatabase = async (documentId: string, regionId: string, title: string, content: string, retryCount = 0) => {
     if (!authState.user) {
-      console.error('Cannot save assignment: no user logged in');
+      console.error('❌ Cannot save assignment: no user logged in');
       return false;
     }
     
-    try {
-      console.log(`Saving assignment for region ${regionId} to database`);
+    const result = await withErrorHandling(async () => {
+      console.log(`💾 Saving assignment: region ${regionId} <- "${title}"`);
       
       const { error } = await supabase
         .from('text_assignments')
@@ -227,28 +245,31 @@ export const TextAssignmentProvider: React.FC<{ children: React.ReactNode }> = (
           updated_at: new Date().toISOString()
         });
 
-      if (error) {
-        console.error('Error saving assignment to database:', error);
-        return false;
-      } else {
-        console.log(`Successfully saved assignment for region ${regionId} to database`);
-        return true;
-      }
-    } catch (error) {
-      console.error('Error saving assignment to database:', error);
-      return false;
+      if (error) throw error;
+      
+      console.log(`✅ Assignment saved successfully`);
+      return true;
+    }, `Save assignment (attempt ${retryCount + 1})`);
+
+    // Retry logic for failed saves
+    if (result === null && retryCount < 2) {
+      console.log(`🔄 Retrying assignment save in 1 second...`);
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      return saveAssignmentToDatabase(documentId, regionId, title, content, retryCount + 1);
     }
+
+    return result !== null;
   };
 
-  // Remove assignment from database
+  // Enhanced assignment removal
   const removeAssignmentFromDatabase = async (documentId: string, regionId: string) => {
     if (!authState.user) {
-      console.error('Cannot remove assignment: no user logged in');
+      console.error('❌ Cannot remove assignment: no user logged in');
       return false;
     }
     
-    try {
-      console.log(`Removing assignment for region ${regionId} from database`);
+    const result = await withErrorHandling(async () => {
+      console.log(`🗑️ Removing assignment for region: ${regionId}`);
       
       const { error } = await supabase
         .from('text_assignments')
@@ -257,17 +278,13 @@ export const TextAssignmentProvider: React.FC<{ children: React.ReactNode }> = (
         .eq('document_id', documentId)
         .eq('region_id', regionId);
 
-      if (error) {
-        console.error('Error removing assignment from database:', error);
-        return false;
-      } else {
-        console.log(`Successfully removed assignment for region ${regionId} from database`);
-        return true;
-      }
-    } catch (error) {
-      console.error('Error removing assignment from database:', error);
-      return false;
-    }
+      if (error) throw error;
+      
+      console.log(`✅ Assignment removed successfully`);
+      return true;
+    }, 'Remove assignment');
+
+    return result !== null;
   };
 
   // Migrate localStorage data to database
@@ -319,22 +336,17 @@ export const TextAssignmentProvider: React.FC<{ children: React.ReactNode }> = (
 
     try {
       setIsLoading(true);
-      console.log('Initializing text assignments...');
+      console.log('🚀 Initializing text assignments...');
       
-      // First, try to migrate any localStorage data
-      await migrateLocalStorageToDatabase();
-      
-      // Load from database
+      // Load from database with enhanced error handling
       const dbAssignments = await loadAssignmentsFromDatabase();
       
-      // Set the assignments
       setDocumentAssignments(dbAssignments);
       
-      console.log('Text assignment context initialization complete');
+      console.log('✅ Text assignment context initialization complete');
       
     } catch (error) {
-      console.error('Error initializing assignments:', error);
-      // Fallback to empty state on error
+      console.error('❌ Error initializing assignments:', error);
       setDocumentAssignments({});
     } finally {
       setIsLoading(false);
@@ -344,26 +356,70 @@ export const TextAssignmentProvider: React.FC<{ children: React.ReactNode }> = (
 
   // Initialize when user changes or on mount
   useEffect(() => {
-    console.log('Auth state changed, user:', authState.user?.id || 'none');
+    console.log('👤 Auth state changed, user:', authState.user?.id || 'none');
     initializeAssignments();
   }, [authState.user]);
 
-  const getCurrentDocumentTexts = (documentId: string): TitledText[] => {
-    const result = documentAssignments[documentId]?.titledTexts || [];
-    console.log(`Getting texts for document ${documentId}:`, result.length, 'texts found');
-    return result;
+  // Enhanced refresh function for data recovery
+  const refreshAssignments = async (documentId: string) => {
+    if (!authState.user || !documentId) return;
+
+    console.log(`🔄 Refreshing assignments for document: ${documentId}`);
+    setIsLoading(true);
+
+    try {
+      // Reload texts and assignments for this specific document
+      const documentTexts = await loadDocumentTextsFromDatabase(documentId);
+      
+      const { data: assignments, error } = await supabase
+        .from('text_assignments')
+        .select('*')
+        .eq('user_id', authState.user.id)
+        .eq('document_id', documentId);
+
+      if (error) throw error;
+
+      // Merge texts with assignments
+      const titledTexts = documentTexts.map(text => {
+        const assignment = assignments?.find(
+          a => a.text_title === text.title && a.text_content === text.content
+        );
+        return {
+          ...text,
+          assignedRegionId: assignment?.region_id
+        };
+      });
+
+      // Update state for this document
+      setDocumentAssignments(prev => ({
+        ...prev,
+        [documentId]: {
+          titledTexts,
+          originalTexts: prev[documentId]?.originalTexts || {}
+        }
+      }));
+
+      console.log(`✅ Refreshed ${titledTexts.length} texts for document ${documentId}`);
+      toast.success('Data refreshed successfully');
+
+    } catch (error) {
+      console.error('❌ Error refreshing assignments:', error);
+      toast.error('Failed to refresh data');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   // New function to get texts filtered by page
   const getCurrentPageTexts = (documentId: string, pageNumber: number): TitledText[] => {
     const allTexts = documentAssignments[documentId]?.titledTexts || [];
     const pageTexts = allTexts.filter(text => text.page === pageNumber);
-    console.log(`Getting texts for document ${documentId}, page ${pageNumber}:`, pageTexts.length, 'texts found');
+    console.log(`📄 Getting texts for document ${documentId}, page ${pageNumber}: ${pageTexts.length} texts found`);
     return pageTexts;
   };
 
   const setTitledTexts = (documentId: string, texts: TitledText[]) => {
-    console.log(`Setting texts for document ${documentId}:`, texts.length, 'texts');
+    console.log(`📝 Setting texts for document ${documentId}: ${texts.length} texts`);
     setDocumentAssignments(prev => ({
       ...prev,
       [documentId]: {
@@ -375,11 +431,10 @@ export const TextAssignmentProvider: React.FC<{ children: React.ReactNode }> = (
 
   const resetAssignments = async (documentId?: string) => {
     if (documentId) {
-      console.log(`Resetting assignments for document: ${documentId}`);
+      console.log(`🔄 Resetting assignments for document: ${documentId}`);
       
-      // Remove from database
       if (authState.user) {
-        try {
+        await withErrorHandling(async () => {
           // Remove assignments
           const { error: assignmentError } = await supabase
             .from('text_assignments')
@@ -387,9 +442,7 @@ export const TextAssignmentProvider: React.FC<{ children: React.ReactNode }> = (
             .eq('user_id', authState.user.id)
             .eq('document_id', documentId);
           
-          if (assignmentError) {
-            console.error('Error removing assignments from database:', assignmentError);
-          }
+          if (assignmentError) throw assignmentError;
 
           // Remove document texts
           const { error: textsError } = await supabase
@@ -398,12 +451,10 @@ export const TextAssignmentProvider: React.FC<{ children: React.ReactNode }> = (
             .eq('user_id', authState.user.id)
             .eq('document_id', documentId);
           
-          if (textsError) {
-            console.error('Error removing document texts from database:', textsError);
-          }
-        } catch (error) {
-          console.error('Error removing data from database:', error);
-        }
+          if (textsError) throw textsError;
+          
+          return true;
+        }, 'Reset document assignments');
       }
       
       // Remove from local state
@@ -413,20 +464,17 @@ export const TextAssignmentProvider: React.FC<{ children: React.ReactNode }> = (
         return newState;
       });
     } else {
-      console.log('Resetting all assignments');
+      console.log('🔄 Resetting all assignments');
       
-      // Remove from database
       if (authState.user) {
-        try {
+        await withErrorHandling(async () => {
           // Remove all assignments
           const { error: assignmentError } = await supabase
             .from('text_assignments')
             .delete()
             .eq('user_id', authState.user.id);
           
-          if (assignmentError) {
-            console.error('Error removing all assignments from database:', assignmentError);
-          }
+          if (assignmentError) throw assignmentError;
 
           // Remove all document texts
           const { error: textsError } = await supabase
@@ -434,87 +482,94 @@ export const TextAssignmentProvider: React.FC<{ children: React.ReactNode }> = (
             .delete()
             .eq('user_id', authState.user.id);
           
-          if (textsError) {
-            console.error('Error removing all document texts from database:', textsError);
-          }
-        } catch (error) {
-          console.error('Error removing all data from database:', error);
-        }
+          if (textsError) throw textsError;
+          
+          return true;
+        }, 'Reset all assignments');
       }
       
-      // Remove from local state
       setDocumentAssignments({});
     }
   };
 
   const assignTextsToRegions = async (text: string, regions: Region[], documentId: string, currentPage: number): Promise<TitledText[]> => {
-    console.log(`Assigning texts to regions for document ${documentId}, page ${currentPage}`);
-    const parsedTexts = parseTitledText(text);
-    // Add page information to each text
-    const newTitledTexts = parsedTexts.map(text => ({ ...text, page: currentPage }));
-    const newOriginalTexts: Record<string, string | null> = {};
+    console.log(`📝 Processing text for document ${documentId}, page ${currentPage}`);
     
+    const parsedTexts = parseTitledText(text);
+    // Ensure ALL texts get the correct page number
+    const newTitledTexts = parsedTexts.map(text => ({ 
+      ...text, 
+      page: currentPage // Use the current page from PDF viewer
+    }));
+
+    console.log(`📋 Created ${newTitledTexts.length} texts for page ${currentPage}`);
+
     // Store original descriptions for undo capability
+    const newOriginalTexts: Record<string, string | null> = {};
     regions.forEach(region => {
       newOriginalTexts[region.id] = region.description;
     });
 
-    // Save texts to database
-    await saveDocumentTextsToDatabase(documentId, [
-      ...(documentAssignments[documentId]?.titledTexts || []),
-      ...newTitledTexts
-    ]);
+    // Save all texts (existing + new) to database
+    const existingTexts = documentAssignments[documentId]?.titledTexts || [];
+    const allTexts = [...existingTexts, ...newTitledTexts];
     
-    setDocumentAssignments(prev => ({
-      ...prev,
-      [documentId]: {
-        titledTexts: [
-          ...(prev[documentId]?.titledTexts || []),
-          ...newTitledTexts
-        ],
-        originalTexts: newOriginalTexts
-      }
-    }));
+    const saveSuccess = await saveDocumentTextsToDatabase(documentId, allTexts);
     
-    console.log(`Processed ${newTitledTexts.length} texts for document ${documentId}, page ${currentPage}`);
-    return newTitledTexts;
-  };
-
-  const undoAllAssignments = async (documentId: string) => {
-    console.log(`Undoing all assignments for document: ${documentId}`);
-    
-    // Remove all assignments for this document from database
-    if (authState.user) {
-      try {
-        const { error } = await supabase
-          .from('text_assignments')
-          .delete()
-          .eq('user_id', authState.user.id)
-          .eq('document_id', documentId);
-        
-        if (error) {
-          console.error('Error removing assignments from database:', error);
-        }
-      } catch (error) {
-        console.error('Error removing assignments from database:', error);
-      }
+    if (!saveSuccess) {
+      console.error('❌ Failed to save texts to database');
+      toast.error('Failed to save texts. Please try again.');
+      return [];
     }
     
     // Update local state
     setDocumentAssignments(prev => ({
       ...prev,
       [documentId]: {
-        ...prev[documentId],
-        titledTexts: (prev[documentId]?.titledTexts || []).map(text => ({ 
-          ...text, 
-          assignedRegionId: undefined 
-        }))
+        titledTexts: allTexts,
+        originalTexts: newOriginalTexts
       }
     }));
+    
+    console.log(`✅ Successfully processed ${newTitledTexts.length} texts for page ${currentPage}`);
+    return newTitledTexts;
+  };
+
+  const undoAllAssignments = async (documentId: string) => {
+    console.log(`↩️ Undoing all assignments for document: ${documentId}`);
+    
+    // Remove all assignments for this document from database
+    if (authState.user) {
+      const result = await withErrorHandling(async () => {
+        const { error } = await supabase
+          .from('text_assignments')
+          .delete()
+          .eq('user_id', authState.user.id)
+          .eq('document_id', documentId);
+        
+        if (error) throw error;
+        return true;
+      }, 'Remove all assignments');
+
+      if (result) {
+        // Update local state
+        setDocumentAssignments(prev => ({
+          ...prev,
+          [documentId]: {
+            ...prev[documentId],
+            titledTexts: (prev[documentId]?.titledTexts || []).map(text => ({ 
+              ...text, 
+              assignedRegionId: undefined 
+            }))
+          }
+        }));
+        toast.success('All assignments undone');
+      }
+    }
   };
 
   const undoRegionAssignment = async (regionId: string, documentId: string) => {
-    console.log(`Undoing assignment for region ${regionId} in document ${documentId}`);
+    console.log(`↩️ Undoing assignment for region ${regionId} in document ${documentId}`);
     
     // Remove from database first
     const success = await removeAssignmentFromDatabase(documentId, regionId);
@@ -532,17 +587,23 @@ export const TextAssignmentProvider: React.FC<{ children: React.ReactNode }> = (
           )
         }
       }));
+      console.log(`✅ Successfully undid assignment for region ${regionId}`);
+      toast.success('Text assignment undone');
+    } else {
+      console.error('❌ Failed to remove assignment from database');
+      toast.error('Failed to undo assignment. Please try again.');
     }
   };
 
   const assignTextToRegion = async (textIndex: number, regionId: string, documentId: string) => {
-    console.log(`Assigning text ${textIndex} to region ${regionId} in document ${documentId}`);
+    console.log(`🔗 Assigning text ${textIndex} to region ${regionId} in document ${documentId}`);
     
     const currentTexts = documentAssignments[documentId]?.titledTexts || [];
     const textToAssign = currentTexts[textIndex];
     
     if (!textToAssign) {
-      console.error('Text to assign not found');
+      console.error('❌ Text to assign not found at index:', textIndex);
+      toast.error('Text not found. Please refresh and try again.');
       return;
     }
 
@@ -562,16 +623,17 @@ export const TextAssignmentProvider: React.FC<{ children: React.ReactNode }> = (
           )
         }
       }));
-      console.log(`Successfully assigned text ${textIndex} to region ${regionId}`);
+      console.log(`✅ Successfully assigned text "${textToAssign.title}" to region ${regionId}`);
+      toast.success(`Assigned "${textToAssign.title}" to region`);
     } else {
-      console.error('Failed to save assignment to database');
+      console.error('❌ Failed to save assignment to database');
+      toast.error('Failed to assign text. Please try again.');
     }
   };
 
   const getAssignedText = (regionId: string, documentId: string): string | null => {
     const assignedText = (documentAssignments[documentId]?.titledTexts || []).find(text => text.assignedRegionId === regionId);
-    const result = assignedText ? assignedText.content : null;
-    return result;
+    return assignedText ? assignedText.content : null;
   };
 
   const isRegionAssigned = (regionId: string, documentId: string): boolean => {
@@ -612,6 +674,7 @@ export const TextAssignmentProvider: React.FC<{ children: React.ReactNode }> = (
     getUnassignedRegions,
     getUnassignedRegionsByPage,
     selectRegionById,
+    refreshAssignments,
     isLoading,
     isReady
   };
