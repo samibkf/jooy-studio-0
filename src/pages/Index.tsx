@@ -1,10 +1,10 @@
+
 import React, { useState, useEffect } from 'react';
 import { useDocumentState } from '@/contexts/DocumentContext';
 import PdfViewer from '@/components/PdfViewer';
 import Sidebar from '@/components/Sidebar';
 import Header from '@/components/Header';
 import { toast } from 'sonner';
-import { useRouter } from 'next/router';
 
 interface IndexProps {}
 
@@ -25,21 +25,11 @@ const Index = () => {
     clearDocument
   } = useDocumentState(documentId);
 
-  const router = useRouter();
-
-  useEffect(() => {
-    const fileId = router.query.fileId as string | undefined;
-    if (fileId) {
-      setDocumentId(fileId);
-    }
-  }, [router.query]);
-
   const handleFileSelect = (file: File) => {
     setSelectedFile(file);
     clearDocument();
     const newDocumentId = generateId();
     setDocumentId(newDocumentId);
-    router.push(`/?fileId=${newDocumentId}`);
     toast.success('Document loaded');
   };
 
@@ -47,10 +37,39 @@ const Index = () => {
     return Math.random().toString(36).substring(2, 15);
   };
 
+  const handleUploadClick = () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.pdf';
+    input.onchange = (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (file) {
+        handleFileSelect(file);
+      }
+    };
+    input.click();
+  };
+
+  const handleExport = () => {
+    // Export functionality placeholder
+    toast.success('Export feature coming soon');
+  };
+
+  const handleSignOut = async () => {
+    // Sign out functionality placeholder
+    toast.success('Sign out feature coming soon');
+  };
+
   return (
     <div className="flex h-screen overflow-hidden">
       <div className="flex-1 flex flex-col overflow-hidden">
-        <Header />
+        <Header 
+          onUploadClick={handleUploadClick}
+          onExport={handleExport}
+          hasDocument={!!selectedFile}
+          user={null}
+          onSignOut={handleSignOut}
+        />
         <div className="flex-1 flex overflow-hidden">
           <div className="flex-1 overflow-hidden">
             <PdfViewer
