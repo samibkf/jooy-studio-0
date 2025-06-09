@@ -19,6 +19,7 @@ import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { pdfCacheService } from '@/services/pdfCacheService';
 import { generateUniqueDocumentId } from '@/utils/documentIdUtils';
 import { useDocumentMetadata } from '@/hooks/useDocumentMetadata';
+import { deleteMetadata } from '@/utils/metadataUtils';
 
 const Index = () => {
   const [documents, setDocuments] = useState<DocumentData[]>([]);
