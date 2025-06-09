@@ -107,6 +107,39 @@ export type Database = {
         }
         Relationships: []
       }
+      text_assignments: {
+        Row: {
+          created_at: string
+          document_id: string
+          id: string
+          region_id: string
+          text_content: string
+          text_title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          document_id: string
+          id?: string
+          region_id: string
+          text_content: string
+          text_title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          document_id?: string
+          id?: string
+          region_id?: string
+          text_content?: string
+          text_title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

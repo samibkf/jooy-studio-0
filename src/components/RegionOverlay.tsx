@@ -26,7 +26,7 @@ const RegionOverlay: React.FC<RegionOverlayProps> = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const { isRegionAssigned, isReady, isLoading } = useTextAssignment();
 
-  // Track assignment state with detailed logging
+  // Track assignment state
   const [hasText, setHasText] = useState(false);
   
   useEffect(() => {
