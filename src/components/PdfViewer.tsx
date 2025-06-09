@@ -41,7 +41,7 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
   onPageChange
 }) => {
   const [pdf, setPdf] = useState<PDFDocumentProxy | null>(null);
-  const [currentPage, setCurrentPage] = useState(1); // Start with page 1
+  const [currentPage, setCurrentPage] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   const [scale, setScale] = useState(1.0);
   const [isSelecting, setIsSelecting] = useState(false);
@@ -91,7 +91,7 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
         const pdfDocument = await loadingTask.promise;
         setPdf(pdfDocument);
         setTotalPages(pdfDocument.numPages);
-        setCurrentPage(1); // Start with page 1
+        setCurrentPage(0);
         toast.success(`PDF loaded with ${pdfDocument.numPages} pages`);
       } catch (error) {
         console.error('Error loading PDF:', error);
@@ -105,7 +105,7 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
     if (!pdf || !canvasRef.current) return;
     const renderPage = async () => {
       try {
-        const page = await pdf.getPage(currentPage); // Use currentPage directly (1-based)
+        const page = await pdf.getPage(currentPage + 1);
         const viewport = page.getViewport({
           scale
         });
@@ -153,10 +153,10 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
     height: number;
   }) => {
     if (rect.width > 10 && rect.height > 10) {
-      const nextNumber = getNextRegionNumber(currentPage); // Use currentPage directly (1-based)
-      const regionName = `${currentPage}_${nextNumber}`;
+      const nextNumber = getNextRegionNumber(currentPage + 1);
+      const regionName = `${currentPage + 1}_${nextNumber}`;
       const newRegion: Omit<Region, 'id'> = {
-        page: currentPage, // Use currentPage directly (1-based)
+        page: currentPage + 1,
         x: rect.x,
         y: rect.y,
         width: rect.width,
@@ -270,10 +270,10 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
   };
   
   const handleNextPage = () => {
-    if (currentPage < totalPages) {
+    if (currentPage < totalPages - 1) {
       const newPage = currentPage + 1;
       setCurrentPage(newPage);
-      onPageChange?.(newPage); // Pass 1-based page number
+      onPageChange?.(newPage);
       window.getSelection()?.removeAllRanges();
       setSelectionPoint(null);
       setSelectionRect({
@@ -289,10 +289,10 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
   };
   
   const handlePrevPage = () => {
-    if (currentPage > 1) {
+    if (currentPage > 0) {
       const newPage = currentPage - 1;
       setCurrentPage(newPage);
-      onPageChange?.(newPage); // Pass 1-based page number
+      onPageChange?.(newPage);
       window.getSelection()?.removeAllRanges();
       setSelectionPoint(null);
       setSelectionRect({
@@ -368,7 +368,7 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
     return () => window.removeEventListener('keydown', handleEscKey);
   }, [selectionPoint]);
   
-  const pageRegions = regions.filter(region => region.page === currentPage); // Use currentPage directly (1-based)
+  const pageRegions = regions.filter(region => region.page === currentPage + 1);
   
   useEffect(() => {
     setPreventCreateRegion(false);
@@ -377,8 +377,8 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
   const handleGoToPage = () => {
     const pageNum = parseInt(pageInputValue);
     if (pageNum >= 1 && pageNum <= totalPages) {
-      setCurrentPage(pageNum);
-      onPageChange?.(pageNum); // Pass 1-based page number
+      setCurrentPage(pageNum - 1);
+      onPageChange?.(pageNum);
       setPageInputValue('');
       // Clear selection state when changing pages
       setSelectionPoint(null);
@@ -447,14 +447,14 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
             </div>
 
             <div className="flex items-center space-x-4">
-              <Button variant="outline" size="icon" onClick={handlePrevPage} disabled={currentPage <= 1}>
+              <Button variant="outline" size="icon" onClick={handlePrevPage} disabled={currentPage <= 0}>
                 <ArrowLeft className="h-4 w-4" />
                 <span className="sr-only">Previous page</span>
               </Button>
               
               <div className="flex items-center space-x-2">
                 <span className="text-sm min-w-[100px] text-center">
-                  Page {currentPage} of {totalPages}
+                  Page {currentPage + 1} of {totalPages}
                 </span>
                 <div className="flex items-center space-x-1">
                   <input
@@ -473,7 +473,7 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
                 </div>
               </div>
               
-              <Button variant="outline" size="icon" onClick={handleNextPage} disabled={currentPage >= totalPages}>
+              <Button variant="outline" size="icon" onClick={handleNextPage} disabled={currentPage >= totalPages - 1}>
                 <ArrowRight className="h-4 w-4" />
                 <span className="sr-only">Next page</span>
               </Button>
