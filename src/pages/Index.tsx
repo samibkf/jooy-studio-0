@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import Header from '@/components/Header';
 import Sidebar from '@/components/Sidebar';
@@ -23,7 +24,7 @@ const Index = () => {
   const [documents, setDocuments] = useState<DocumentData[]>([]);
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const pdfViewerRef = useRef<any>(null);
-  const { setTitledTexts, resetAssignments } = useTextAssignment();
+  const { setTitledTexts, resetAssignments, getCurrentDocumentTexts } = useTextAssignment();
   const { authState } = useAuth();
   const navigate = useNavigate();
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
@@ -39,7 +40,9 @@ const Index = () => {
     setRegionsCache,
     resetStates
   } = useDocumentState(document?.id || null);
-  const { metadataSyncing } = useMetadataSync(document, setDocument, setDocuments, regionsCache, setRegionsCache);
+  
+  // Fix the useMetadataSync hook call
+  useMetadataSync(document, setDocument, setDocuments, regionsCache, setRegionsCache);
 
   // Load documents on user authentication
   useEffect(() => {
@@ -62,44 +65,44 @@ const Index = () => {
               data.map(async (doc) => {
                 try {
                   // Check if the PDF file exists in storage
-                  const { data: fileData, error: fileError } = await supabase.storage
+                  const { data: fileData } = await supabase.storage
                     .from('pdfs')
                     .getPublicUrl(`${doc.id}.pdf`);
 
-                  if (fileError) {
-                    console.warn(`File not found in storage for document ${doc.id}:`, fileError);
+                  if (!fileData?.publicUrl) {
+                    console.warn(`File not found in storage for document ${doc.id}`);
                     return {
                       ...doc,
                       fileAvailable: false,
-                      uploadRequired: true, // Set the flag to indicate re-upload
-                      lastAttemptedAccess: new Date(), // Track the last failed attempt
+                      uploadRequired: true,
+                      lastAttemptedAccess: new Date(),
                     };
                   }
 
-                  // Check if the file is cached
-                  const cachedFile = await pdfCacheService.getFile(doc.id);
+                  // Check if the file is cached (assuming pdfCacheService has a method to check)
+                  const cachedFile = await pdfCacheService.getCachedFile?.(doc.id);
                   if (!cachedFile) {
                     return {
                       ...doc,
                       fileAvailable: true,
-                      uploadRequired: true, // Set the flag to indicate re-upload
-                      lastAttemptedAccess: new Date(), // Track the last failed attempt
+                      uploadRequired: true,
+                      lastAttemptedAccess: new Date(),
                     };
                   }
 
                   return {
                     ...doc,
                     fileAvailable: true,
-                    uploadRequired: false, // No re-upload required
-                    lastAttemptedAccess: new Date(), // Track the last access attempt
+                    uploadRequired: false,
+                    lastAttemptedAccess: new Date(),
                   };
                 } catch (fileCheckError) {
                   console.error(`Error checking file availability for document ${doc.id}:`, fileCheckError);
                   return {
                     ...doc,
                     fileAvailable: false,
-                    uploadRequired: true, // Set the flag to indicate re-upload
-                    lastAttemptedAccess: new Date(), // Track the last failed attempt
+                    uploadRequired: true,
+                    lastAttemptedAccess: new Date(),
                   };
                 }
               })
@@ -226,7 +229,7 @@ const Index = () => {
       setDocument(newDocument);
 
       // Upload metadata first
-      await uploadMetadata(newDocument, authState.user.id);
+      await uploadMetadata(newDocument, authState.user.id, documentId);
 
       // Upload the PDF file
       const { error: uploadError } = await supabase.storage
@@ -245,7 +248,7 @@ const Index = () => {
         setDocument(null);
 
         // Delete metadata on failure
-        await deleteMetadata(documentId);
+        await deleteMetadata(documentId, authState.user.id);
 
         toast.error("Failed to upload the PDF file. Please try again.");
         return;
@@ -268,27 +271,30 @@ const Index = () => {
 
         // Delete file and metadata on failure
         await supabase.storage.from('pdfs').remove([`${documentId}.pdf`]);
-        await deleteMetadata(documentId);
+        await deleteMetadata(documentId, authState.user.id);
 
         toast.error("Failed to save document metadata. Please try again.");
         return;
       }
 
       // Generate initial metadata
-      await generateMetadata(newDocument);
+      await generateMetadata(newDocument, authState.user.id, documentId);
 
       toast.success(`${documentName} uploaded successfully!`);
     } catch (error) {
       console.error("Unexpected error during file upload:", error);
       setUploadError("An unexpected error occurred during file upload. Please try again.");
 
+      // Generate a new documentId for error handling (since it might not be defined in catch block)
+      const errorDocumentId = await generateUniqueDocumentId(authState.user.id);
+      
       // Revert the UI update on failure
-      setDocuments(prevDocuments => prevDocuments.filter(doc => doc.id !== documentId));
+      setDocuments(prevDocuments => prevDocuments.filter(doc => doc.id !== errorDocumentId));
       setDocument(null);
 
       // Delete file and metadata on failure
-      await supabase.storage.from('pdfs').remove([`${documentId}.pdf`]);
-      await deleteMetadata(documentId);
+      await supabase.storage.from('pdfs').remove([`${errorDocumentId}.pdf`]);
+      await deleteMetadata(errorDocumentId, authState.user.id);
 
       toast.error("An unexpected error occurred during file upload. Please try again.");
     }
@@ -302,7 +308,6 @@ const Index = () => {
 
     try {
       const regions = regionsCache[document.id] || [];
-      const { getCurrentDocumentTexts } = useTextAssignment();
       const texts = getCurrentDocumentTexts(document.id);
 
       // Prepare data for CSV export
@@ -324,7 +329,7 @@ const Index = () => {
       console.error("Error exporting data:", error);
       toast.error("Failed to export data.");
     }
-  }, [document, regionsCache]);
+  }, [document, regionsCache, getCurrentDocumentTexts]);
 
   const handleSignOut = async () => {
     try {
@@ -366,7 +371,7 @@ const Index = () => {
 
         <div className="flex flex-grow">
           <Sidebar
-            isOpen={isSidebarOpen}
+            open={isSidebarOpen}
             toggleSidebar={toggleSidebar}
             documents={documents}
             selectedDocument={document}
@@ -381,7 +386,7 @@ const Index = () => {
             {document ? (
               <PdfViewer
                 documentId={document.id}
-                pdfFile={document.file}
+                file={document.file}
                 pdfViewerRef={pdfViewerRef}
                 selectedRegionId={selectedRegionId}
                 onRegionSelect={handleRegionSelect}

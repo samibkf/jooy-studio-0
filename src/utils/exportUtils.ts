@@ -74,3 +74,48 @@ export const exportRegionMapping = (mapping: RegionMapping): void => {
   }
 };
 
+// Add the missing exportToCSV function
+export const exportToCSV = (data: any[], filename: string): void => {
+  try {
+    if (!data || data.length === 0) {
+      toast.error('No data to export');
+      return;
+    }
+
+    // Get headers from the first object
+    const headers = Object.keys(data[0]);
+    
+    // Create CSV content
+    const csvContent = [
+      headers.join(','), // Header row
+      ...data.map(row => 
+        headers.map(header => {
+          const value = row[header] || '';
+          // Escape quotes and wrap in quotes if contains comma or quote
+          const stringValue = String(value);
+          if (stringValue.includes(',') || stringValue.includes('"') || stringValue.includes('\n')) {
+            return `"${stringValue.replace(/"/g, '""')}"`;
+          }
+          return stringValue;
+        }).join(',')
+      )
+    ].join('\n');
+
+    // Create blob and download
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${filename}_export.csv`;
+    
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    
+    toast.success('CSV exported successfully!');
+  } catch (error) {
+    console.error('Error exporting CSV:', error);
+    toast.error('Failed to export CSV');
+  }
+};
