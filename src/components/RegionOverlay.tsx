@@ -26,14 +26,27 @@ const RegionOverlay: React.FC<RegionOverlayProps> = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const { isRegionAssigned, isReady, isLoading } = useTextAssignment();
 
-  // Track assignment state
+  // Track assignment state - only check when context is ready and we have a documentId
   const [hasText, setHasText] = useState(false);
+  const [isCheckingAssignment, setIsCheckingAssignment] = useState(true);
   
   useEffect(() => {
-    if (isReady && documentId && !isLoading) {
-      const assigned = isRegionAssigned(region.id, documentId);
-      console.log(`Region ${region.id} (${region.name}) assignment check: ${assigned}`);
-      setHasText(assigned);
+    if (isReady && !isLoading && documentId) {
+      console.log(`Checking assignment for region ${region.id} (${region.name}) in document ${documentId}`);
+      setIsCheckingAssignment(true);
+      
+      // Small delay to ensure all assignments are loaded
+      const timer = setTimeout(() => {
+        const assigned = isRegionAssigned(region.id, documentId);
+        console.log(`Region ${region.id} assignment result: ${assigned}`);
+        setHasText(assigned);
+        setIsCheckingAssignment(false);
+      }, 100);
+      
+      return () => clearTimeout(timer);
+    } else {
+      console.log(`Context not ready for region ${region.id}: isReady=${isReady}, isLoading=${isLoading}, documentId=${documentId}`);
+      setIsCheckingAssignment(true);
     }
   }, [isReady, isLoading, region.id, documentId, isRegionAssigned]);
 
@@ -106,13 +119,9 @@ const RegionOverlay: React.FC<RegionOverlayProps> = ({
     }
     return hasText ? 'rgba(34, 197, 94, 0.1)' : 'rgba(37, 99, 235, 0.1)';
   };
-  
-  const borderColor = getBorderColor();
-  const bgColor = getBackgroundColor();
-  const borderWidth = isSelected ? '3px' : '2px';
 
-  // Show loading state while context is initializing
-  if (!isReady || isLoading) {
+  // Show loading state while context is initializing or checking assignments
+  if (!isReady || isLoading || isCheckingAssignment) {
     return (
       <div
         ref={containerRef}
@@ -122,7 +131,7 @@ const RegionOverlay: React.FC<RegionOverlayProps> = ({
           top: `${position.y * scale}px`,
           width: `${region.width * scale}px`,
           height: `${region.height * scale}px`,
-          border: `${Math.max(1, parseInt(borderWidth) * scale)}px solid rgba(156, 163, 175, 0.5)`,
+          border: `${Math.max(1, (isSelected ? 3 : 2) * scale)}px solid rgba(156, 163, 175, 0.5)`,
           backgroundColor: 'rgba(156, 163, 175, 0.1)',
           boxSizing: 'border-box',
           touchAction: 'none',
@@ -148,6 +157,10 @@ const RegionOverlay: React.FC<RegionOverlayProps> = ({
       </div>
     );
   }
+  
+  const borderColor = getBorderColor();
+  const bgColor = getBackgroundColor();
+  const borderWidth = isSelected ? '3px' : '2px';
 
   return (
     <div
