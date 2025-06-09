@@ -18,7 +18,7 @@ import { useNavigate } from 'react-router-dom';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { pdfCacheService } from '@/services/pdfCacheService';
 import { generateUniqueDocumentId } from '@/utils/documentIdUtils';
-import { uploadMetadata, updateMetadata, deleteMetadata, generateMetadata } from '@/utils/metadataUtils';
+import { useDocumentMetadata } from '@/hooks/useDocumentMetadata';
 
 const Index = () => {
   const [documents, setDocuments] = useState<DocumentData[]>([]);
@@ -47,6 +47,14 @@ const Index = () => {
   
   const { authState, signOut } = useAuth();
   const navigate = useNavigate();
+
+  // Initialize metadata management for selected document
+  const { syncMetadata } = useDocumentMetadata({
+    documentId: selectedDocumentId,
+    documentData: selectedDocument,
+    autoSync: true,
+    syncInterval: 2000
+  });
 
   const loadDocuments = async () => {
     if (documentsLoaded && !isInitialLoad) {
@@ -287,7 +295,7 @@ const Index = () => {
 
       toast.loading('Uploading PDF file...', { id: 'pdf-upload' });
       
-      // Store PDF in main folder with 5-letter ID
+      // Store PDF in main folder with 5-letter ID (updated structure)
       const filePath = `${documentId}.pdf`;
       console.log(`Uploading PDF to ${filePath}`);
       
@@ -351,15 +359,10 @@ const Index = () => {
           [documentId]: []
         }));
 
-        // Create initial metadata file
-        try {
-          const metadata = await generateMetadata(newDocument, documentId, authState.user.id);
-          await uploadMetadata(documentId, metadata, authState.user.id);
-          console.log('Initial metadata created for document:', documentId);
-        } catch (metadataError) {
-          console.error('Failed to create initial metadata:', metadataError);
-          // Don't fail the upload for metadata issues
-        }
+        // Trigger metadata sync for the new document
+        setTimeout(() => {
+          syncMetadata();
+        }, 1000);
       }
     } catch (error) {
       console.error('Error uploading document:', error);
@@ -547,14 +550,8 @@ const Index = () => {
       } else {
         toast.success('Region created');
         
-        // Update metadata
-        try {
-          await updateMetadata(selectedDocumentId, {
-            regions: [...(regionsCache[selectedDocumentId] || []), newRegion]
-          }, authState.user.id);
-        } catch (metadataError) {
-          console.error('Failed to update metadata after region creation:', metadataError);
-        }
+        // Trigger metadata sync
+        setTimeout(syncMetadata, 500);
       }
     } catch (error) {
       console.error('Error creating region:', error);
@@ -644,14 +641,8 @@ const Index = () => {
           }));
         }
       } else {
-        // Update metadata
-        try {
-          await updateMetadata(selectedDocumentId, {
-            regions: regionsCache[selectedDocumentId] || []
-          }, authState.user.id);
-        } catch (metadataError) {
-          console.error('Failed to update metadata after region update:', metadataError);
-        }
+        // Trigger metadata sync
+        setTimeout(syncMetadata, 500);
       }
     } catch (error) {
       console.error('Error updating region:', error);
@@ -693,14 +684,8 @@ const Index = () => {
         setSelectedRegionId(null);
       }
 
-      // Update metadata
-      try {
-        await updateMetadata(selectedDocumentId, {
-          regions: (regionsCache[selectedDocumentId] || []).filter(r => r.id !== regionId)
-        }, authState.user.id);
-      } catch (metadataError) {
-        console.error('Failed to update metadata after region deletion:', metadataError);
-      }
+      // Trigger metadata sync
+      setTimeout(syncMetadata, 500);
 
       toast.success('Region deleted');
     } catch (error) {

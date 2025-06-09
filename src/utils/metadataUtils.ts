@@ -1,4 +1,7 @@
 
+// Legacy metadata utilities - kept for backward compatibility
+// New projects should use useDocumentMetadata hook instead
+
 import { supabase } from '@/integrations/supabase/client';
 import { Region } from '@/types/regions';
 import { DocumentData } from '@/types/documents';
@@ -25,12 +28,14 @@ export interface DocumentMetadata {
   }>;
 }
 
-// Generate metadata object from document data
+// Legacy function - use useDocumentMetadata hook instead
 export const generateMetadata = async (
   document: DocumentData,
   documentId: string,
   userId: string
 ): Promise<DocumentMetadata> => {
+  console.warn('generateMetadata is deprecated. Use useDocumentMetadata hook instead.');
+  
   // Get text assignments
   const { data: textAssignments } = await supabase
     .from('text_assignments')
@@ -63,17 +68,19 @@ export const generateMetadata = async (
       title: dt.title,
       content: dt.content,
       page: dt.page,
-      assignedRegionId: undefined // Will be populated by text assignment context
+      assignedRegionId: undefined
     }))
   };
 };
 
-// Upload metadata to Supabase storage
+// Legacy function - use useDocumentMetadata hook instead
 export const uploadMetadata = async (
   documentId: string,
   metadata: DocumentMetadata,
   userId: string
 ): Promise<boolean> => {
+  console.warn('uploadMetadata is deprecated. Use useDocumentMetadata hook instead.');
+  
   try {
     const metadataJson = JSON.stringify(metadata, null, 2);
     const fileName = `${userId}/${documentId}.json`;
@@ -96,14 +103,15 @@ export const uploadMetadata = async (
   }
 };
 
-// Update metadata file when document changes
+// Legacy function - use useDocumentMetadata hook instead
 export const updateMetadata = async (
   documentId: string,
   updates: Partial<DocumentMetadata>,
   userId: string
 ): Promise<boolean> => {
+  console.warn('updateMetadata is deprecated. Use useDocumentMetadata hook instead.');
+  
   try {
-    // First, try to download existing metadata
     const fileName = `${userId}/${documentId}.json`;
     
     const { data: existingData } = await supabase.storage
@@ -116,7 +124,6 @@ export const updateMetadata = async (
       const text = await existingData.text();
       currentMetadata = JSON.parse(text);
     } else {
-      // Create new metadata if it doesn't exist
       currentMetadata = {
         id: documentId,
         name: '',
@@ -129,7 +136,6 @@ export const updateMetadata = async (
       };
     }
 
-    // Merge updates
     const updatedMetadata: DocumentMetadata = {
       ...currentMetadata,
       ...updates,
@@ -144,8 +150,10 @@ export const updateMetadata = async (
   }
 };
 
-// Delete metadata file
+// Legacy function - use useDocumentMetadata hook instead
 export const deleteMetadata = async (documentId: string, userId: string): Promise<boolean> => {
+  console.warn('deleteMetadata is deprecated. Use useDocumentMetadata hook instead.');
+  
   try {
     const fileName = `${userId}/${documentId}.json`;
     
