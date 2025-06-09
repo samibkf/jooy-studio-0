@@ -17,7 +17,8 @@ import { supabase, initializeStorage } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { pdfCacheService } from '@/services/pdfCacheService';
-import { generateUniqueDocumentId, uploadMetadata, updateMetadata, deleteMetadata, generateMetadata } from '@/utils/metadataUtils';
+import { generateUniqueDocumentId } from '@/utils/documentIdUtils';
+import { uploadMetadata, updateMetadata, deleteMetadata, generateMetadata } from '@/utils/metadataUtils';
 
 const Index = () => {
   const [documents, setDocuments] = useState<DocumentData[]>([]);
