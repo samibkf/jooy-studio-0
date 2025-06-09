@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Region } from '@/types/regions';
 import { parseTitledText } from '@/utils/textProcessing';
@@ -19,7 +18,7 @@ type DocumentAssignments = {
 type TextAssignmentContextType = {
   getCurrentDocumentTexts: (documentId: string) => TitledText[];
   setTitledTexts: (documentId: string, texts: TitledText[]) => void;
-  assignTextsToRegions: (text: string, regions: Region[], documentId: string) => Promise<TitledText[]>;
+  assignTextsToRegions: (text: string, regions: Region[], documentId: string, page?: number) => Promise<TitledText[]>;
   undoAllAssignments: (documentId: string) => void;
   undoRegionAssignment: (regionId: string, documentId: string) => void;
   assignTextToRegion: (textIndex: number, regionId: string, documentId: string) => void;
@@ -436,10 +435,16 @@ export const TextAssignmentProvider: React.FC<{ children: React.ReactNode }> = (
     }
   };
 
-  const assignTextsToRegions = async (text: string, regions: Region[], documentId: string): Promise<TitledText[]> => {
-    console.log(`Assigning texts to regions for document ${documentId}`);
+  const assignTextsToRegions = async (text: string, regions: Region[], documentId: string, page: number = 1): Promise<TitledText[]> => {
+    console.log(`Assigning texts to regions for document ${documentId} on page ${page}`);
     const parsedTexts = parseTitledText(text);
-    const newTitledTexts = [...parsedTexts];
+    
+    // Add page information to each text
+    const newTitledTexts = parsedTexts.map(parsedText => ({
+      ...parsedText,
+      page
+    }));
+    
     const newOriginalTexts: Record<string, string | null> = {};
     
     // Store original descriptions for undo capability
@@ -447,18 +452,23 @@ export const TextAssignmentProvider: React.FC<{ children: React.ReactNode }> = (
       newOriginalTexts[region.id] = region.description;
     });
 
-    // Save texts to database
+    // Save texts to database with page information
     await saveDocumentTextsToDatabase(documentId, newTitledTexts);
+    
+    // Merge with existing texts from other pages
+    const existingTexts = documentAssignments[documentId]?.titledTexts || [];
+    const otherPageTexts = existingTexts.filter((existingText: any) => (existingText.page || 1) !== page);
+    const allTexts = [...otherPageTexts, ...newTitledTexts];
     
     setDocumentAssignments(prev => ({
       ...prev,
       [documentId]: {
-        titledTexts: newTitledTexts,
+        titledTexts: allTexts,
         originalTexts: newOriginalTexts
       }
     }));
     
-    console.log(`Processed ${newTitledTexts.length} texts for document ${documentId}`);
+    console.log(`Processed ${newTitledTexts.length} texts for document ${documentId} on page ${page}`);
     return newTitledTexts;
   };
 

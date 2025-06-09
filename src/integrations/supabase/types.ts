@@ -68,6 +68,7 @@ export type Database = {
           created_at: string
           document_id: string
           id: string
+          page: number
           title: string
           user_id: string
         }
@@ -76,6 +77,7 @@ export type Database = {
           created_at?: string
           document_id: string
           id?: string
+          page?: number
           title: string
           user_id: string
         }
@@ -84,6 +86,7 @@ export type Database = {
           created_at?: string
           document_id?: string
           id?: string
+          page?: number
           title?: string
           user_id?: string
         }
