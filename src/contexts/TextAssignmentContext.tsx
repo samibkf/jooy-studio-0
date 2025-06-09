@@ -8,6 +8,7 @@ type TitledText = {
   title: string;
   content: string;
   assignedRegionId?: string;
+  page?: number;
 };
 
 type DocumentAssignments = {
@@ -16,10 +17,10 @@ type DocumentAssignments = {
 };
 
 type TextAssignmentContextType = {
-  getCurrentDocumentTexts: (documentId: string) => TitledText[];
+  getCurrentDocumentTexts: (documentId: string, page?: number) => TitledText[];
   setTitledTexts: (documentId: string, texts: TitledText[]) => void;
   assignTextsToRegions: (text: string, regions: Region[], documentId: string, page?: number) => Promise<TitledText[]>;
-  undoAllAssignments: (documentId: string) => void;
+  undoAllAssignments: (documentId: string, page?: number) => void;
   undoRegionAssignment: (regionId: string, documentId: string) => void;
   assignTextToRegion: (textIndex: number, regionId: string, documentId: string) => void;
   getAssignedText: (regionId: string, documentId: string) => string | null;
@@ -76,10 +77,11 @@ export const TextAssignmentProvider: React.FC<{ children: React.ReactNode }> = (
         return [];
       }
 
-      // Convert database texts to TitledText format
+      // Convert database texts to TitledText format with page information
       const titledTexts = texts.map(text => ({
         title: text.title,
-        content: text.content
+        content: text.content,
+        page: text.page
       }));
 
       console.log(`Successfully loaded ${titledTexts.length} document texts from database`);
@@ -128,14 +130,14 @@ export const TextAssignmentProvider: React.FC<{ children: React.ReactNode }> = (
         }
       }
 
-      // Then insert new texts
+      // Then insert new texts with proper page information
       if (texts.length > 0) {
         const textsToInsert = texts.map(text => ({
           user_id: authState.user.id,
           document_id: documentId,
           title: text.title,
           content: text.content,
-          page: (text as any).page || page || 1
+          page: text.page || page || 1
         }));
 
         const { error: insertError } = await supabase
@@ -360,10 +362,18 @@ export const TextAssignmentProvider: React.FC<{ children: React.ReactNode }> = (
     initializeAssignments();
   }, [authState.user]);
 
-  const getCurrentDocumentTexts = (documentId: string): TitledText[] => {
-    const result = documentAssignments[documentId]?.titledTexts || [];
-    console.log(`Getting texts for document ${documentId}:`, result.length, 'texts found');
-    return result;
+  const getCurrentDocumentTexts = (documentId: string, page?: number): TitledText[] => {
+    const allTexts = documentAssignments[documentId]?.titledTexts || [];
+    
+    // If page is specified, filter texts by page
+    if (page !== undefined) {
+      const filteredTexts = allTexts.filter(text => text.page === page);
+      console.log(`Getting texts for document ${documentId} page ${page}:`, filteredTexts.length, 'texts found');
+      return filteredTexts;
+    }
+    
+    console.log(`Getting all texts for document ${documentId}:`, allTexts.length, 'texts found');
+    return allTexts;
   };
 
   const setTitledTexts = (documentId: string, texts: TitledText[]) => {
@@ -475,7 +485,7 @@ export const TextAssignmentProvider: React.FC<{ children: React.ReactNode }> = (
     setDocumentAssignments(prev => {
       const existingTexts = prev[documentId]?.titledTexts || [];
       // Remove any existing texts from the same page to avoid duplicates
-      const textsFromOtherPages = existingTexts.filter(t => (t as any).page !== page);
+      const textsFromOtherPages = existingTexts.filter(t => t.page !== page);
       // Combine with new texts
       const allTexts = [...textsFromOtherPages, ...newTitledTexts];
       
@@ -492,17 +502,29 @@ export const TextAssignmentProvider: React.FC<{ children: React.ReactNode }> = (
     return newTitledTexts;
   };
 
-  const undoAllAssignments = async (documentId: string) => {
-    console.log(`Undoing all assignments for document: ${documentId}`);
+  const undoAllAssignments = async (documentId: string, page?: number) => {
+    console.log(`Undoing assignments for document: ${documentId}`, page ? `on page ${page}` : '');
     
-    // Remove all assignments for this document from database
+    // Remove assignments from database
     if (authState.user) {
       try {
-        const { error } = await supabase
+        let query = supabase
           .from('text_assignments')
           .delete()
           .eq('user_id', authState.user.id)
           .eq('document_id', documentId);
+        
+        // If page is specified, we need to filter by texts that belong to that page
+        if (page !== undefined) {
+          // Get all texts for this page first
+          const pageTexts = getCurrentDocumentTexts(documentId, page);
+          if (pageTexts.length > 0) {
+            const textTitles = pageTexts.map(text => text.title);
+            query = query.in('text_title', textTitles);
+          }
+        }
+        
+        const { error } = await query;
         
         if (error) {
           console.error('Error removing assignments from database:', error);
@@ -517,10 +539,13 @@ export const TextAssignmentProvider: React.FC<{ children: React.ReactNode }> = (
       ...prev,
       [documentId]: {
         ...prev[documentId],
-        titledTexts: (prev[documentId]?.titledTexts || []).map(text => ({ 
-          ...text, 
-          assignedRegionId: undefined 
-        }))
+        titledTexts: (prev[documentId]?.titledTexts || []).map(text => {
+          // If page is specified, only clear assignments for texts on that page
+          if (page !== undefined && text.page !== page) {
+            return text;
+          }
+          return { ...text, assignedRegionId: undefined };
+        })
       }
     }));
   };

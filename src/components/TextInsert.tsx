@@ -1,3 +1,4 @@
+
 import React, { useState, useRef } from 'react';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
@@ -38,13 +39,9 @@ const TextInsert = ({
   } = useTextAssignment();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // Get texts for current document and filter by current page only
+  // Get texts for current document and filter by current page
   const allDocumentTexts = documentId ? getCurrentDocumentTexts(documentId) : [];
-  const titledTexts = allDocumentTexts.filter(text => {
-    // If text doesn't have a page property, assume it belongs to page 1
-    const textPage = (text as any).page || 1;
-    return textPage === currentPage;
-  });
+  const currentPageTexts = documentId ? getCurrentDocumentTexts(documentId, currentPage) : [];
 
   const handleInsertText = async () => {
     if (!inputText.trim()) {
@@ -80,16 +77,27 @@ const TextInsert = ({
 
     // Assign texts to regions in order
     if (processedTexts && processedTexts.length > 0) {
+      // Find the actual indices in the full document texts array for the new texts
+      const updatedAllTexts = documentId ? getCurrentDocumentTexts(documentId) : [];
+      
       processedTexts.forEach((text, index) => {
         if (index < sortedRegions.length) {
           const regionId = sortedRegions[index].id;
-          assignTextToRegion(index, regionId, documentId);
+          
+          // Find the actual index of this text in the full document texts array
+          const actualTextIndex = updatedAllTexts.findIndex(t => 
+            t.title === text.title && t.content === text.content && t.page === currentPage
+          );
+          
+          if (actualTextIndex !== -1) {
+            assignTextToRegion(actualTextIndex, regionId, documentId);
 
-          // Update region description through parent component
-          onRegionUpdate({
-            ...sortedRegions[index],
-            description: text.content
-          });
+            // Update region description through parent component
+            onRegionUpdate({
+              ...sortedRegions[index],
+              description: text.content
+            });
+          }
         }
       });
       toast.success(`Text assigned to ${processedTexts.length} regions on page ${currentPage}`);
@@ -101,11 +109,12 @@ const TextInsert = ({
     if (!documentId) return;
 
     // Only undo assignments for current page
-    const currentPageRegions = regions.filter(region => region.page === currentPage);
+    undoAllAssignments(documentId, currentPage);
     
+    // Update all regions on current page to clear descriptions
+    const currentPageRegions = regions.filter(region => region.page === currentPage);
     currentPageRegions.forEach(region => {
       if (isRegionAssigned(region.id, documentId)) {
-        undoRegionAssignment(region.id, documentId);
         onRegionUpdate({
           ...region,
           description: null
@@ -144,7 +153,7 @@ const TextInsert = ({
     if (!documentId) return;
 
     // Find the text and region
-    const text = titledTexts[textIndex];
+    const text = currentPageTexts[textIndex];
     const region = regions.find(r => r.id === regionId);
     if (!text || !region) return;
 
@@ -156,7 +165,7 @@ const TextInsert = ({
 
     // Find the actual index in the full document texts array
     const actualTextIndex = allDocumentTexts.findIndex(t => 
-      t.title === text.title && t.content === text.content
+      t.title === text.title && t.content === text.content && t.page === currentPage
     );
 
     if (actualTextIndex === -1) return;
@@ -190,8 +199,8 @@ const TextInsert = ({
   };
 
   // Get unassigned texts and texts that are assigned (for current page only)
-  const unassignedTexts = titledTexts.filter(text => !text.assignedRegionId);
-  const assignedTexts = titledTexts.filter(text => text.assignedRegionId);
+  const unassignedTexts = currentPageTexts.filter(text => !text.assignedRegionId);
+  const assignedTexts = currentPageTexts.filter(text => text.assignedRegionId);
 
   // Get unassigned regions for the current page only
   const unassignedRegionsByPage = documentId ? getUnassignedRegionsByPage(regions, currentPage, documentId) : [];
@@ -220,7 +229,7 @@ const TextInsert = ({
         </div>
       </div>
       
-      {titledTexts.length > 0 && (
+      {currentPageTexts.length > 0 && (
         <div className="space-y-3">
           {/* Unassigned Texts Section */}
           {unassignedTexts.length > 0 && (
@@ -229,7 +238,7 @@ const TextInsert = ({
               <ScrollArea className="h-[150px] border rounded-md p-2">
                 <div className="space-y-2">
                   {unassignedTexts.map((text, index) => {
-                    const textIndex = titledTexts.indexOf(text);
+                    const textIndex = currentPageTexts.indexOf(text);
                     return (
                       <Popover key={`unassigned-${index}`} open={activeTextIndex === textIndex} onOpenChange={open => setActiveTextIndex(open ? textIndex : null)}>
                         <PopoverTrigger asChild>
