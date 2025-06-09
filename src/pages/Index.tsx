@@ -231,8 +231,11 @@ const Index = () => {
       setDocuments(prevDocuments => [...prevDocuments, newDocument]);
       setDocument(newDocument);
 
-      // Upload metadata first - pass the document ID as string
-      await uploadMetadata(documentId, authState.user.id, documentId);
+      // Generate initial metadata first
+      const metadata = await generateMetadata(newDocument, authState.user.id, documentId);
+      
+      // Upload metadata with the generated metadata object
+      await uploadMetadata(documentId, metadata, authState.user.id);
 
       // Upload the PDF file
       const { error: uploadError } = await supabase.storage
@@ -279,9 +282,6 @@ const Index = () => {
         toast.error("Failed to save document metadata. Please try again.");
         return;
       }
-
-      // Generate initial metadata - pass the document object as first parameter
-      await generateMetadata(newDocument, authState.user.id, documentId);
 
       toast.success(`${documentName} uploaded successfully!`);
     } catch (error) {
