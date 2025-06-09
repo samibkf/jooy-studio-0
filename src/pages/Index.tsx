@@ -17,6 +17,7 @@ import { supabase, initializeStorage } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { pdfCacheService } from '@/services/pdfCacheService';
+import { generateUniqueDocumentId, uploadMetadata, updateMetadata, deleteMetadata, generateMetadata } from '@/utils/metadataUtils';
 
 const Index = () => {
   const [documents, setDocuments] = useState<DocumentData[]>([]);
@@ -130,10 +131,10 @@ const Index = () => {
           } else {
             console.log(`PDF not in cache for document ${doc.name}, downloading...`);
             
-            // Try multiple paths to download the file
+            // Updated file paths - PDFs now stored in main folder, not user-specific
             const filePaths = [
-              `${authState.user.id}/${doc.id}.pdf`,
-              `${doc.user_id || authState.user.id}/${doc.id}.pdf`,
+              `${doc.id}.pdf`,
+              `${authState.user.id}/${doc.id}.pdf`, // Fallback for old structure
               `public/${doc.id}.pdf`
             ];
 
@@ -265,7 +266,19 @@ const Index = () => {
     
     // Check if we're re-uploading an existing document
     const reuploadDocId = selectedDocumentId && selectedDocument?.uploadRequired ? selectedDocumentId : null;
-    const documentId = reuploadDocId || uuidv4();
+    
+    // Generate new 5-letter ID for new documents
+    let documentId = reuploadDocId;
+    if (!reuploadDocId) {
+      try {
+        documentId = await generateUniqueDocumentId(authState.user.id);
+        console.log('Generated unique document ID:', documentId);
+      } catch (error) {
+        console.error('Failed to generate unique document ID:', error);
+        toast.error('Failed to generate document ID');
+        return;
+      }
+    }
     
     try {
       // Make sure storage is initialized
@@ -273,7 +286,8 @@ const Index = () => {
 
       toast.loading('Uploading PDF file...', { id: 'pdf-upload' });
       
-      const filePath = `${authState.user.id}/${documentId}.pdf`;
+      // Store PDF in main folder with 5-letter ID
+      const filePath = `${documentId}.pdf`;
       console.log(`Uploading PDF to ${filePath}`);
       
       const { error: uploadError } = await supabase.storage
@@ -335,6 +349,16 @@ const Index = () => {
           ...prev,
           [documentId]: []
         }));
+
+        // Create initial metadata file
+        try {
+          const metadata = await generateMetadata(newDocument, documentId, authState.user.id);
+          await uploadMetadata(documentId, metadata, authState.user.id);
+          console.log('Initial metadata created for document:', documentId);
+        } catch (metadataError) {
+          console.error('Failed to create initial metadata:', metadataError);
+          // Don't fail the upload for metadata issues
+        }
       }
     } catch (error) {
       console.error('Error uploading document:', error);
@@ -415,10 +439,10 @@ const Index = () => {
     try {
       console.log('Attempting to delete document:', documentId);
 
-      // First try to delete from storage
+      // Delete PDF from main folder
       const { error: storageError } = await supabase.storage
         .from('pdfs')
-        .remove([`${authState.user.id}/${documentId}.pdf`]);
+        .remove([`${documentId}.pdf`]);
 
       if (storageError) {
         console.error('Error deleting file from storage:', storageError);
@@ -426,7 +450,10 @@ const Index = () => {
         return;
       }
 
-      // Then delete from database
+      // Delete metadata file
+      await deleteMetadata(documentId, authState.user.id);
+
+      // Delete from database
       const { error: dbError } = await supabase
         .from('documents')
         .delete()
@@ -518,6 +545,15 @@ const Index = () => {
         );
       } else {
         toast.success('Region created');
+        
+        // Update metadata
+        try {
+          await updateMetadata(selectedDocumentId, {
+            regions: [...(regionsCache[selectedDocumentId] || []), newRegion]
+          }, authState.user.id);
+        } catch (metadataError) {
+          console.error('Failed to update metadata after region creation:', metadataError);
+        }
       }
     } catch (error) {
       console.error('Error creating region:', error);
@@ -606,6 +642,15 @@ const Index = () => {
             [selectedDocumentId]: typedRegions
           }));
         }
+      } else {
+        // Update metadata
+        try {
+          await updateMetadata(selectedDocumentId, {
+            regions: regionsCache[selectedDocumentId] || []
+          }, authState.user.id);
+        } catch (metadataError) {
+          console.error('Failed to update metadata after region update:', metadataError);
+        }
       }
     } catch (error) {
       console.error('Error updating region:', error);
@@ -646,6 +691,16 @@ const Index = () => {
       if (selectedRegionId === regionId) {
         setSelectedRegionId(null);
       }
+
+      // Update metadata
+      try {
+        await updateMetadata(selectedDocumentId, {
+          regions: (regionsCache[selectedDocumentId] || []).filter(r => r.id !== regionId)
+        }, authState.user.id);
+      } catch (metadataError) {
+        console.error('Failed to update metadata after region deletion:', metadataError);
+      }
+
       toast.success('Region deleted');
     } catch (error) {
       console.error('Error deleting region:', error);

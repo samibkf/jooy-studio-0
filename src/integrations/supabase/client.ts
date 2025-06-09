@@ -23,9 +23,9 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
   }
 });
 
-export const createBucket = async () => {
+export const createBucket = async (bucketName: string = 'pdfs') => {
   try {
-    console.log(`[${new Date().toISOString()}] Creating or checking "pdfs" storage bucket...`);
+    console.log(`[${new Date().toISOString()}] Creating or checking "${bucketName}" storage bucket...`);
     
     // Get the current session to ensure we're authenticated
     const { data: { session } } = await supabase.auth.getSession();
@@ -36,7 +36,7 @@ export const createBucket = async () => {
 
     try {
       // Check if bucket already exists
-      const { data: existingBucket, error: checkError } = await supabase.storage.getBucket('pdfs');
+      const { data: existingBucket, error: checkError } = await supabase.storage.getBucket(bucketName);
       
       if (checkError) {
         // If error is not related to "bucket not found", log it but continue
@@ -47,11 +47,17 @@ export const createBucket = async () => {
         console.log(`[${new Date().toISOString()}] Bucket does not exist or not accessible, trying to create it...`);
         
         // Try to create the bucket
-        const { data: bucketData, error: createError } = await supabase.storage.createBucket('pdfs', {
+        const bucketConfig = bucketName === 'pdfs' ? {
           public: false, // Make bucket private for security
           fileSizeLimit: 20971520, // 20MB file size limit
           allowedMimeTypes: ['application/pdf']
-        });
+        } : {
+          public: false, // Make data bucket private
+          fileSizeLimit: 5242880, // 5MB for metadata files
+          allowedMimeTypes: ['application/json']
+        };
+
+        const { data: bucketData, error: createError } = await supabase.storage.createBucket(bucketName, bucketConfig);
         
         if (createError) {
           console.error(`[${new Date().toISOString()}] Error creating bucket:`, createError);
@@ -61,19 +67,6 @@ export const createBucket = async () => {
         console.log(`[${new Date().toISOString()}] Bucket created successfully:`, bucketData);
       } else {
         console.log(`[${new Date().toISOString()}] Bucket already exists:`, existingBucket);
-      }
-      
-      // Update bucket settings to ensure proper configuration
-      const { data: updatedBucket, error: updateError } = await supabase.storage.updateBucket('pdfs', {
-        public: false,
-        fileSizeLimit: 20971520, // 20MB
-        allowedMimeTypes: ['application/pdf']
-      });
-      
-      if (updateError) {
-        console.warn(`[${new Date().toISOString()}] Warning updating bucket settings:`, updateError);
-      } else {
-        console.log(`[${new Date().toISOString()}] Bucket settings updated:`, updatedBucket);
       }
       
       return true;
@@ -98,24 +91,42 @@ export const initializeStorage = async () => {
       return false;
     }
     
-    // Ensure the bucket exists
-    const bucketCreated = await createBucket();
-    if (!bucketCreated) {
+    // Ensure both buckets exist
+    const pdfBucketCreated = await createBucket('pdfs');
+    const dataBucketCreated = await createBucket('data');
+    
+    if (!pdfBucketCreated) {
       console.warn(`[${new Date().toISOString()}] Warning: Failed to ensure PDF bucket exists`);
     }
     
-    // Test if we can access the bucket anyway
+    if (!dataBucketCreated) {
+      console.warn(`[${new Date().toISOString()}] Warning: Failed to ensure data bucket exists`);
+    }
+    
+    // Test if we can access the buckets anyway
     try {
       console.log(`[${new Date().toISOString()}] Testing storage bucket access permissions...`);
-      const { data: fileList, error: listError } = await supabase.storage
+      
+      // Test PDF bucket
+      const { data: pdfFileList, error: pdfListError } = await supabase.storage
         .from('pdfs')
-        .list(session.user.id);
+        .list('', { limit: 1 });
         
-      if (listError) {
-        console.warn(`[${new Date().toISOString()}] Bucket exists but cannot list contents:`, listError);
-        // Continue anyway as this might be an RLS permission issue but files may still be accessible
+      if (pdfListError) {
+        console.warn(`[${new Date().toISOString()}] PDF bucket exists but cannot list contents:`, pdfListError);
       } else {
-        console.log(`[${new Date().toISOString()}] PDF storage bucket exists and is accessible, file count:`, fileList?.length || 0);
+        console.log(`[${new Date().toISOString()}] PDF storage bucket exists and is accessible`);
+      }
+
+      // Test data bucket
+      const { data: dataFileList, error: dataListError } = await supabase.storage
+        .from('data')
+        .list('', { limit: 1 });
+        
+      if (dataListError) {
+        console.warn(`[${new Date().toISOString()}] Data bucket exists but cannot list contents:`, dataListError);
+      } else {
+        console.log(`[${new Date().toISOString()}] Data storage bucket exists and is accessible`);
       }
       
       return true;
@@ -124,7 +135,7 @@ export const initializeStorage = async () => {
       return true; // Return true anyway to continue with the application
     }
   } catch (error) {
-    console.error(`[${new Date().toISOString()}] Unexpected error during PDF storage initialization:`, error);
+    console.error(`[${new Date().toISOString()}] Unexpected error during storage initialization:`, error);
     return false;
   }
 };
