@@ -839,7 +839,7 @@ const Index = () => {
                 onRegionDelete={handleRegionDelete}
                 isSelectionMode={!!currentSelectionType}
                 currentSelectionType={currentSelectionType}
-                onCurrentSelectionTypeChange={setCurrentSelectionType}
+                onCurrentSelectionTypeChange={(type: string) => setCurrentSelectionType(type as "area")}
                 documentId={selectedDocumentId}
                 onPageChange={handlePageChange}
               />

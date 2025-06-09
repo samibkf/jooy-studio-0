@@ -1,11 +1,12 @@
+
 import React, { useState, useEffect } from 'react';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Region } from '@/types/regions';
 import { useTextAssignment } from '@/contexts/TextAssignmentContext';
 import { toast } from 'sonner';
-import { Alert, AlertCircle, AlertTitle, AlertDescription } from '@/components/ui/alert';
-import { Undo2, Loader2 } from 'lucide-react';
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
+import { Undo2, Loader2, AlertCircle } from 'lucide-react';
 import { parseTitledText } from '@/utils/textProcessing';
 import { Badge } from '@/components/ui/badge';
 import { getUnassignedRegionsByPage } from '@/utils/regionUtils';
