@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import Header from '@/components/Header';
 import Sidebar from '@/components/Sidebar';
@@ -41,8 +40,12 @@ const Index = () => {
     resetStates
   } = useDocumentState(document?.id || null);
   
-  // Fix the useMetadataSync hook call - it expects only 1 argument (the document)
-  useMetadataSync(document);
+  // Fix the useMetadataSync hook call - pass the correct props object
+  useMetadataSync({
+    documentId: document?.id || null,
+    regions: regionsCache[document?.id || ''] || [],
+    documentName: document?.name
+  });
 
   // Load documents on user authentication
   useEffect(() => {
@@ -229,7 +232,7 @@ const Index = () => {
       setDocument(newDocument);
 
       // Upload metadata first - pass the document ID as string
-      await uploadMetadata(newDocument, authState.user.id, documentId);
+      await uploadMetadata(documentId, authState.user.id, documentId);
 
       // Upload the PDF file
       const { error: uploadError } = await supabase.storage
@@ -277,8 +280,8 @@ const Index = () => {
         return;
       }
 
-      // Generate initial metadata - pass the document ID as string
-      await generateMetadata(documentId, authState.user.id, documentId);
+      // Generate initial metadata - pass the document object as first parameter
+      await generateMetadata(newDocument, authState.user.id, documentId);
 
       toast.success(`${documentName} uploaded successfully!`);
     } catch (error) {
