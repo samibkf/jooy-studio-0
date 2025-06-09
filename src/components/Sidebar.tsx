@@ -1,3 +1,4 @@
+
 import React, { useRef, useState, useEffect } from 'react';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
@@ -15,7 +16,6 @@ interface SidebarProps {
   onRegionDelete: (regionId: string) => void;
   onRegionSelect: (regionId: string) => void;
   documentId: string | null;
-  currentPage: number;
 }
 
 const Sidebar = ({
@@ -24,8 +24,7 @@ const Sidebar = ({
   onRegionUpdate,
   onRegionDelete,
   onRegionSelect,
-  documentId,
-  currentPage
+  documentId
 }: SidebarProps) => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [localDescription, setLocalDescription] = useState<string>('');
@@ -103,7 +102,6 @@ const Sidebar = ({
           selectedRegion={selectedRegion} 
           onRegionSelect={onRegionSelect}
           documentId={documentId}
-          currentPage={currentPage}
         />
         
         {/* Selected Region Info - Only visible when a region is selected */}

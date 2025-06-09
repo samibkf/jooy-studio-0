@@ -13,7 +13,7 @@ interface DraggableTextProps {
 
 const DraggableText = ({ region, onRegionUpdate, documentId }: DraggableTextProps) => {
   const { 
-    getCurrentPageTexts,
+    getCurrentDocumentTexts,
     undoRegionAssignment,
     isRegionAssigned,
     isReady,
@@ -32,9 +32,8 @@ const DraggableText = ({ region, onRegionUpdate, documentId }: DraggableTextProp
       
       // Small delay to ensure all assignments are loaded
       const timer = setTimeout(() => {
-        // Get texts for the region's page specifically
-        const pageTexts = getCurrentPageTexts(documentId, region.page);
-        const foundText = pageTexts.find(text => text.assignedRegionId === region.id);
+        const titledTexts = getCurrentDocumentTexts(documentId);
+        const foundText = titledTexts.find(text => text.assignedRegionId === region.id);
         const isAssigned = isRegionAssigned(region.id, documentId);
         
         console.log(`DraggableText for region ${region.id}: assigned=${isAssigned}, hasText=${!!foundText}`);
@@ -49,7 +48,7 @@ const DraggableText = ({ region, onRegionUpdate, documentId }: DraggableTextProp
       console.log(`DraggableText context not ready for region ${region.id}`);
       setIsCheckingAssignment(true);
     }
-  }, [isReady, isLoading, region.id, region.page, documentId, getCurrentPageTexts, isRegionAssigned]);
+  }, [isReady, isLoading, region.id, documentId, getCurrentDocumentTexts, isRegionAssigned]);
 
   // Wait for context to be ready and not loading
   if (!isReady || isLoading || isCheckingAssignment) {

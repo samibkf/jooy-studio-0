@@ -23,7 +23,6 @@ interface PdfViewerProps {
   currentSelectionType: 'area' | null;
   onCurrentSelectionTypeChange: (type: 'area' | null) => void;
   documentId: string | null;
-  onPageChange?: (page: number) => void;
 }
 
 const PdfViewer: React.FC<PdfViewerProps> = ({
@@ -37,8 +36,7 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
   isSelectionMode,
   currentSelectionType,
   onCurrentSelectionTypeChange,
-  documentId,
-  onPageChange
+  documentId
 }) => {
   const [pdf, setPdf] = useState<PDFDocumentProxy | null>(null);
   const [currentPage, setCurrentPage] = useState(0);
@@ -271,9 +269,7 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
   
   const handleNextPage = () => {
     if (currentPage < totalPages - 1) {
-      const newPage = currentPage + 1;
-      setCurrentPage(newPage);
-      onPageChange?.(newPage + 1); // Convert to 1-based for parent
+      setCurrentPage(prev => prev + 1);
       window.getSelection()?.removeAllRanges();
       setSelectionPoint(null);
       setSelectionRect({
@@ -290,9 +286,7 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
   
   const handlePrevPage = () => {
     if (currentPage > 0) {
-      const newPage = currentPage - 1;
-      setCurrentPage(newPage);
-      onPageChange?.(newPage + 1); // Convert to 1-based for parent
+      setCurrentPage(prev => prev - 1);
       window.getSelection()?.removeAllRanges();
       setSelectionPoint(null);
       setSelectionRect({
@@ -377,9 +371,7 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
   const handleGoToPage = () => {
     const pageNum = parseInt(pageInputValue);
     if (pageNum >= 1 && pageNum <= totalPages) {
-      const newPage = pageNum - 1;
-      setCurrentPage(newPage);
-      onPageChange?.(pageNum); // Use 1-based for parent
+      setCurrentPage(pageNum - 1);
       setPageInputValue('');
       // Clear selection state when changing pages
       setSelectionPoint(null);
@@ -397,12 +389,6 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
       handleGoToPage();
     }
   };
-
-  useEffect(() => {
-    if (pdf) {
-      onPageChange?.(currentPage + 1); // Convert to 1-based for parent
-    }
-  }, [pdf, onPageChange]);
 
   if (!file) {
     return <div className="flex flex-col items-center justify-center h-[calc(100vh-72px)] bg-muted">
