@@ -1,19 +1,17 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { v4 as uuidv4 } from 'uuid';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import Header from '@/components/Header';
 import Sidebar from '@/components/Sidebar';
 import PdfViewer from '@/components/PdfViewer';
-import { Region } from '@/types/regions';
 import { DocumentData } from '@/types/documents';
-import { exportRegionMapping } from '@/utils/exportUtils';
-import { toast } from 'sonner';
-import DocumentList from '@/components/DocumentList';
-import { useDocumentState } from '@/hooks/useDocumentState';
-import { ProtectedRoute } from '@/components/ProtectedRoute';
+import { Region } from '@/types/regions';
+import { useTextAssignment } from '@/contexts/TextAssignmentContext';
 import { useAuth } from '@/contexts/AuthProvider';
-import { supabase, initializeStorage } from '@/integrations/supabase/client';
+import { ProtectedRoute } from '@/components/ProtectedRoute';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
+import { exportToCSV } from '@/utils/exportUtils';
+import { useDocumentState } from '@/hooks/useDocumentState';
+import { useMetadataSync } from '@/hooks/useMetadataSync';
 import { useNavigate } from 'react-router-dom';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { pdfCacheService } from '@/services/pdfCacheService';
@@ -21,911 +19,382 @@ import { generateUniqueDocumentId } from '@/utils/documentIdUtils';
 import { uploadMetadata, updateMetadata, deleteMetadata, generateMetadata } from '@/utils/metadataUtils';
 
 const Index = () => {
+  const [document, setDocument] = useState<DocumentData | null>(null);
   const [documents, setDocuments] = useState<DocumentData[]>([]);
-  const [selectedDocumentId, setSelectedDocumentId] = useState<string | null>(null);
-  const [isDocumentListCollapsed, setIsDocumentListCollapsed] = useState(true);
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(true);
-  const [isLoading, setIsLoading] = useState(false);
-  const [retryCount, setRetryCount] = useState<Record<string, number>>({});
-  const [storageInitialized, setStorageInitialized] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const [isInitialLoad, setIsInitialLoad] = useState(true);
-  const [documentsLoaded, setDocumentsLoaded] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1);
-
+  const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+  const pdfViewerRef = useRef<any>(null);
+  const { setTitledTexts, resetAssignments } = useTextAssignment();
+  const { authState } = useAuth();
+  const navigate = useNavigate();
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [uploadError, setUploadError] = useState<string | null>(null);
   const {
     selectedRegionId,
     setSelectedRegionId,
     currentSelectionType,
     setCurrentSelectionType,
+    isSelectionMode,
+    setIsSelectionMode,
     regionsCache,
     setRegionsCache,
     resetStates
-  } = useDocumentState(selectedDocumentId);
+  } = useDocumentState(document?.id || null);
+  const { metadataSyncing } = useMetadataSync(document, setDocument, setDocuments, regionsCache, setRegionsCache);
 
-  const selectedDocument = documents.find(doc => doc.id === selectedDocumentId);
-  
-  const { authState, signOut } = useAuth();
-  const navigate = useNavigate();
-
-  const loadDocuments = async () => {
-    if (documentsLoaded && !isInitialLoad) {
-      console.log('Documents already loaded, skipping reload');
-      return;
-    }
-
-    setIsLoading(true);
-    try {
-      console.log("Loading documents for user:", authState.user.id);
-      
-      // Initialize storage to ensure bucket exists
-      const storageReady = await initializeStorage();
-      setStorageInitialized(storageReady);
-      
-      if (!storageReady) {
-        toast.warning("Storage system is not fully initialized. Document access may be limited.", {
-          duration: 10000,
-          id: "storage-initialization-warning"
-        });
-      }
-      
-      const { data: dbDocuments, error } = await supabase
-        .from('documents')
-        .select('*')
-        .eq('user_id', authState.user.id);
-
-      if (error) {
-        console.error("Error loading documents:", error);
-        toast.error('Failed to load documents: ' + error.message);
-        setIsLoading(false);
-        return;
-      }
-
-      console.log("Documents loaded from database:", dbDocuments);
-      
-      if (!dbDocuments || dbDocuments.length === 0) {
-        console.log("No documents found for user");
-        setDocumentsLoaded(true);
-        setIsLoading(false);
-        return;
-      }
-      
-      const validDocuments: DocumentData[] = [];
-      const newCache: Record<string, Region[]> = {};
-      let documentWithIssues = 0;
-      
-      for (const doc of dbDocuments) {
+  // Load documents on user authentication
+  useEffect(() => {
+    const loadDocuments = async () => {
+      if (authState.user) {
         try {
-          // First get the regions for this document
-          const { data: regions, error: regionsError } = await supabase
-            .from('document_regions')
+          const { data, error } = await supabase
+            .from('documents')
             .select('*')
-            .eq('document_id', doc.id);
+            .eq('user_id', authState.user.id);
 
-          if (regionsError) {
-            console.error(`Error loading regions for document ${doc.name}:`, regionsError);
-            toast.error(`Failed to load regions for document ${doc.name}`);
-            continue;
+          if (error) {
+            console.error("Error fetching documents:", error);
+            toast.error("Failed to load documents.");
+            return;
           }
 
-          const typedRegions = (regions || []).map(r => ({
-            id: r.id,
-            page: r.page,
-            x: r.x,
-            y: r.y,
-            width: r.width,
-            height: r.height,
-            type: r.type,
-            name: r.name,
-            description: r.description,
-            document_id: r.document_id,
-            user_id: r.user_id,
-            created_at: r.created_at
-          }));
-          
-          // PRIORITIZE CACHE: Try to get PDF from cache FIRST
-          let pdfFile: File | null = await pdfCacheService.getCachedPDF(doc.id);
-          let fileFound = !!pdfFile;
-          
-          if (pdfFile) {
-            console.log(`Using cached PDF for document ${doc.name}`);
-          } else {
-            console.log(`PDF not in cache for document ${doc.name}, downloading...`);
-            
-            // Updated file paths - PDFs now stored in main folder, not user-specific
-            const filePaths = [
-              `${doc.id}.pdf`,
-              `${authState.user.id}/${doc.id}.pdf`, // Fallback for old structure
-              `public/${doc.id}.pdf`
-            ];
-
-            // Try each path with direct download
-            for (const path of filePaths) {
-              if (fileFound) continue;
-              
-              console.log(`Attempting to download PDF file directly: ${path}`);
-              try {
-                const { data: fileData, error: downloadError } = await supabase.storage
-                  .from('pdfs')
-                  .download(path);
-
-                if (!downloadError && fileData) {
-                  pdfFile = new File([fileData], doc.name, { type: 'application/pdf' });
-                  fileFound = true;
-                  
-                  // Cache the PDF for future use
-                  await pdfCacheService.cachePDF(doc.id, pdfFile);
-                  console.log(`Successfully loaded and cached document ${doc.name} from ${path}`);
-                  break;
-                }
-              } catch (downloadError) {
-                console.warn(`Direct download failed for ${path}:`, downloadError);
-              }
-            }
-            
-            // If direct download failed, try with signed URLs
-            if (!fileFound) {
-              for (const path of filePaths) {
-                if (fileFound) continue;
-                
+          if (data && data.length > 0) {
+            const documentsWithFileAvailability = await Promise.all(
+              data.map(async (doc) => {
                 try {
-                  console.log(`Trying signed URL for: ${path}`);
-                  const { data: signedUrlData, error: signedUrlError } = await supabase.storage
+                  // Check if the PDF file exists in storage
+                  const { data: fileData, error: fileError } = await supabase.storage
                     .from('pdfs')
-                    .createSignedUrl(path, 3600);
+                    .getPublicUrl(`${doc.id}.pdf`);
 
-                  if (!signedUrlError && signedUrlData?.signedUrl) {
-                    try {
-                      const response = await fetch(signedUrlData.signedUrl);
-                      if (response.ok) {
-                        const blob = await response.blob();
-                        pdfFile = new File([blob], doc.name, { type: 'application/pdf' });
-                        fileFound = true;
-                        
-                        // Cache the PDF for future use
-                        await pdfCacheService.cachePDF(doc.id, pdfFile);
-                        console.log(`Successfully loaded and cached document ${doc.name} with signed URL from ${path}`);
-                        break;
-                      }
-                    } catch (fetchError) {
-                      console.warn(`Fetch from signed URL failed for ${path}:`, fetchError);
-                    }
+                  if (fileError) {
+                    console.warn(`File not found in storage for document ${doc.id}:`, fileError);
+                    return {
+                      ...doc,
+                      fileAvailable: false,
+                      uploadRequired: true, // Set the flag to indicate re-upload
+                      lastAttemptedAccess: new Date(), // Track the last failed attempt
+                    };
                   }
-                } catch (signedUrlError) {
-                  console.warn(`Failed to get signed URL for ${path}:`, signedUrlError);
+
+                  // Check if the file is cached
+                  const cachedFile = await pdfCacheService.getFile(doc.id);
+                  if (!cachedFile) {
+                    return {
+                      ...doc,
+                      fileAvailable: true,
+                      uploadRequired: true, // Set the flag to indicate re-upload
+                      lastAttemptedAccess: new Date(), // Track the last failed attempt
+                    };
+                  }
+
+                  return {
+                    ...doc,
+                    fileAvailable: true,
+                    uploadRequired: false, // No re-upload required
+                    lastAttemptedAccess: new Date(), // Track the last access attempt
+                  };
+                } catch (fileCheckError) {
+                  console.error(`Error checking file availability for document ${doc.id}:`, fileCheckError);
+                  return {
+                    ...doc,
+                    fileAvailable: false,
+                    uploadRequired: true, // Set the flag to indicate re-upload
+                    lastAttemptedAccess: new Date(), // Track the last failed attempt
+                  };
                 }
-              }
+              })
+            );
+
+            const typedDocuments = documentsWithFileAvailability.map(doc => ({
+              id: doc.id,
+              name: doc.name,
+              file: null, // No File object available at this stage
+              regions: [], // Regions will be loaded separately
+              user_id: doc.user_id,
+              fileAvailable: doc.fileAvailable,
+              uploadRequired: doc.uploadRequired,
+              lastAttemptedAccess: doc.lastAttemptedAccess,
+            })) as DocumentData[];
+
+            setDocuments(typedDocuments);
+
+            // Select the first document if available
+            if (typedDocuments.length > 0) {
+              setDocument(typedDocuments[0]);
             }
+          } else {
+            setDocuments([]);
+            setDocument(null);
           }
-          
-          // Add the document with or without the file
-          const documentData: DocumentData = {
-            ...doc,
-            file: pdfFile || new File([], doc.name, { type: 'application/pdf' }),
-            regions: typedRegions,
-            fileAvailable: fileFound,
-            uploadRequired: !fileFound
-          };
-          
-          validDocuments.push(documentData);
-          newCache[doc.id] = typedRegions;
-          
-          if (!fileFound) {
-            documentWithIssues++;
-          }
-          
-        } catch (docError) {
-          console.error('Error processing document:', docError);
+        } catch (error) {
+          console.error("Unexpected error loading documents:", error);
+          toast.error("Failed to load documents due to an unexpected error.");
         }
       }
+    };
 
-      setDocuments(validDocuments);
-      setRegionsCache(newCache);
-      setDocumentsLoaded(true);
-      
-      console.log("Processed documents:", validDocuments.length, "Documents with issues:", documentWithIssues);
-      
-      if (documentWithIssues > 0 && isInitialLoad) {
-        toast.warning(`${documentWithIssues} document(s) have PDF access issues. You may need to re-upload them.`, {
-          duration: 8000
-        });
-      }
-      
-      // Clean expired cache entries in the background
-      pdfCacheService.clearExpiredCache().catch(console.error);
-      
-    } catch (loadError) {
-      console.error('Error loading documents:', loadError);
-      toast.error('Failed to load documents');
-    } finally {
-      setIsLoading(false);
-      setIsInitialLoad(false);
-    }
-  };
-
-  useEffect(() => {
-    console.log('User profile loaded in Index:', authState.profile);
-
-    if (!authState.user) return;
-    
     loadDocuments();
   }, [authState.user]);
 
-  const handleFileUpload = () => {
-    fileInputRef.current?.click();
-  };
-
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files || files.length === 0 || !authState.user) return;
-    
-    const file = files[0];
-    if (file.type !== 'application/pdf') {
-      toast.error('Please select a PDF file');
-      return;
-    }
-    
-    // Check if we're re-uploading an existing document
-    const reuploadDocId = selectedDocumentId && selectedDocument?.uploadRequired ? selectedDocumentId : null;
-    
-    // Generate new 5-letter ID for new documents
-    let documentId = reuploadDocId;
-    if (!reuploadDocId) {
-      try {
-        documentId = await generateUniqueDocumentId(authState.user.id);
-        console.log('Generated unique document ID:', documentId);
-      } catch (error) {
-        console.error('Failed to generate unique document ID:', error);
-        toast.error('Failed to generate document ID');
-        return;
-      }
-    }
-    
-    try {
-      // Make sure storage is initialized
-      await initializeStorage();
-
-      toast.loading('Uploading PDF file...', { id: 'pdf-upload' });
-      
-      // Store PDF in main folder with 5-letter ID
-      const filePath = `${documentId}.pdf`;
-      console.log(`Uploading PDF to ${filePath}`);
-      
-      const { error: uploadError } = await supabase.storage
-        .from('pdfs')
-        .upload(filePath, file, { upsert: true });
-
-      if (uploadError) {
-        console.error('Storage upload error:', uploadError);
-        toast.error('Failed to upload PDF file: ' + uploadError.message, { id: 'pdf-upload' });
-        return;
-      }
-      
-      // Cache the uploaded file
-      await pdfCacheService.cachePDF(documentId, file);
-      
-      if (reuploadDocId) {
-        // Update existing document
-        setDocuments(prev => 
-          prev.map(doc => 
-            doc.id === reuploadDocId 
-              ? { ...doc, file, fileAvailable: true, uploadRequired: false } 
-              : doc
-          )
-        );
-        
-        toast.success('Document PDF re-uploaded successfully', { id: 'pdf-upload' });
-      } else {
-        // Create new document in database
-        const { error: dbError } = await supabase
-          .from('documents')
-          .insert({
-            id: documentId,
-            name: file.name,
-            user_id: authState.user.id
-          });
-
-        if (dbError) {
-          console.error('Database insert error:', dbError);
-          toast.error('Failed to save document information: ' + dbError.message, { id: 'pdf-upload' });
-          return;
-        }
-
-        const newDocument: DocumentData = {
-          id: documentId,
-          name: file.name,
-          file,
-          regions: [],
-          fileAvailable: true
-        };
-
-        setDocuments(prev => [...prev, newDocument]);
-        setSelectedDocumentId(documentId);
-        resetStates();
-        setIsDocumentListCollapsed(false);
-        
-        toast.success('Document added successfully', { id: 'pdf-upload' });
-        
-        setRegionsCache(prev => ({
-          ...prev,
-          [documentId]: []
-        }));
-
-        // Create initial metadata file
+  // Load regions when document changes
+  useEffect(() => {
+    const loadRegions = async () => {
+      if (document?.id) {
         try {
-          const metadata = await generateMetadata(newDocument, documentId, authState.user.id);
-          await uploadMetadata(documentId, metadata, authState.user.id);
-          console.log('Initial metadata created for document:', documentId);
-        } catch (metadataError) {
-          console.error('Failed to create initial metadata:', metadataError);
-          // Don't fail the upload for metadata issues
-        }
-      }
-    } catch (error) {
-      console.error('Error uploading document:', error);
-      toast.error('Failed to upload document', { id: 'pdf-upload' });
-    }
-    
-    // Clear file input
-    if (e.target) {
-      e.target.value = '';
-    }
-  };
+          const { data: regions, error } = await supabase
+            .from('document_regions')
+            .select('*')
+            .eq('document_id', document.id);
 
-  const handleDocumentSelect = (documentId: string) => {
-    if (selectedDocumentId === documentId) return;
-    
-    const docToSelect = documents.find(doc => doc.id === documentId);
-    
-    if (docToSelect && !docToSelect.fileAvailable) {
-      toast.warning(`PDF file for "${docToSelect.name}" is not available. You may need to re-upload it.`, {
-        action: {
-          label: "Re-upload",
-          onClick: () => {
-            setSelectedDocumentId(documentId);
-            fileInputRef.current?.click();
+          if (error) {
+            console.error("Error fetching regions:", error);
+            toast.error("Failed to load regions for this document.");
+            return;
           }
+
+          // Convert generic objects to Region type
+          const typedRegions = regions?.map(region => ({
+            id: region.id,
+            document_id: region.document_id,
+            user_id: region.user_id,
+            page: region.page,
+            name: region.name,
+            description: region.description,
+            type: region.type,
+            x: region.x,
+            y: region.y,
+            width: region.width,
+            height: region.height,
+            created_at: region.created_at,
+          })) as Region[];
+
+          setRegionsCache(prev => ({ ...prev, [document.id]: typedRegions }));
+        } catch (error) {
+          console.error("Unexpected error loading regions:", error);
+          toast.error("Failed to load regions due to an unexpected error.");
         }
-      });
-    }
-    
-    if (selectedDocumentId && selectedDocument) {
-      setDocuments(prev => 
-        prev.map(doc => 
-          doc.id === selectedDocumentId 
-            ? { ...doc, regions: regionsCache[selectedDocumentId] || [] } 
-            : doc
-        )
-      );
-    }
-    
-    setSelectedDocumentId(documentId);
+      } else {
+        setRegionsCache({});
+      }
+    };
+
+    loadRegions();
+  }, [document?.id]);
+
+  const handleDocumentSelect = (doc: DocumentData) => {
+    console.log(`Selected document: ${doc.name} (ID: ${doc.id})`);
+    setDocument(doc);
     resetStates();
   };
 
-  const handleDocumentRename = async (documentId: string, newName: string) => {
-    if (!authState.user) return;
-    
-    try {
-      console.log('Attempting to rename document:', documentId, 'to:', newName);
-      
-      const { error: updateError } = await supabase
-        .from('documents')
-        .update({ name: newName })
-        .eq('id', documentId)
-        .eq('user_id', authState.user.id);
-
-      if (updateError) {
-        console.error('Error renaming document:', updateError);
-        toast.error('Failed to rename document');
-        return;
-      }
-
-      setDocuments(prev =>
-        prev.map(doc =>
-          doc.id === documentId ? { ...doc, name: newName } : doc
-        )
-      );
-      
-      toast.success('Document renamed successfully');
-    } catch (error) {
-      console.error('Error in handleDocumentRename:', error);
-      toast.error('Failed to rename document');
-    }
+  const handleUploadClick = () => {
+    setIsUploadModalOpen(true);
   };
 
-  const handleDocumentDelete = async (documentId: string) => {
-    if (!authState.user) return;
-
-    try {
-      console.log('Attempting to delete document:', documentId);
-
-      // Delete PDF from main folder
-      const { error: storageError } = await supabase.storage
-        .from('pdfs')
-        .remove([`${documentId}.pdf`]);
-
-      if (storageError) {
-        console.error('Error deleting file from storage:', storageError);
-        toast.error('Failed to delete document from storage');
-        return;
-      }
-
-      // Delete metadata file
-      await deleteMetadata(documentId, authState.user.id);
-
-      // Delete from database
-      const { error: dbError } = await supabase
-        .from('documents')
-        .delete()
-        .eq('id', documentId)
-        .eq('user_id', authState.user.id);
-
-      if (dbError) {
-        console.error('Error deleting document from database:', dbError);
-        toast.error('Failed to delete document');
-        return;
-      }
-
-      setDocuments(prev => prev.filter(doc => doc.id !== documentId));
-      
-      setRegionsCache(prev => {
-        const newCache = { ...prev };
-        delete newCache[documentId];
-        return newCache;
-      });
-      
-      if (selectedDocumentId === documentId) {
-        setSelectedDocumentId(null);
-        setSelectedRegionId(null);
-      }
-
-      toast.success('Document deleted successfully');
-    } catch (error) {
-      console.error('Error in handleDocumentDelete:', error);
-      toast.error('Failed to delete document');
-    }
+  const handleCloseModal = () => {
+    setIsUploadModalOpen(false);
+    setUploadError(null); // Clear any previous upload errors
   };
 
-  const handleRegionCreate = async (regionData: Omit<Region, 'id'>) => {
-    if (!selectedDocumentId || !authState.user) return;
-
-    const newRegion: Region = {
-      ...regionData,
-      id: uuidv4(),
-      description: regionData.description || null
-    };
-
-    try {
-      setRegionsCache(prev => ({
-        ...prev,
-        [selectedDocumentId]: [...(prev[selectedDocumentId] || []), newRegion]
-      }));
-      
-      setDocuments(prev =>
-        prev.map(doc =>
-          doc.id === selectedDocumentId
-            ? { ...doc, regions: [...doc.regions, newRegion] }
-            : doc
-        )
-      );
-      
-      setSelectedRegionId(newRegion.id);
-
-      const { error } = await supabase
-        .from('document_regions')
-        .insert({
-          id: newRegion.id,
-          document_id: selectedDocumentId,
-          user_id: authState.user.id,
-          page: newRegion.page,
-          x: newRegion.x,
-          y: newRegion.y,
-          width: newRegion.width,
-          height: newRegion.height,
-          type: newRegion.type,
-          name: newRegion.name,
-          description: newRegion.description
-        });
-
-      if (error) {
-        console.error('Error creating region:', error);
-        toast.error('Failed to create region: ' + error.message);
-        
-        setRegionsCache(prev => ({
-          ...prev,
-          [selectedDocumentId]: (prev[selectedDocumentId] || []).filter(r => r.id !== newRegion.id)
-        }));
-        
-        setDocuments(prev =>
-          prev.map(doc =>
-            doc.id === selectedDocumentId
-              ? { ...doc, regions: doc.regions.filter(r => r.id !== newRegion.id) }
-              : doc
-          )
-        );
-      } else {
-        toast.success('Region created');
-        
-        // Update metadata
-        try {
-          await updateMetadata(selectedDocumentId, {
-            regions: [...(regionsCache[selectedDocumentId] || []), newRegion]
-          }, authState.user.id);
-        } catch (metadataError) {
-          console.error('Failed to update metadata after region creation:', metadataError);
-        }
-      }
-    } catch (error) {
-      console.error('Error creating region:', error);
-      toast.error('Failed to create region');
+  const handleFileUpload = async (file: File, documentName: string) => {
+    if (!authState.user) {
+      console.error('User not authenticated.');
+      toast.error('You must be logged in to upload files.');
+      setIsUploadModalOpen(false);
+      return;
     }
-  };
 
-  const handleRegionUpdate = async (updatedRegion: Region) => {
-    if (!selectedDocumentId || !authState.user) return;
+    setIsUploadModalOpen(false); // Close the modal immediately
 
     try {
-      console.log('Updating region:', updatedRegion);
-      
-      setDocuments(prev =>
-        prev.map(doc =>
-          doc.id === selectedDocumentId
-            ? {
-                ...doc,
-                regions: doc.regions.map(region =>
-                  region.id === updatedRegion.id ? updatedRegion : region
-                )
-              }
-            : doc
-        )
-      );
-      
-      setRegionsCache(prev => ({
-        ...prev,
-        [selectedDocumentId]: (prev[selectedDocumentId] || []).map(region =>
-          region.id === updatedRegion.id ? updatedRegion : region
-        )
-      }));
+      // Generate a unique document ID
+      const documentId = await generateUniqueDocumentId(authState.user.id);
 
-      const updatePayload = {
-        page: updatedRegion.page,
-        x: updatedRegion.x,
-        y: updatedRegion.y,
-        width: updatedRegion.width,
-        height: updatedRegion.height,
-        type: updatedRegion.type,
-        name: updatedRegion.name,
-        description: updatedRegion.description || null
+      // Optimistically update the UI
+      const newDocument: DocumentData = {
+        id: documentId,
+        name: documentName,
+        file: file,
+        regions: [],
+        user_id: authState.user.id,
+        fileAvailable: true, // Assume file is available
+        uploadRequired: false, // No re-upload required
+        lastAttemptedAccess: new Date(), // Track the last access attempt
       };
 
-      const { error } = await supabase
-        .from('document_regions')
-        .update(updatePayload)
-        .eq('id', updatedRegion.id)
-        .eq('user_id', authState.user.id);
+      setDocuments(prevDocuments => [...prevDocuments, newDocument]);
+      setDocument(newDocument);
 
-      if (error) {
-        console.error('Supabase error updating region:', error);
-        toast.error('Failed to update region: ' + error.message);
-        
-        const { data: freshRegions, error: regionsError } = await supabase
-          .from('document_regions')
-          .select('*')
-          .eq('document_id', selectedDocumentId);
-          
-        if (!regionsError && freshRegions) {
-          const typedRegions: Region[] = freshRegions.map(r => ({
-            id: r.id,
-            page: r.page,
-            x: r.x,
-            y: r.y,
-            width: r.width,
-            height: r.height,
-            type: r.type,
-            name: r.name,
-            description: r.description,
-            document_id: r.document_id,
-            user_id: r.user_id,
-            created_at: r.created_at
-          }));
+      // Upload metadata first
+      await uploadMetadata(newDocument, authState.user.id);
 
-          setDocuments(prev =>
-            prev.map(doc =>
-              doc.id === selectedDocumentId
-                ? { ...doc, regions: typedRegions }
-                : doc
-            )
-          );
-          
-          setRegionsCache(prev => ({
-            ...prev,
-            [selectedDocumentId]: typedRegions
-          }));
-        }
-      } else {
-        // Update metadata
-        try {
-          await updateMetadata(selectedDocumentId, {
-            regions: regionsCache[selectedDocumentId] || []
-          }, authState.user.id);
-        } catch (metadataError) {
-          console.error('Failed to update metadata after region update:', metadataError);
-        }
+      // Upload the PDF file
+      const { error: uploadError } = await supabase.storage
+        .from('pdfs')
+        .upload(`${documentId}.pdf`, file, {
+          cacheControl: '3600',
+          upsert: false
+        });
+
+      if (uploadError) {
+        console.error("Error uploading PDF to storage:", uploadError);
+        setUploadError("Failed to upload the PDF file. Please try again.");
+
+        // Revert the UI update on failure
+        setDocuments(prevDocuments => prevDocuments.filter(doc => doc.id !== documentId));
+        setDocument(null);
+
+        // Delete metadata on failure
+        await deleteMetadata(documentId);
+
+        toast.error("Failed to upload the PDF file. Please try again.");
+        return;
       }
+
+      // Store the document in the database
+      const { error: dbError } = await supabase
+        .from('documents')
+        .insert([
+          { id: documentId, name: documentName, user_id: authState.user.id }
+        ]);
+
+      if (dbError) {
+        console.error("Error saving document metadata to database:", dbError);
+        setUploadError("Failed to save document metadata. Please try again.");
+
+        // Revert the UI update on failure
+        setDocuments(prevDocuments => prevDocuments.filter(doc => doc.id !== documentId));
+        setDocument(null);
+
+        // Delete file and metadata on failure
+        await supabase.storage.from('pdfs').remove([`${documentId}.pdf`]);
+        await deleteMetadata(documentId);
+
+        toast.error("Failed to save document metadata. Please try again.");
+        return;
+      }
+
+      // Generate initial metadata
+      await generateMetadata(newDocument);
+
+      toast.success(`${documentName} uploaded successfully!`);
     } catch (error) {
-      console.error('Error updating region:', error);
-      toast.error('Failed to update region');
+      console.error("Unexpected error during file upload:", error);
+      setUploadError("An unexpected error occurred during file upload. Please try again.");
+
+      // Revert the UI update on failure
+      setDocuments(prevDocuments => prevDocuments.filter(doc => doc.id !== documentId));
+      setDocument(null);
+
+      // Delete file and metadata on failure
+      await supabase.storage.from('pdfs').remove([`${documentId}.pdf`]);
+      await deleteMetadata(documentId);
+
+      toast.error("An unexpected error occurred during file upload. Please try again.");
     }
   };
 
-  const handleRegionDelete = async (regionId: string) => {
-    if (!selectedDocumentId || !authState.user) return;
+  const handleExport = useCallback(async () => {
+    if (!document) {
+      toast.error("No document selected.");
+      return;
+    }
 
     try {
-      const { error } = await supabase
-        .from('document_regions')
-        .delete()
-        .eq('id', regionId)
-        .eq('user_id', authState.user.id);
+      const regions = regionsCache[document.id] || [];
+      const { getCurrentDocumentTexts } = useTextAssignment();
+      const texts = getCurrentDocumentTexts(document.id);
 
-      if (error) throw error;
+      // Prepare data for CSV export
+      const csvData = regions.map(region => {
+        const assignedText = texts.find(text => text.assignedRegionId === region.id);
+        return {
+          regionId: region.id,
+          regionName: region.name,
+          regionDescription: region.description || '',
+          textTitle: assignedText?.title || '',
+          textContent: assignedText?.content || ''
+        };
+      });
 
-      setDocuments(prev =>
-        prev.map(doc =>
-          doc.id === selectedDocumentId
-            ? {
-                ...doc,
-                regions: doc.regions.filter(region => region.id !== regionId)
-              }
-            : doc
-        )
-      );
-      
-      setRegionsCache(prev => ({
-        ...prev,
-        [selectedDocumentId]: (prev[selectedDocumentId] || []).filter(
-          region => region.id !== regionId
-        )
-      }));
-
-      if (selectedRegionId === regionId) {
-        setSelectedRegionId(null);
-      }
-
-      // Update metadata
-      try {
-        await updateMetadata(selectedDocumentId, {
-          regions: (regionsCache[selectedDocumentId] || []).filter(r => r.id !== regionId)
-        }, authState.user.id);
-      } catch (metadataError) {
-        console.error('Failed to update metadata after region deletion:', metadataError);
-      }
-
-      toast.success('Region deleted');
+      // Export to CSV
+      exportToCSV(csvData, document.name);
+      toast.success("Data exported to CSV successfully!");
     } catch (error) {
-      console.error('Error deleting region:', error);
-      toast.error('Failed to delete region');
+      console.error("Error exporting data:", error);
+      toast.error("Failed to export data.");
     }
-  };
+  }, [document, regionsCache]);
 
-  const handleExport = () => {
-    if (!selectedDocument) {
-      toast.error('No document selected');
-      return;
+  const handleSignOut = async () => {
+    try {
+      await supabase.auth.signOut();
+      resetAssignments();
+      navigate('/auth');
+      toast.success('Signed out successfully!');
+    } catch (error) {
+      console.error('Error signing out:', error);
+      toast.error('Failed to sign out.');
     }
-
-    if (selectedDocument.regions.length === 0) {
-      toast.error('No regions defined');
-      return;
-    }
-
-    const mapping = {
-      documentName: selectedDocument.name,
-      documentId: selectedDocument.id,
-      regions: selectedDocument.regions
-    };
-
-    exportRegionMapping(mapping);
-    toast.success('Data exported successfully');
   };
 
   const toggleSidebar = () => {
-    setIsSidebarCollapsed(!isSidebarCollapsed);
+    setIsSidebarOpen(!isSidebarOpen);
   };
 
-  const handleRetryLoadDocument = async () => {
-    if (!selectedDocumentId || !authState.user) return;
-    
-    toast.loading('Retrying document access...', { id: 'retry-load' });
-    
-    try {
-      // Update retry count
-      setRetryCount(prev => ({
-        ...prev,
-        [selectedDocumentId]: (prev[selectedDocumentId] || 0) + 1
-      }));
-      
-      const doc = documents.find(d => d.id === selectedDocumentId);
-      if (!doc) {
-        toast.error('Document not found', { id: 'retry-load' });
-        return;
-      }
-      
-      // First check cache again
-      let pdfFile = await pdfCacheService.getCachedPDF(selectedDocumentId);
-      
-      if (pdfFile) {
-        console.log('Found document in cache during retry');
-        setDocuments(prev => 
-          prev.map(d => 
-            d.id === selectedDocumentId ? { ...d, file: pdfFile!, fileAvailable: true, uploadRequired: false } : d
-          )
-        );
-        toast.success('Document loaded from cache', { id: 'retry-load' });
-        return;
-      }
-      
-      const filePath = `${authState.user.id}/${selectedDocumentId}.pdf`;
-      
-      // Try direct download first
-      const { data: fileData, error: downloadError } = await supabase.storage
-        .from('pdfs')
-        .download(filePath);
-        
-      if (downloadError || !fileData) {
-        console.warn(`Direct retry download failed:`, downloadError);
-        
-        // Try with signed URL as fallback
-        const { data: signedUrlData, error: signedUrlError } = await supabase.storage
-          .from('pdfs')
-          .createSignedUrl(filePath, 3600);
-          
-        if (signedUrlError || !signedUrlData?.signedUrl) {
-          toast.error('PDF file still not accessible. Please try re-uploading.', { id: 'retry-load' });
-          return;
-        }
-        
-        const response = await fetch(signedUrlData.signedUrl);
-        if (!response.ok) {
-          toast.error('Failed to fetch PDF. Please try re-uploading.', { id: 'retry-load' });
-          return;
-        }
-        
-        const blob = await response.blob();
-        pdfFile = new File([blob], doc.name, { type: 'application/pdf' });
-      } else {
-        // Direct download succeeded
-        pdfFile = new File([fileData], doc.name, { type: 'application/pdf' });
-      }
-      
-      // Cache the successfully loaded file
-      await pdfCacheService.cachePDF(selectedDocumentId, pdfFile);
-      
-      // Update document with file
-      setDocuments(prev => 
-        prev.map(d => 
-          d.id === selectedDocumentId ? { ...d, file: pdfFile!, fileAvailable: true, uploadRequired: false } : d
-        )
-      );
-      
-      toast.success('Document loaded successfully', { id: 'retry-load' });
-    } catch (error) {
-      console.error('Error retrying document load:', error);
-      toast.error('Failed to reload document', { id: 'retry-load' });
-    }
-  };
-
-  const handlePageChange = (page: number) => {
-    setCurrentPage(page); // page is now consistently 1-based from PdfViewer
+  const handleRegionSelect = (regionId: string) => {
+    setSelectedRegionId(regionId);
   };
 
   return (
     <ProtectedRoute>
       <div className="flex flex-col h-screen">
-        <input
-          type="file"
-          ref={fileInputRef}
-          onChange={handleFileChange}
-          accept="application/pdf"
-          className="hidden"
-        />
-        
         <Header
-          onUploadClick={handleFileUpload}
+          onUploadClick={handleUploadClick}
           onExport={handleExport}
-          hasDocument={!!selectedDocument && selectedDocument.fileAvailable}
+          hasDocument={!!document}
           user={authState.profile}
-          onSignOut={signOut}
+          onSignOut={handleSignOut}
         />
-        
-        <div className="flex flex-1 overflow-hidden">
-          <DocumentList
+
+        {uploadError && (
+          <Alert variant="destructive">
+            <AlertTitle>Upload Error</AlertTitle>
+            <AlertDescription>{uploadError}</AlertDescription>
+          </Alert>
+        )}
+
+        <div className="flex flex-grow">
+          <Sidebar
+            isOpen={isSidebarOpen}
+            toggleSidebar={toggleSidebar}
             documents={documents}
-            selectedDocumentId={selectedDocumentId}
+            selectedDocument={document}
             onDocumentSelect={handleDocumentSelect}
-            onDocumentRename={handleDocumentRename}
-            onDocumentDelete={handleDocumentDelete}
-            isCollapsed={isDocumentListCollapsed}
-            onCollapsedChange={setIsDocumentListCollapsed}
+            isUploadModalOpen={isUploadModalOpen}
+            onCloseModal={handleCloseModal}
+            onFileUpload={handleFileUpload}
+            uploadError={uploadError}
           />
 
-          <div className="flex-1 overflow-hidden relative">
-            {isLoading ? (
-              <div className="flex items-center justify-center h-full">
-                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
-                <span className="ml-3">Loading documents...</span>
-              </div>
-            ) : selectedDocument && !selectedDocument.fileAvailable ? (
-              <div className="flex flex-col items-center justify-center h-full p-4">
-                <Alert className="max-w-md mb-4 bg-amber-50 border-amber-300">
-                  <AlertTitle className="text-amber-800">PDF File Not Available</AlertTitle>
-                  <AlertDescription className="text-amber-700">
-                    The PDF file for "{selectedDocument.name}" could not be accessed. 
-                    This can happen when accessing your documents from a new device.
-                  </AlertDescription>
-                </Alert>
-                
-                <div className="flex gap-4 mt-4">
-                  <Button 
-                    onClick={handleRetryLoadDocument} 
-                    variant="outline"
-                    disabled={retryCount[selectedDocumentId] > 2}
-                  >
-                    Retry Loading
-                  </Button>
-                  
-                  <Button onClick={() => fileInputRef.current?.click()}>
-                    Re-upload PDF
-                  </Button>
-                </div>
-                
-                <p className="mt-8 text-sm text-muted-foreground max-w-md text-center">
-                  All your region data is still available and will be reconnected when the PDF is uploaded again.
-                </p>
-              </div>
-            ) : (
+          <div className="flex-grow flex items-center justify-center">
+            {document ? (
               <PdfViewer
-                file={selectedDocument?.fileAvailable ? selectedDocument.file : null}
-                regions={selectedDocument?.regions || []}
-                onRegionCreate={handleRegionCreate}
-                onRegionUpdate={handleRegionUpdate}
+                documentId={document.id}
+                pdfFile={document.file}
+                pdfViewerRef={pdfViewerRef}
                 selectedRegionId={selectedRegionId}
-                onRegionSelect={setSelectedRegionId}
-                onRegionDelete={handleRegionDelete}
-                isSelectionMode={!!currentSelectionType}
+                onRegionSelect={handleRegionSelect}
                 currentSelectionType={currentSelectionType}
-                onCurrentSelectionTypeChange={setCurrentSelectionType}
-                documentId={selectedDocumentId}
-                onPageChange={handlePageChange}
+                setCurrentSelectionType={setCurrentSelectionType}
+                isSelectionMode={isSelectionMode}
+                setIsSelectionMode={setIsSelectionMode}
+                regionsCache={regionsCache}
+                setRegionsCache={setRegionsCache}
               />
+            ) : (
+              <div className="text-gray-500">No document selected. Please upload or select a document.</div>
             )}
-          </div>
-          
-          <div className="relative">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="fixed z-20 top-20 bg-background shadow-md border rounded-full"
-              style={{ right: isSidebarCollapsed ? '16px' : '390px' }}
-              onClick={toggleSidebar}
-            >
-              {isSidebarCollapsed ? <ChevronLeft /> : <ChevronRight />}
-            </Button>
-            
-            <div className={`transition-all duration-300 ${isSidebarCollapsed ? 'w-0 opacity-0 overflow-hidden' : 'w-[400px]'}`}>
-              <div className="h-full">
-                <Sidebar
-                  selectedRegion={selectedDocument?.regions.find(r => r.id === selectedRegionId) || null}
-                  regions={selectedDocument?.regions || []}
-                  onRegionUpdate={handleRegionUpdate}
-                  onRegionDelete={handleRegionDelete}
-                  onRegionSelect={setSelectedRegionId}
-                  documentId={selectedDocumentId}
-                  currentPage={currentPage}
-                />
-              </div>
-            </div>
           </div>
         </div>
       </div>
