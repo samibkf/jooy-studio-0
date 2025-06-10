@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 const AuthContext = createContext<{
   authState: AuthState;
   signIn: (email: string, password: string, rememberMe?: boolean) => Promise<void>;
+  signInWithGoogle: () => Promise<void>;
   signUp: (email: string, password: string, fullName: string) => Promise<void>;
   signOut: () => Promise<void>;
 } | null>(null);
@@ -121,6 +122,23 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
+  const signInWithGoogle = async () => {
+    try {
+      console.log('Attempting to sign in with Google');
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: window.location.origin
+        }
+      });
+      
+      if (error) throw error;
+    } catch (error) {
+      console.error('Google sign in error:', error);
+      throw error;
+    }
+  };
+
   const signUp = async (email: string, password: string, fullName: string) => {
     try {
       console.log('Attempting to sign up:', email);
@@ -195,7 +213,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ authState, signIn, signUp, signOut }}>
+    <AuthContext.Provider value={{ authState, signIn, signInWithGoogle, signUp, signOut }}>
       {children}
     </AuthContext.Provider>
   );
@@ -208,3 +226,5 @@ export const useAuth = () => {
   }
   return context;
 };
+
+export default AuthProvider;
