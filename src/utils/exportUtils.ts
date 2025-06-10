@@ -79,7 +79,7 @@ export const exportDocumentTexts = async (documentId: string, documentName: stri
   try {
     console.log(`Fetching text content for document: ${documentId}`);
     
-    // First, try to fetch text assignments for the given document ID
+    // Fetch text assignments for the given document ID
     const { data: textAssignments, error: assignmentsError } = await supabase
       .from('text_assignments')
       .select('text_content, region_id')
@@ -106,45 +106,6 @@ export const exportDocumentTexts = async (documentId: string, documentName: stri
     }
 
     console.log(`Found ${textAssignments?.length || 0} text assignments and ${documentTexts?.length || 0} document texts`);
-
-    // If no content found for this document ID, try to find content by document name
-    // This is a fallback for data inconsistency issues
-    if ((!textAssignments || textAssignments.length === 0) && (!documentTexts || documentTexts.length === 0)) {
-      console.log(`No content found for document ID ${documentId}, checking for alternative document IDs...`);
-      
-      // Check if there are any text assignments with different document IDs
-      const { data: allTextAssignments, error: allAssignmentsError } = await supabase
-        .from('text_assignments')
-        .select('document_id, text_content, region_id')
-        .limit(50);
-
-      const { data: allDocumentTexts, error: allTextsError } = await supabase
-        .from('document_texts')
-        .select('document_id, content, page')
-        .limit(50);
-
-      if (!allAssignmentsError && !allTextsError) {
-        console.log('Available text assignments document IDs:', allTextAssignments?.map(ta => ta.document_id));
-        console.log('Available document texts document IDs:', allDocumentTexts?.map(dt => dt.document_id));
-        
-        // Try to find content that might belong to this document
-        const possibleTextAssignments = allTextAssignments?.filter(ta => ta.text_content && ta.text_content.trim().length > 0) || [];
-        const possibleDocumentTexts = allDocumentTexts?.filter(dt => dt.content && dt.content.trim().length > 0) || [];
-        
-        if (possibleTextAssignments.length > 0 || possibleDocumentTexts.length > 0) {
-          // Ask user which content to export since there's a data mismatch
-          const availableIds = [
-            ...new Set([
-              ...(possibleTextAssignments.map(ta => ta.document_id) || []),
-              ...(possibleDocumentTexts.map(dt => dt.document_id) || [])
-            ])
-          ];
-          
-          toast.error(`No content found for this document. Available content exists for document IDs: ${availableIds.join(', ')}. Please check data consistency.`);
-          return;
-        }
-      }
-    }
 
     // Combine all text content
     const allTexts: string[] = [];
@@ -178,14 +139,14 @@ export const exportDocumentTexts = async (documentId: string, documentName: stri
     }
 
     if (allTexts.length === 0) {
-      toast.error('No text content found in this document');
+      toast.error('No text content found in this document after data consistency fix');
       return;
     }
 
     console.log(`Successfully processed ${allTexts.length} text sections`);
 
     // Join all texts with new lines between paragraphs
-    const finalText = allTexts.join('\n');
+    const finalText = allTexts.join('\n\n');
 
     // Create text file
     const blob = new Blob([finalText], { type: 'text/plain' });
