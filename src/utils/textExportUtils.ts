@@ -36,15 +36,11 @@ export const exportDocumentTexts = async (documentId: string, documentName: stri
     const isAdmin = profile?.role === 'admin';
     console.log('Current user is admin:', isAdmin);
 
-    // Fetch assigned text content by joining text_assignments with document_regions
-    // This ensures we only get assigned texts and can order them properly by region names
+    // Fetch assigned text content with region information
+    // We need to do separate queries since there's no direct foreign key relationship
     const { data: assignedTexts, error: assignedError } = await supabase
       .from('text_assignments')
-      .select(`
-        text_content,
-        text_title,
-        document_regions!inner(name, page, x, y)
-      `)
+      .select('text_content, text_title, region_id')
       .eq('document_id', documentId);
 
     if (assignedError) {
@@ -59,26 +55,56 @@ export const exportDocumentTexts = async (documentId: string, documentName: stri
       return;
     }
 
-    // Sort by region names to get proper order (1_1, 1_2, 2_1, 2_2, etc.)
-    const sortedTexts = assignedTexts.sort((a, b) => {
-      const aRegion = a.document_regions;
-      const bRegion = b.document_regions;
-      
-      // Parse region names like "1_1", "1_2", "2_1" etc.
-      const aParts = aRegion.name.split('_').map(Number);
-      const bParts = bRegion.name.split('_').map(Number);
-      
-      // First sort by page number (first part)
-      if (aParts[0] !== bParts[0]) {
-        return aParts[0] - bParts[0];
-      }
-      
-      // Then sort by region number within page (second part)
-      return (aParts[1] || 0) - (bParts[1] || 0);
-    });
+    // Get region information for all regions
+    const regionIds = assignedTexts.map(text => text.region_id);
+    const { data: regions, error: regionsError } = await supabase
+      .from('document_regions')
+      .select('id, name, page, x, y')
+      .in('id', regionIds);
+
+    if (regionsError) {
+      console.error('Error fetching regions:', regionsError);
+      throw regionsError;
+    }
+
+    if (!regions || regions.length === 0) {
+      toast.error('No region information found');
+      return;
+    }
+
+    // Create a map of region_id to region info
+    const regionMap = new Map(regions.map(region => [region.id, region]));
+
+    // Combine texts with their region information and sort
+    const textsWithRegions = assignedTexts
+      .map(text => {
+        const region = regionMap.get(text.region_id);
+        return {
+          text_content: text.text_content,
+          text_title: text.text_title,
+          region: region
+        };
+      })
+      .filter(item => item.region) // Only include items with valid region data
+      .sort((a, b) => {
+        const aRegion = a.region!;
+        const bRegion = b.region!;
+        
+        // Parse region names like "1_1", "1_2", "2_1" etc.
+        const aParts = aRegion.name.split('_').map(Number);
+        const bParts = bRegion.name.split('_').map(Number);
+        
+        // First sort by page number (first part)
+        if (aParts[0] !== bParts[0]) {
+          return aParts[0] - bParts[0];
+        }
+        
+        // Then sort by region number within page (second part)
+        return (aParts[1] || 0) - (bParts[1] || 0);
+      });
 
     // Process and format the text content
-    const processedTexts = sortedTexts.map(item => {
+    const processedTexts = textsWithRegions.map(item => {
       let text = item.text_content;
       
       // Remove markdown formatting (asterisks, etc.)
