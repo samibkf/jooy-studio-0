@@ -15,7 +15,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Download, LogOut, Search, User, RefreshCw, ExternalLink } from 'lucide-react';
 import { Input } from '@/components/ui/input';
-import { exportRegionMapping, exportDocumentTexts } from '@/utils/exportUtils';
+import { exportRegionMapping } from '@/utils/exportUtils';
 import { toast } from 'sonner';
 import {
   Card,
@@ -328,15 +328,20 @@ const Admin = () => {
     fetchUserDocuments(user.id);
   };
 
-  const handleExport = async (doc: DocumentData) => {
-    try {
-      console.log(`Starting export for document: ${doc.id} (${doc.name})`);
-      // Export text content instead of metadata
-      await exportDocumentTexts(doc.id, doc.name);
-    } catch (error) {
-      console.error('Export failed:', error);
-      toast.error('Export failed. Please try again.');
+  const handleExport = (doc: DocumentData) => {
+    if (doc.regions.length === 0) {
+      toast.error('No regions defined in this document');
+      return;
     }
+
+    const mapping = {
+      documentName: doc.name,
+      documentId: doc.id,
+      regions: doc.regions
+    };
+
+    exportRegionMapping(mapping);
+    toast.success('Data exported successfully');
   };
 
   const handleDownload = async (doc: DocumentData) => {
