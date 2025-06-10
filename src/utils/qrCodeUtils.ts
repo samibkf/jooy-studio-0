@@ -90,6 +90,17 @@ export const exportQRCodesAsZip = async (
   try {
     const zip = new JSZip();
     
+    // Create a text file listing all QR codes in order
+    let qrCodeListText = "QR CODE LIST\n";
+    qrCodeListText += "=============\n\n";
+    
+    for (const qrCode of qrCodes) {
+      qrCodeListText += `Page ${qrCode.pageNumber}: ${qrCode.content}\n`;
+    }
+    
+    // Add the text file to the ZIP archive
+    zip.file("qr_code_list.txt", qrCodeListText);
+    
     // Add each QR code to the ZIP
     for (const qrCode of qrCodes) {
       const blob = dataURLToBlob(qrCode.dataUrl);
