@@ -24,11 +24,12 @@ export const useMetadataSync = ({ documentId, regions, documentName }: UseMetada
           let descriptionArray: string[] = [];
           if (region.description) {
             if (typeof region.description === 'string') {
-              // Split by commas and clean up each paragraph
+              // Split by paragraph separators (double newlines, or other common separators)
               descriptionArray = region.description
-                .split(',')
+                .split(/\n\n+|\r\n\r\n+/)  // Split by double newlines
                 .map(para => para.trim())
-                .filter(para => para.length > 0);
+                .filter(para => para.length > 0)
+                .map(para => para.replace(/\n/g, ' ').trim()); // Clean up single newlines within paragraphs
             } else if (Array.isArray(region.description)) {
               descriptionArray = region.description;
             }
