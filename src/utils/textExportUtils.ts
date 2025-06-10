@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -102,13 +103,13 @@ export const exportDocumentTexts = async (documentId: string, documentName: stri
         return (aParts[1] || 0) - (bParts[1] || 0);
       });
 
-    // Process and format the text content - keep it simple
+    // Process and format the text content - preserve original formatting
     const processedTexts = textsWithRegions.map(item => {
       let text = item.text_content;
       
-      // Only remove "---" separators and clean up excessive whitespace
+      // Only remove "---" separators and collapse multiple consecutive spaces
       text = text.replace(/---/g, '');
-      text = text.replace(/\s+/g, ' ').trim();
+      text = text.replace(/ +/g, ' ').trim();
       
       return text;
     }).filter(text => text.length > 0);
