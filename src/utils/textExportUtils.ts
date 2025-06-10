@@ -4,7 +4,7 @@ import { toast } from 'sonner';
 
 export const exportDocumentTexts = async (documentId: string, documentName: string): Promise<void> => {
   try {
-    console.log('Fetching text content for document:', documentId);
+    console.log('Fetching assigned text content for document:', documentId);
     
     // Get the document information
     const { data: docData, error: docError } = await supabase
@@ -36,71 +36,81 @@ export const exportDocumentTexts = async (documentId: string, documentName: stri
     const isAdmin = profile?.role === 'admin';
     console.log('Current user is admin:', isAdmin);
 
-    // Fetch text content from text_assignments table
-    // RLS policies will handle access control automatically
-    const { data: textAssignments, error: assignmentsError } = await supabase
+    // Fetch assigned text content by joining text_assignments with document_regions
+    // This ensures we only get assigned texts and can order them properly by region names
+    const { data: assignedTexts, error: assignedError } = await supabase
       .from('text_assignments')
-      .select('text_content')
+      .select(`
+        text_content,
+        text_title,
+        document_regions!inner(name, page, x, y)
+      `)
       .eq('document_id', documentId);
 
-    if (assignmentsError) {
-      console.error('Error fetching text assignments:', assignmentsError);
-      throw assignmentsError;
+    if (assignedError) {
+      console.error('Error fetching assigned texts:', assignedError);
+      throw assignedError;
     }
 
-    // Fetch text content from document_texts table  
-    // RLS policies will handle access control automatically
-    const { data: documentTexts, error: textsError } = await supabase
-      .from('document_texts')
-      .select('content')
-      .eq('document_id', documentId);
+    console.log('Assigned texts found:', assignedTexts?.length || 0);
 
-    if (textsError) {
-      console.error('Error fetching document texts:', textsError);
-      throw textsError;
-    }
-
-    console.log('Text assignments found:', textAssignments?.length || 0);
-    console.log('Document texts found:', documentTexts?.length || 0);
-
-    // Combine all text content
-    const allTexts: string[] = [];
-    
-    // Add text from assignments
-    if (textAssignments && textAssignments.length > 0) {
-      textAssignments.forEach(assignment => {
-        if (assignment.text_content && assignment.text_content.trim()) {
-          allTexts.push(assignment.text_content.trim());
-        }
-      });
-    }
-
-    // Add text from document texts
-    if (documentTexts && documentTexts.length > 0) {
-      documentTexts.forEach(text => {
-        if (text.content && text.content.trim()) {
-          allTexts.push(text.content.trim());
-        }
-      });
-    }
-
-    if (allTexts.length === 0) {
-      toast.error('No text content found in this document');
+    if (!assignedTexts || assignedTexts.length === 0) {
+      toast.error('No assigned text content found in this document');
       return;
     }
 
-    // Process and clean the text
-    const processedTexts = allTexts.map(text => {
+    // Sort by region names to get proper order (1_1, 1_2, 2_1, 2_2, etc.)
+    const sortedTexts = assignedTexts.sort((a, b) => {
+      const aRegion = a.document_regions;
+      const bRegion = b.document_regions;
+      
+      // Parse region names like "1_1", "1_2", "2_1" etc.
+      const aParts = aRegion.name.split('_').map(Number);
+      const bParts = bRegion.name.split('_').map(Number);
+      
+      // First sort by page number (first part)
+      if (aParts[0] !== bParts[0]) {
+        return aParts[0] - bParts[0];
+      }
+      
+      // Then sort by region number within page (second part)
+      return (aParts[1] || 0) - (bParts[1] || 0);
+    });
+
+    // Process and format the text content
+    const processedTexts = sortedTexts.map(item => {
+      let text = item.text_content;
+      
       // Remove markdown formatting (asterisks, etc.)
-      let cleanText = text.replace(/\*\*/g, '').replace(/\*/g, '');
+      text = text.replace(/\*\*/g, '').replace(/\*/g, '');
       
-      // Clean up extra whitespace and normalize line breaks
-      cleanText = cleanText.replace(/\s+/g, ' ').trim();
+      // Split text into logical paragraphs/questions for better readability
+      // Split on question marks followed by space/newline, or on double spaces, or explicit newlines
+      const paragraphs = text
+        .split(/\?\s+|\n\s*\n|\.\s{2,}/)
+        .map(para => para.trim())
+        .filter(para => para.length > 0)
+        .map(para => {
+          // Add back question mark if it was removed during split and the paragraph is a question
+          if (para.includes('What') || para.includes('Which') || para.includes('How') || para.includes('Why')) {
+            if (!para.endsWith('?') && !para.endsWith('.')) {
+              para += '?';
+            }
+          }
+          // Clean up extra whitespace
+          return para.replace(/\s+/g, ' ').trim();
+        });
       
-      return cleanText;
+      // Join paragraphs with newlines for proper formatting
+      return paragraphs.join('\n');
     }).filter(text => text.length > 0);
 
-    // Join all paragraphs with single newlines
+    if (processedTexts.length === 0) {
+      toast.error('No valid text content found after processing');
+      return;
+    }
+
+    // Join all texts with double newlines to separate different regions
     const finalText = processedTexts.join('\n\n');
 
     // Create and download the text file
@@ -111,7 +121,7 @@ export const exportDocumentTexts = async (documentId: string, documentName: stri
     
     // Create safe filename
     const safeDocName = documentName.replace(/[^a-z0-9]/gi, '_').toLowerCase();
-    link.download = `${safeDocName}_text.txt`;
+    link.download = `${safeDocName}_assigned_text.txt`;
     
     // Trigger download
     document.body.appendChild(link);
@@ -121,11 +131,11 @@ export const exportDocumentTexts = async (documentId: string, documentName: stri
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
     
-    toast.success(`Successfully exported ${processedTexts.length} text sections`);
-    console.log('Text export completed successfully');
+    toast.success(`Successfully exported ${processedTexts.length} assigned text sections`);
+    console.log('Assigned text export completed successfully');
     
   } catch (error) {
-    console.error('Error exporting text content:', error);
-    toast.error('Failed to export text content');
+    console.error('Error exporting assigned text content:', error);
+    toast.error('Failed to export assigned text content');
   }
 };
