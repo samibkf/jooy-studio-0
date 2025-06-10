@@ -22,6 +22,11 @@ import { useDocumentMetadata } from '@/hooks/useDocumentMetadata';
 import { deleteMetadata } from '@/utils/metadataUtils';
 import { usePdfPageCount } from '@/hooks/usePdfPageCount';
 import { generateBulkQRCodes, exportQRCodesAsZip } from '@/utils/qrCodeUtils';
+import { 
+  generateTransparentBulkQRCodes, 
+  embedQRCodeIntoPDF, 
+  downloadPDFWithQRCodes 
+} from '@/utils/pdfQrEmbedding';
 
 const Index = () => {
   const [documents, setDocuments] = useState<DocumentData[]>([]);
@@ -36,6 +41,8 @@ const Index = () => {
   const [documentsLoaded, setDocumentsLoaded] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [isQRExporting, setIsQRExporting] = useState(false);
+  const [isPDFQRExporting, setIsPDFQRExporting] = useState(false);
+  const [qrCorner, setQrCorner] = useState<'top-left' | 'top-right'>('top-left');
 
   const {
     selectedRegionId,
@@ -763,6 +770,54 @@ const Index = () => {
     }
   };
 
+  const handlePDFQRExport = async (corner: 'top-left' | 'top-right') => {
+    if (!selectedDocument || !selectedDocument.fileAvailable) {
+      toast.error('No valid document selected');
+      return;
+    }
+
+    if (pageCount === 0) {
+      toast.error('Unable to determine page count for this document');
+      return;
+    }
+
+    setIsPDFQRExporting(true);
+    
+    try {
+      toast.loading('Generating transparent QR codes...', { id: 'pdf-qr-export' });
+      
+      // Generate transparent QR codes for all pages
+      const qrCodes = await generateTransparentBulkQRCodes(
+        selectedDocument.id,
+        pageCount,
+        (progress) => {
+          toast.loading(`Generating QR codes... ${Math.round(progress)}%`, { id: 'pdf-qr-export' });
+        }
+      );
+
+      toast.loading('Embedding QR codes into PDF...', { id: 'pdf-qr-export' });
+      
+      // Embed QR codes into PDF
+      const modifiedPdfBytes = await embedQRCodeIntoPDF(
+        selectedDocument.file,
+        qrCodes,
+        corner
+      );
+
+      toast.loading('Preparing download...', { id: 'pdf-qr-export' });
+      
+      // Download the modified PDF
+      await downloadPDFWithQRCodes(modifiedPdfBytes, selectedDocument.name);
+      
+      toast.success(`Successfully created PDF with ${qrCodes.length} embedded QR codes`, { id: 'pdf-qr-export' });
+    } catch (error) {
+      console.error('Error creating PDF with QR codes:', error);
+      toast.error('Failed to create PDF with QR codes: ' + (error instanceof Error ? error.message : 'Unknown error'), { id: 'pdf-qr-export' });
+    } finally {
+      setIsPDFQRExporting(false);
+    }
+  };
+
   const toggleSidebar = () => {
     setIsSidebarCollapsed(!isSidebarCollapsed);
   };
@@ -868,8 +923,12 @@ const Index = () => {
           onUploadClick={handleFileUpload}
           onExport={handleExport}
           onQRExport={handleQRExport}
+          onPDFQRExport={handlePDFQRExport}
           hasDocument={!!selectedDocument && selectedDocument.fileAvailable}
           isQRExporting={isQRExporting}
+          isPDFQRExporting={isPDFQRExporting}
+          qrCorner={qrCorner}
+          onQRCornerChange={setQrCorner}
           user={authState.profile}
           onSignOut={signOut}
         />
@@ -969,3 +1028,5 @@ const Index = () => {
 };
 
 export default Index;
+
+}

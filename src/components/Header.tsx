@@ -1,15 +1,20 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { Upload, Download, File, LogOut, QrCode } from 'lucide-react';
+import { Upload, Download, File, LogOut, QrCode, FileText } from 'lucide-react';
 import type { Profile } from '@/types/auth';
+import QRCornerSelector from './QRCornerSelector';
 
 interface HeaderProps {
   onUploadClick: () => void;
   onExport: () => void;
   onQRExport: () => void;
+  onPDFQRExport: (corner: 'top-left' | 'top-right') => void;
   hasDocument: boolean;
   isQRExporting: boolean;
+  isPDFQRExporting: boolean;
+  qrCorner: 'top-left' | 'top-right';
+  onQRCornerChange: (corner: 'top-left' | 'top-right') => void;
   user: Profile | null;
   onSignOut: () => Promise<void>;
 }
@@ -17,9 +22,13 @@ interface HeaderProps {
 const Header = ({ 
   onUploadClick, 
   onExport, 
-  onQRExport, 
+  onQRExport,
+  onPDFQRExport,
   hasDocument, 
-  isQRExporting, 
+  isQRExporting,
+  isPDFQRExporting,
+  qrCorner,
+  onQRCornerChange,
   user, 
   onSignOut 
 }: HeaderProps) => {
@@ -70,6 +79,25 @@ const Header = ({
               <QrCode className="h-4 w-4" />
               {isQRExporting ? "Generating..." : "Export QR Codes"}
             </Button>
+
+            <div className="flex items-center gap-2">
+              <Button 
+                onClick={() => onPDFQRExport(qrCorner)} 
+                disabled={!hasDocument || isPDFQRExporting}
+                className="flex items-center gap-2"
+                variant="outline"
+                title={!hasDocument ? "Select a document with a valid PDF to embed QR codes" : "Download PDF with embedded QR codes"}
+              >
+                <FileText className="h-4 w-4" />
+                {isPDFQRExporting ? "Processing..." : "Download PDF with QR"}
+              </Button>
+              
+              <QRCornerSelector
+                value={qrCorner}
+                onChange={onQRCornerChange}
+                disabled={!hasDocument || isPDFQRExporting}
+              />
+            </div>
 
             <Button
               onClick={onSignOut}
