@@ -102,64 +102,15 @@ export const exportDocumentTexts = async (documentId: string, documentName: stri
         return (aParts[1] || 0) - (bParts[1] || 0);
       });
 
-    // Process and format the text content
+    // Process and format the text content - keep it simple
     const processedTexts = textsWithRegions.map(item => {
       let text = item.text_content;
       
-      // Remove "---" separators first
+      // Only remove "---" separators and clean up excessive whitespace
       text = text.replace(/---/g, '');
+      text = text.replace(/\s+/g, ' ').trim();
       
-      // Remove only bold markdown formatting (**), but preserve single asterisks for questions
-      text = text.replace(/\*\*/g, '');
-      
-      // Split text into sections - first by double newlines (natural paragraph breaks)
-      const sections = text.split(/\n\s*\n/);
-      
-      const processedSections = sections.map(section => {
-        section = section.trim();
-        if (!section) return '';
-        
-        // Check if this section contains asterisk-wrapped questions
-        const asteriskQuestionPattern = /\*([^*]+\?)\*/g;
-        const hasAsteriskQuestions = asteriskQuestionPattern.test(section);
-        
-        if (hasAsteriskQuestions) {
-          // Split by asterisk questions and process each part
-          const parts = section.split(/(\*[^*]+\?\*)/);
-          return parts.map(part => {
-            if (part.match(/^\*[^*]+\?\*$/)) {
-              // This is an asterisk-wrapped question - keep it as is
-              return part;
-            } else {
-              // This is regular text - clean up whitespace and split long sentences
-              return part.trim().replace(/\s+/g, ' ');
-            }
-          }).filter(part => part.length > 0).join('\n');
-        } else {
-          // No asterisk questions - process as regular paragraphs
-          // Split on sentence endings followed by multiple spaces or question marks
-          const sentences = section
-            .split(/(\?\s+|\.\s{2,})/)
-            .map(sentence => sentence.trim())
-            .filter(sentence => sentence.length > 0)
-            .map(sentence => {
-              // Clean up extra whitespace
-              sentence = sentence.replace(/\s+/g, ' ').trim();
-              
-              // Add back question mark if it was a question and doesn't end with punctuation
-              if ((sentence.includes('What') || sentence.includes('Which') || sentence.includes('How') || sentence.includes('Why')) && 
-                  !sentence.endsWith('?') && !sentence.endsWith('.')) {
-                sentence += '?';
-              }
-              
-              return sentence;
-            });
-          
-          return sentences.join('\n');
-        }
-      }).filter(section => section.length > 0);
-      
-      return processedSections.join('\n');
+      return text;
     }).filter(text => text.length > 0);
 
     if (processedTexts.length === 0) {
@@ -167,8 +118,8 @@ export const exportDocumentTexts = async (documentId: string, documentName: stri
       return;
     }
 
-    // Join all texts with single spaces to separate different regions
-    const finalText = processedTexts.join(' ');
+    // Join all texts with double newlines to separate different regions
+    const finalText = processedTexts.join('\n\n');
 
     // Create and download the text file
     const blob = new Blob([finalText], { type: 'text/plain' });
