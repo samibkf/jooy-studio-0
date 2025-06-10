@@ -136,8 +136,8 @@ export const exportDocumentTexts = async (documentId: string, documentName: stri
       return;
     }
 
-    // Join all texts with double newlines to separate different regions
-    const finalText = processedTexts.join('\n\n');
+    // Join all texts with single spaces to separate different regions (remove --- separators)
+    const finalText = processedTexts.join(' ');
 
     // Create and download the text file
     const blob = new Blob([finalText], { type: 'text/plain' });
