@@ -7,24 +7,18 @@ import { Region } from '@/types/regions';
 import { DocumentData } from '@/types/documents';
 
 export interface DocumentMetadata {
-  id: string;
-  name: string;
-  createdAt: string;
-  updatedAt: string;
-  version: number;
-  regions: Region[];
-  textAssignments: Array<{
-    regionId: string;
-    textTitle: string;
-    textContent: string;
-    assignedAt: string;
-  }>;
-  documentTexts: Array<{
-    id: string;
-    title: string;
-    content: string;
+  documentName: string;
+  documentId: string;
+  drmProtectedPages: number[];
+  regions: Array<{
     page: number;
-    assignedRegionId?: string;
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+    type: string;
+    name: string;
+    description: string[];
   }>;
 }
 
@@ -36,40 +30,52 @@ export const generateMetadata = async (
 ): Promise<DocumentMetadata> => {
   console.warn('generateMetadata is deprecated. Use useDocumentMetadata hook instead.');
   
-  // Get text assignments
-  const { data: textAssignments } = await supabase
-    .from('text_assignments')
-    .select('*')
-    .eq('document_id', documentId)
-    .eq('user_id', userId);
+  // Process regions to include only essential fields and ensure proper ordering
+  const processedRegions = (document.regions || []).map(region => {
+    // Convert description to array format if it's a string
+    let descriptionArray: string[] = [];
+    if (region.description) {
+      if (typeof region.description === 'string') {
+        // Split by commas and clean up each paragraph
+        descriptionArray = region.description
+          .split(',')
+          .map(para => para.trim())
+          .filter(para => para.length > 0);
+      } else if (Array.isArray(region.description)) {
+        descriptionArray = region.description;
+      }
+    }
 
-  // Get document texts
-  const { data: documentTexts } = await supabase
-    .from('document_texts')
-    .select('*')
-    .eq('document_id', documentId)
-    .eq('user_id', userId);
+    return {
+      page: region.page,
+      x: region.x,
+      y: region.y,
+      width: region.width,
+      height: region.height,
+      type: region.type,
+      name: region.name,
+      description: descriptionArray
+    };
+  });
+
+  // Sort regions: first by page number, then by region name
+  const sortedRegions = processedRegions.sort((a, b) => {
+    // First sort by page number
+    if (a.page !== b.page) {
+      return a.page - b.page;
+    }
+    
+    // If on the same page, sort by region name (assuming format like "1_1", "1_2", etc.)
+    const aNumber = parseInt(a.name.split('_')[1]) || 0;
+    const bNumber = parseInt(b.name.split('_')[1]) || 0;
+    return aNumber - bNumber;
+  });
 
   return {
-    id: documentId,
-    name: document.name,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-    version: 1,
-    regions: document.regions || [],
-    textAssignments: (textAssignments || []).map(ta => ({
-      regionId: ta.region_id,
-      textTitle: ta.text_title,
-      textContent: ta.text_content,
-      assignedAt: ta.created_at
-    })),
-    documentTexts: (documentTexts || []).map(dt => ({
-      id: dt.id,
-      title: dt.title,
-      content: dt.content,
-      page: dt.page,
-      assignedRegionId: undefined
-    }))
+    documentName: document.name,
+    documentId: documentId,
+    drmProtectedPages: [], // Initialize as empty array - can be populated based on document data if needed
+    regions: sortedRegions
   };
 };
 
@@ -127,22 +133,16 @@ export const updateMetadata = async (
       currentMetadata = JSON.parse(text);
     } else {
       currentMetadata = {
-        id: documentId,
-        name: '',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        version: 1,
-        regions: [],
-        textAssignments: [],
-        documentTexts: []
+        documentName: '',
+        documentId: documentId,
+        drmProtectedPages: [],
+        regions: []
       };
     }
 
     const updatedMetadata: DocumentMetadata = {
       ...currentMetadata,
-      ...updates,
-      updatedAt: new Date().toISOString(),
-      version: currentMetadata.version + 1
+      ...updates
     };
 
     return await uploadMetadata(documentId, updatedMetadata, userId);
