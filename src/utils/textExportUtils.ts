@@ -6,11 +6,50 @@ export const exportDocumentTexts = async (documentId: string, documentName: stri
   try {
     console.log('Fetching text content for document:', documentId);
     
+    // First, get the document and its owner's user_id
+    const { data: document, error: docError } = await supabase
+      .from('documents')
+      .select('user_id, name')
+      .eq('id', documentId)
+      .single();
+
+    if (docError) {
+      console.error('Error fetching document:', docError);
+      throw docError;
+    }
+
+    if (!document) {
+      toast.error('Document not found');
+      return;
+    }
+
+    console.log('Document owner user_id:', document.user_id);
+    
+    // Check if current user is admin
+    const { data: { user } } = await supabase.auth.getUser();
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user?.id)
+      .single();
+
+    const isAdmin = profile?.role === 'admin';
+    console.log('Current user is admin:', isAdmin);
+
     // Fetch text content from text_assignments table
-    const { data: textAssignments, error: assignmentsError } = await supabase
+    let textAssignmentsQuery = supabase
       .from('text_assignments')
       .select('text_content')
       .eq('document_id', documentId);
+
+    // If not admin, filter by current user; if admin, filter by document owner
+    if (!isAdmin) {
+      textAssignmentsQuery = textAssignmentsQuery.eq('user_id', user?.id);
+    } else {
+      textAssignmentsQuery = textAssignmentsQuery.eq('user_id', document.user_id);
+    }
+
+    const { data: textAssignments, error: assignmentsError } = await textAssignmentsQuery;
 
     if (assignmentsError) {
       console.error('Error fetching text assignments:', assignmentsError);
@@ -18,10 +57,19 @@ export const exportDocumentTexts = async (documentId: string, documentName: stri
     }
 
     // Fetch text content from document_texts table
-    const { data: documentTexts, error: textsError } = await supabase
+    let documentTextsQuery = supabase
       .from('document_texts')
       .select('content')
       .eq('document_id', documentId);
+
+    // If not admin, filter by current user; if admin, filter by document owner
+    if (!isAdmin) {
+      documentTextsQuery = documentTextsQuery.eq('user_id', user?.id);
+    } else {
+      documentTextsQuery = documentTextsQuery.eq('user_id', document.user_id);
+    }
+
+    const { data: documentTexts, error: textsError } = await documentTextsQuery;
 
     if (textsError) {
       console.error('Error fetching document texts:', textsError);
