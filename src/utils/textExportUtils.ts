@@ -7,7 +7,7 @@ export const exportDocumentTexts = async (documentId: string, documentName: stri
     console.log('Fetching text content for document:', documentId);
     
     // First, get the document and its owner's user_id
-    const { data: document, error: docError } = await supabase
+    const { data: docData, error: docError } = await supabase
       .from('documents')
       .select('user_id, name')
       .eq('id', documentId)
@@ -18,12 +18,12 @@ export const exportDocumentTexts = async (documentId: string, documentName: stri
       throw docError;
     }
 
-    if (!document) {
+    if (!docData) {
       toast.error('Document not found');
       return;
     }
 
-    console.log('Document owner user_id:', document.user_id);
+    console.log('Document owner user_id:', docData.user_id);
     
     // Check if current user is admin
     const { data: { user } } = await supabase.auth.getUser();
@@ -46,7 +46,7 @@ export const exportDocumentTexts = async (documentId: string, documentName: stri
     if (!isAdmin) {
       textAssignmentsQuery = textAssignmentsQuery.eq('user_id', user?.id);
     } else {
-      textAssignmentsQuery = textAssignmentsQuery.eq('user_id', document.user_id);
+      textAssignmentsQuery = textAssignmentsQuery.eq('user_id', docData.user_id);
     }
 
     const { data: textAssignments, error: assignmentsError } = await textAssignmentsQuery;
@@ -66,7 +66,7 @@ export const exportDocumentTexts = async (documentId: string, documentName: stri
     if (!isAdmin) {
       documentTextsQuery = documentTextsQuery.eq('user_id', user?.id);
     } else {
-      documentTextsQuery = documentTextsQuery.eq('user_id', document.user_id);
+      documentTextsQuery = documentTextsQuery.eq('user_id', docData.user_id);
     }
 
     const { data: documentTexts, error: textsError } = await documentTextsQuery;
