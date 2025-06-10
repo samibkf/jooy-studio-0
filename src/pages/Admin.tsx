@@ -15,7 +15,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Download, LogOut, Search, User, RefreshCw, ExternalLink } from 'lucide-react';
 import { Input } from '@/components/ui/input';
-import { exportRegionMapping } from '@/utils/exportUtils';
+import { exportDocumentTexts } from '@/utils/textExportUtils';
 import { toast } from 'sonner';
 import {
   Card,
@@ -84,7 +84,6 @@ const Admin = () => {
           switch(payload.eventType) {
             case 'DELETE':
               console.log('Document deleted:', payload.old.id);
-              // Immediately remove the document from the UI
               setUserDocuments(prev => 
                 prev.filter(doc => doc.id !== payload.old.id)
               );
@@ -93,7 +92,6 @@ const Admin = () => {
             case 'UPDATE':
               console.log('Document updated:', payload.new);
               try {
-                // Check if the file exists in storage
                 const { data: fileList, error: listError } = await supabase.storage
                   .from('pdfs')
                   .list(selectedUser.id);
@@ -125,7 +123,6 @@ const Admin = () => {
             case 'INSERT':
               console.log('Document inserted:', payload.new);
               try {
-                // Check if the file exists in storage
                 const { data: fileList, error: listError } = await supabase.storage
                   .from('pdfs')
                   .list(selectedUser.id);
@@ -242,7 +239,6 @@ const Admin = () => {
       console.log('Fetching documents for user:', userId);
       setLoadingDocuments(true);
       
-      // First check if storage is initialized
       const storageReady = await initializeStorage();
       setStorageInitialized(storageReady);
       
@@ -253,7 +249,6 @@ const Admin = () => {
         return;
       }
 
-      // Get list of files in storage first to check which documents are actually available
       const { data: fileList, error: listError } = await supabase.storage
         .from('pdfs')
         .list(userId);
@@ -267,7 +262,6 @@ const Admin = () => {
 
       console.log(`Files found in storage for user ${userId}:`, fileList);
       
-      // Now fetch documents from the database
       const { data: documents, error } = await supabase
         .from('documents')
         .select('*')
@@ -297,7 +291,6 @@ const Admin = () => {
           console.error('Error fetching regions for document:', doc.id, regionsError);
         }
 
-        // Check if the file exists in storage
         const fileExists = fileList?.some(file => file.name === `${doc.id}.pdf`);
         console.log(`File exists check for ${doc.id}.pdf:`, fileExists);
         
@@ -328,20 +321,8 @@ const Admin = () => {
     fetchUserDocuments(user.id);
   };
 
-  const handleExport = (doc: DocumentData) => {
-    if (doc.regions.length === 0) {
-      toast.error('No regions defined in this document');
-      return;
-    }
-
-    const mapping = {
-      documentName: doc.name,
-      documentId: doc.id,
-      regions: doc.regions
-    };
-
-    exportRegionMapping(mapping);
-    toast.success('Data exported successfully');
+  const handleExport = async (doc: DocumentData) => {
+    await exportDocumentTexts(doc.id, doc.name);
   };
 
   const handleDownload = async (doc: DocumentData) => {
@@ -378,7 +359,6 @@ const Admin = () => {
         console.error(`Download failed: ${response.status} ${response.statusText}`);
         
         if (response.status === 404) {
-          // Update the document status in the UI to show that the file is not available
           setUserDocuments(prev => 
             prev.map(d => 
               d.id === doc.id 
@@ -664,8 +644,7 @@ const Admin = () => {
                             variant="outline"
                             size="sm"
                             onClick={() => handleExport(document)}
-                            disabled={document.regions.length === 0}
-                            title={document.regions.length === 0 ? "No regions to export" : "Export regions"}
+                            title="Export text content"
                           >
                             Export
                           </Button>
