@@ -329,8 +329,14 @@ const Admin = () => {
   };
 
   const handleExport = async (doc: DocumentData) => {
-    // Export text content instead of metadata
-    await exportDocumentTexts(doc.id, doc.name);
+    try {
+      console.log(`Starting export for document: ${doc.id} (${doc.name})`);
+      // Export text content instead of metadata
+      await exportDocumentTexts(doc.id, doc.name);
+    } catch (error) {
+      console.error('Export failed:', error);
+      toast.error('Export failed. Please try again.');
+    }
   };
 
   const handleDownload = async (doc: DocumentData) => {
