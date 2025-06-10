@@ -1,7 +1,6 @@
 
 import QRCode from 'qrcode';
 import JSZip from 'jszip';
-import { saveAs } from 'file-saver';
 
 export interface QRCodeData {
   pageNumber: number;
@@ -101,9 +100,16 @@ export const exportQRCodesAsZip = async (
     // Generate the ZIP file
     const zipBlob = await zip.generateAsync({ type: 'blob' });
     
-    // Trigger download
+    // Create and trigger download without using file-saver
+    const downloadLink = document.createElement('a');
+    downloadLink.href = URL.createObjectURL(zipBlob);
     const fileName = `${documentName.replace(/\.pdf$/i, '')}_QRCodes.zip`;
-    saveAs(zipBlob, fileName);
+    downloadLink.download = fileName;
+    document.body.appendChild(downloadLink);
+    downloadLink.click();
+    document.body.removeChild(downloadLink);
+    // Clean up the object URL
+    setTimeout(() => URL.revokeObjectURL(downloadLink.href), 100);
   } catch (error) {
     console.error('Error creating ZIP file:', error);
     throw new Error('Failed to create ZIP file');
