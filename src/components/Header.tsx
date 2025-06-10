@@ -1,18 +1,28 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { Upload, Download, File, LogOut } from 'lucide-react';
+import { Upload, Download, File, LogOut, QrCode } from 'lucide-react';
 import type { Profile } from '@/types/auth';
 
 interface HeaderProps {
   onUploadClick: () => void;
   onExport: () => void;
+  onQRExport: () => void;
   hasDocument: boolean;
+  isQRExporting: boolean;
   user: Profile | null;
   onSignOut: () => Promise<void>;
 }
 
-const Header = ({ onUploadClick, onExport, hasDocument, user, onSignOut }: HeaderProps) => {
+const Header = ({ 
+  onUploadClick, 
+  onExport, 
+  onQRExport, 
+  hasDocument, 
+  isQRExporting, 
+  user, 
+  onSignOut 
+}: HeaderProps) => {
   return (
     <header className="bg-white border-b border-gray-200 shadow-sm py-4">
       <div className="container mx-auto px-4 flex justify-between items-center">
@@ -49,6 +59,17 @@ const Header = ({ onUploadClick, onExport, hasDocument, user, onSignOut }: Heade
                 Export Data
               </Button>
             )}
+
+            <Button 
+              onClick={onQRExport} 
+              disabled={!hasDocument || isQRExporting}
+              className="flex items-center gap-2"
+              variant="outline"
+              title={!hasDocument ? "Select a document with a valid PDF to export QR codes" : "Export QR codes for all pages"}
+            >
+              <QrCode className="h-4 w-4" />
+              {isQRExporting ? "Generating..." : "Export QR Codes"}
+            </Button>
 
             <Button
               onClick={onSignOut}

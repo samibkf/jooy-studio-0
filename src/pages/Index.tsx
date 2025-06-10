@@ -20,6 +20,8 @@ import { pdfCacheService } from '@/services/pdfCacheService';
 import { generateUniqueDocumentId } from '@/utils/documentIdUtils';
 import { useDocumentMetadata } from '@/hooks/useDocumentMetadata';
 import { deleteMetadata } from '@/utils/metadataUtils';
+import { usePdfPageCount } from '@/hooks/usePdfPageCount';
+import { generateBulkQRCodes, exportQRCodesAsZip } from '@/utils/qrCodeUtils';
 
 const Index = () => {
   const [documents, setDocuments] = useState<DocumentData[]>([]);
@@ -33,6 +35,7 @@ const Index = () => {
   const [isInitialLoad, setIsInitialLoad] = useState(true);
   const [documentsLoaded, setDocumentsLoaded] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+  const [isQRExporting, setIsQRExporting] = useState(false);
 
   const {
     selectedRegionId,
@@ -48,6 +51,11 @@ const Index = () => {
   
   const { authState, signOut } = useAuth();
   const navigate = useNavigate();
+
+  // Get PDF page count for QR code generation
+  const { pageCount } = usePdfPageCount({
+    file: selectedDocument?.fileAvailable ? selectedDocument.file : null
+  });
 
   // Initialize metadata management for selected document
   const { syncMetadata } = useDocumentMetadata({
@@ -716,6 +724,45 @@ const Index = () => {
     toast.success('Data exported successfully');
   };
 
+  const handleQRExport = async () => {
+    if (!selectedDocument || !selectedDocument.fileAvailable) {
+      toast.error('No valid document selected');
+      return;
+    }
+
+    if (pageCount === 0) {
+      toast.error('Unable to determine page count for this document');
+      return;
+    }
+
+    setIsQRExporting(true);
+    
+    try {
+      toast.loading('Generating QR codes...', { id: 'qr-export' });
+      
+      // Generate QR codes for all pages
+      const qrCodes = await generateBulkQRCodes(
+        selectedDocument.id,
+        pageCount,
+        (progress) => {
+          toast.loading(`Generating QR codes... ${Math.round(progress)}%`, { id: 'qr-export' });
+        }
+      );
+
+      toast.loading('Creating ZIP file...', { id: 'qr-export' });
+      
+      // Export as ZIP
+      await exportQRCodesAsZip(qrCodes, selectedDocument.name);
+      
+      toast.success(`Successfully exported ${qrCodes.length} QR codes`, { id: 'qr-export' });
+    } catch (error) {
+      console.error('Error exporting QR codes:', error);
+      toast.error('Failed to export QR codes: ' + (error instanceof Error ? error.message : 'Unknown error'), { id: 'qr-export' });
+    } finally {
+      setIsQRExporting(false);
+    }
+  };
+
   const toggleSidebar = () => {
     setIsSidebarCollapsed(!isSidebarCollapsed);
   };
@@ -820,7 +867,9 @@ const Index = () => {
         <Header
           onUploadClick={handleFileUpload}
           onExport={handleExport}
+          onQRExport={handleQRExport}
           hasDocument={!!selectedDocument && selectedDocument.fileAvailable}
+          isQRExporting={isQRExporting}
           user={authState.profile}
           onSignOut={signOut}
         />
