@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -107,31 +106,60 @@ export const exportDocumentTexts = async (documentId: string, documentName: stri
     const processedTexts = textsWithRegions.map(item => {
       let text = item.text_content;
       
-      // Remove markdown formatting (asterisks, etc.)
-      text = text.replace(/\*\*/g, '').replace(/\*/g, '');
-      
-      // Remove "---" separators
+      // Remove "---" separators first
       text = text.replace(/---/g, '');
       
-      // Split text into logical paragraphs/questions for better readability
-      // Split on question marks followed by space/newline, or on double spaces, or explicit newlines
-      const paragraphs = text
-        .split(/\?\s+|\n\s*\n|\.\s{2,}/)
-        .map(para => para.trim())
-        .filter(para => para.length > 0)
-        .map(para => {
-          // Add back question mark if it was removed during split and the paragraph is a question
-          if (para.includes('What') || para.includes('Which') || para.includes('How') || para.includes('Why')) {
-            if (!para.endsWith('?') && !para.endsWith('.')) {
-              para += '?';
-            }
-          }
-          // Clean up extra whitespace
-          return para.replace(/\s+/g, ' ').trim();
-        });
+      // Remove only bold markdown formatting (**), but preserve single asterisks for questions
+      text = text.replace(/\*\*/g, '');
       
-      // Join paragraphs with newlines for proper formatting
-      return paragraphs.join('\n');
+      // Split text into sections - first by double newlines (natural paragraph breaks)
+      const sections = text.split(/\n\s*\n/);
+      
+      const processedSections = sections.map(section => {
+        section = section.trim();
+        if (!section) return '';
+        
+        // Check if this section contains asterisk-wrapped questions
+        const asteriskQuestionPattern = /\*([^*]+\?)\*/g;
+        const hasAsteriskQuestions = asteriskQuestionPattern.test(section);
+        
+        if (hasAsteriskQuestions) {
+          // Split by asterisk questions and process each part
+          const parts = section.split(/(\*[^*]+\?\*)/);
+          return parts.map(part => {
+            if (part.match(/^\*[^*]+\?\*$/)) {
+              // This is an asterisk-wrapped question - keep it as is
+              return part;
+            } else {
+              // This is regular text - clean up whitespace and split long sentences
+              return part.trim().replace(/\s+/g, ' ');
+            }
+          }).filter(part => part.length > 0).join('\n');
+        } else {
+          // No asterisk questions - process as regular paragraphs
+          // Split on sentence endings followed by multiple spaces or question marks
+          const sentences = section
+            .split(/(\?\s+|\.\s{2,})/)
+            .map(sentence => sentence.trim())
+            .filter(sentence => sentence.length > 0)
+            .map(sentence => {
+              // Clean up extra whitespace
+              sentence = sentence.replace(/\s+/g, ' ').trim();
+              
+              // Add back question mark if it was a question and doesn't end with punctuation
+              if ((sentence.includes('What') || sentence.includes('Which') || sentence.includes('How') || sentence.includes('Why')) && 
+                  !sentence.endsWith('?') && !sentence.endsWith('.')) {
+                sentence += '?';
+              }
+              
+              return sentence;
+            });
+          
+          return sentences.join('\n');
+        }
+      }).filter(section => section.length > 0);
+      
+      return processedSections.join('\n');
     }).filter(text => text.length > 0);
 
     if (processedTexts.length === 0) {
