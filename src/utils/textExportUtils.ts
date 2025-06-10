@@ -110,6 +110,9 @@ export const exportDocumentTexts = async (documentId: string, documentName: stri
       // Remove markdown formatting (asterisks, etc.)
       text = text.replace(/\*\*/g, '').replace(/\*/g, '');
       
+      // Remove "---" separators
+      text = text.replace(/---/g, '');
+      
       // Split text into logical paragraphs/questions for better readability
       // Split on question marks followed by space/newline, or on double spaces, or explicit newlines
       const paragraphs = text
@@ -136,7 +139,7 @@ export const exportDocumentTexts = async (documentId: string, documentName: stri
       return;
     }
 
-    // Join all texts with single spaces to separate different regions (remove --- separators)
+    // Join all texts with single spaces to separate different regions
     const finalText = processedTexts.join(' ');
 
     // Create and download the text file
