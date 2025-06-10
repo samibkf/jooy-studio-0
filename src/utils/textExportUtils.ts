@@ -6,7 +6,7 @@ export const exportDocumentTexts = async (documentId: string, documentName: stri
   try {
     console.log('Fetching text content for document:', documentId);
     
-    // First, get the document and its owner's user_id
+    // Get the document information
     const { data: docData, error: docError } = await supabase
       .from('documents')
       .select('user_id, name')
@@ -37,39 +37,23 @@ export const exportDocumentTexts = async (documentId: string, documentName: stri
     console.log('Current user is admin:', isAdmin);
 
     // Fetch text content from text_assignments table
-    let textAssignmentsQuery = supabase
+    // RLS policies will handle access control automatically
+    const { data: textAssignments, error: assignmentsError } = await supabase
       .from('text_assignments')
       .select('text_content')
       .eq('document_id', documentId);
-
-    // If not admin, filter by current user; if admin, filter by document owner
-    if (!isAdmin) {
-      textAssignmentsQuery = textAssignmentsQuery.eq('user_id', user?.id);
-    } else {
-      textAssignmentsQuery = textAssignmentsQuery.eq('user_id', docData.user_id);
-    }
-
-    const { data: textAssignments, error: assignmentsError } = await textAssignmentsQuery;
 
     if (assignmentsError) {
       console.error('Error fetching text assignments:', assignmentsError);
       throw assignmentsError;
     }
 
-    // Fetch text content from document_texts table
-    let documentTextsQuery = supabase
+    // Fetch text content from document_texts table  
+    // RLS policies will handle access control automatically
+    const { data: documentTexts, error: textsError } = await supabase
       .from('document_texts')
       .select('content')
       .eq('document_id', documentId);
-
-    // If not admin, filter by current user; if admin, filter by document owner
-    if (!isAdmin) {
-      documentTextsQuery = documentTextsQuery.eq('user_id', user?.id);
-    } else {
-      documentTextsQuery = documentTextsQuery.eq('user_id', docData.user_id);
-    }
-
-    const { data: documentTexts, error: textsError } = await documentTextsQuery;
 
     if (textsError) {
       console.error('Error fetching document texts:', textsError);
