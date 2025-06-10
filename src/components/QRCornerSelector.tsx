@@ -2,12 +2,11 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { ChevronDown } from 'lucide-react';
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import { CornerDownLeft, CornerDownRight, Settings } from 'lucide-react';
 
 interface QRCornerSelectorProps {
   value: 'top-left' | 'top-right';
@@ -16,38 +15,42 @@ interface QRCornerSelectorProps {
 }
 
 const QRCornerSelector = ({ value, onChange, disabled = false }: QRCornerSelectorProps) => {
-  const getDisplayText = (corner: 'top-left' | 'top-right') => {
-    return corner === 'top-left' ? 'Top Left' : 'Top Right';
-  };
-
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
+    <Popover>
+      <PopoverTrigger asChild>
         <Button
           variant="outline"
-          size="sm"
+          size="icon"
           disabled={disabled}
-          className="flex items-center gap-1 text-xs h-8"
+          className="h-10 w-10"
+          title="QR Position"
         >
-          {getDisplayText(value)}
-          <ChevronDown className="h-3 w-3" />
+          <Settings className="h-4 w-4" />
         </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-32">
-        <DropdownMenuItem
-          onClick={() => onChange('top-left')}
-          className={value === 'top-left' ? 'bg-accent' : ''}
-        >
-          Top Left
-        </DropdownMenuItem>
-        <DropdownMenuItem
-          onClick={() => onChange('top-right')}
-          className={value === 'top-right' ? 'bg-accent' : ''}
-        >
-          Top Right
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
+      </PopoverTrigger>
+      <PopoverContent className="w-40 p-2" align="end">
+        <div className="space-y-1">
+          <Button
+            variant={value === 'top-left' ? 'default' : 'ghost'}
+            size="sm"
+            className="w-full justify-start"
+            onClick={() => onChange('top-left')}
+          >
+            <CornerDownLeft className="h-4 w-4 mr-2" />
+            Top Left
+          </Button>
+          <Button
+            variant={value === 'top-right' ? 'default' : 'ghost'}
+            size="sm"
+            className="w-full justify-start"
+            onClick={() => onChange('top-right')}
+          >
+            <CornerDownRight className="h-4 w-4 mr-2" />
+            Top Right
+          </Button>
+        </div>
+      </PopoverContent>
+    </Popover>
   );
 };
 

@@ -80,11 +80,11 @@ const Header = ({
               {isQRExporting ? "Generating..." : "Export QR Codes"}
             </Button>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center">
               <Button 
                 onClick={() => onPDFQRExport(qrCorner)} 
                 disabled={!hasDocument || isPDFQRExporting}
-                className="flex items-center gap-2"
+                className="flex items-center gap-2 rounded-r-none"
                 variant="outline"
                 title={!hasDocument ? "Select a document with a valid PDF to embed QR codes" : "Download PDF with embedded QR codes"}
               >
@@ -92,11 +92,13 @@ const Header = ({
                 {isPDFQRExporting ? "Processing..." : "Download PDF with QR"}
               </Button>
               
-              <QRCornerSelector
-                value={qrCorner}
-                onChange={onQRCornerChange}
-                disabled={!hasDocument || isPDFQRExporting}
-              />
+              <div className="border-l">
+                <QRCornerSelector
+                  value={qrCorner}
+                  onChange={onQRCornerChange}
+                  disabled={!hasDocument || isPDFQRExporting}
+                />
+              </div>
             </div>
 
             <Button
