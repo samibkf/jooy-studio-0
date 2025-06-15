@@ -2,7 +2,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthProvider';
 import { supabase } from '@/integrations/supabase/client';
-import { DocumentData } from '@/types/documents';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Link, useNavigate } from 'react-router-dom';
@@ -13,14 +12,19 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 
-interface DocumentWithPageCount extends DocumentData {
+interface DocForTTS {
+    id: string;
+    name: string;
+}
+
+interface DocumentWithPageCount extends DocForTTS {
     pageCount?: number;
 }
 
 const TTSHistory = () => {
     const { authState } = useAuth();
     const navigate = useNavigate();
-    const [documents, setDocuments] = useState<DocumentWithPageCount[]>([]);
+    const [documents, setDocuments] = useState<DocForTTS[]>([]);
     const [ttsRequests, setTtsRequests] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [selectedDocument, setSelectedDocument] = useState<DocumentWithPageCount | null>(null);
@@ -30,7 +34,7 @@ const TTSHistory = () => {
         setLoading(true);
         try {
             const [docs, requests] = await Promise.all([
-                supabase.from('documents').select('*').eq('user_id', authState.user.id),
+                supabase.from('documents').select('id, name').eq('user_id', authState.user.id),
                 supabase.from('tts_requests').select('*, documents(name)').eq('user_id', authState.user.id).order('created_at', { ascending: false })
             ]);
 
@@ -56,7 +60,7 @@ const TTSHistory = () => {
     }, [authState, navigate, fetchAllData]);
     
 
-    const handleRequestTTS = async (doc: DocumentData) => {
+    const handleRequestTTS = async (doc: DocForTTS) => {
         if (!authState.user) return;
         toast.loading('Loading document details...');
         try {

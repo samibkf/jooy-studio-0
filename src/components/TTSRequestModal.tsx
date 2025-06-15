@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useEffect } from 'react';
 import {
   Dialog,
@@ -112,7 +111,7 @@ const TTSRequestModal = ({ isOpen, onOpenChange, documentId, pageCount, onSucces
       if (taskError) throw taskError;
       
       toast.success('TTS request submitted successfully!');
-      if (refreshProfile) await refreshProfile();
+      await refreshProfile();
       onSuccess();
       onOpenChange(false);
     } catch (error) {

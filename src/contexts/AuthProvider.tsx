@@ -10,6 +10,7 @@ const AuthContext = createContext<{
   signInWithGoogle: () => Promise<void>;
   signUp: (email: string, password: string, fullName: string) => Promise<void>;
   signOut: () => Promise<void>;
+  refreshProfile: () => Promise<void>;
 } | null>(null);
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
@@ -38,6 +39,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     } catch (error) {
       console.error('Exception when fetching profile:', error);
       return null;
+    }
+  };
+
+  const refreshProfile = async () => {
+    if (authState.user) {
+      console.log('Refreshing profile for user:', authState.user.id);
+      const profile = await fetchProfile(authState.user.id);
+      if (profile) {
+        console.log('Profile refreshed:', profile);
+        setAuthState(prev => ({ ...prev, profile }));
+      }
     }
   };
 
@@ -213,7 +225,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ authState, signIn, signInWithGoogle, signUp, signOut }}>
+    <AuthContext.Provider value={{ authState, signIn, signInWithGoogle, signUp, signOut, refreshProfile }}>
       {children}
     </AuthContext.Provider>
   );

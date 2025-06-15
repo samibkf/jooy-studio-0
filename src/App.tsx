@@ -8,7 +8,7 @@ import { AuthProvider } from './contexts/AuthProvider';
 import { Toaster } from '@/components/ui/sonner';
 import { TextAssignmentProvider } from './contexts/TextAssignmentContext';
 import TTSHistory from './pages/TTSHistory';
-import ProtectedRoute from './components/ProtectedRoute';
+import { ProtectedRoute } from './components/ProtectedRoute';
 
 function App() {
   return (
