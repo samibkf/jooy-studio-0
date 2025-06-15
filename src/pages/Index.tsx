@@ -27,6 +27,7 @@ import {
   embedQRCodeIntoPDF, 
   downloadPDFWithQRCodes 
 } from '@/utils/pdfQrEmbedding';
+import { decryptData } from '@/utils/crypto';
 
 const Index = () => {
   const [documents, setDocuments] = useState<DocumentData[]>([]);
@@ -686,7 +687,6 @@ const Index = () => {
     try {
       toast.loading('Fetching PDF data...', { id: 'pdf-qr-export' });
 
-      // *** Refactor: Fetch PDF as arrayBuffer using stream-pdf and auth ***
       const supabaseUrl = 'https://bohxienpthilrfwktokd.supabase.co';
       const anonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJvaHhpZW5wdGhpbHJmd2t0b2tkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDU2OTc3OTcsImV4cCI6MjA2MTI3Mzc5N30.4UO_pFmDauRz6Km5wTr3VHM95_GwyWKc1-pxGO1mImg';
       const functionUrl = `${supabaseUrl}/functions/v1/stream-pdf?document_id=${selectedDocument.id}&user_id=${authState.user.id}`;
@@ -701,7 +701,17 @@ const Index = () => {
       if (!response.ok) {
         throw new Error(`Failed to fetch PDF for QR code embedding. Status: ${response.status}`);
       }
-      const arrayBuffer = await response.arrayBuffer();
+
+      toast.loading('Decrypting PDF data...', { id: 'pdf-qr-export' });
+      const encryptedData = await response.arrayBuffer();
+      const keyB64 = response.headers.get('X-Encryption-Key');
+      const ivB64 = response.headers.get('X-Encryption-IV');
+
+      if (!keyB64 || !ivB64) {
+        throw new Error('Encryption key or IV not found in response headers.');
+      }
+      
+      const decryptedData = await decryptData(encryptedData, keyB64, ivB64);
 
       toast.loading('Generating transparent QR codes...', { id: 'pdf-qr-export' });
 
@@ -719,9 +729,9 @@ const Index = () => {
 
       toast.loading('Embedding QR codes into PDF...', { id: 'pdf-qr-export' });
 
-      // Pass arrayBuffer to embedQRCodeIntoPDF
+      // Pass decrypted data to embedQRCodeIntoPDF
       const modifiedPdfBytes = await embedQRCodeIntoPDF(
-        arrayBuffer,
+        decryptedData,
         qrCodes,
         corner
       );
