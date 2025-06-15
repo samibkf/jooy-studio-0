@@ -25,10 +25,14 @@ export const usePdfPageCount = ({ documentId }: UsePdfPageCountProps) => {
       setError(null);
 
       try {
-        // Include user ID in the request
-        const url = `/functions/v1/stream-pdf?document_id=${documentId}&user_id=${authState.user.id}`;
+        // Use the full Supabase project URL for the Edge Function
+        const url = `https://bohxienpthilrfwktokd.supabase.co/functions/v1/stream-pdf?document_id=${documentId}&user_id=${authState.user.id}`;
         const resp = await fetch(url, {
-          headers: { 'Cache-Control': 'no-store' },
+          headers: { 
+            'Cache-Control': 'no-store',
+            'Authorization': `Bearer ${authState.session?.access_token}`,
+            'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJvaHhpZW5wdGhpbHJmd2t0b2tkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDU2OTc3OTcsImV4cCI6MjA2MTI3Mzc5N30.4UO_pFmDauRz6Km5wTr3VHM95_GwyWKc1-pxGO1mImg'
+          },
         });
         if (!resp.ok) throw new Error('Failed to fetch PDF');
         const arrayBuffer = await resp.arrayBuffer();
@@ -44,7 +48,7 @@ export const usePdfPageCount = ({ documentId }: UsePdfPageCountProps) => {
     };
 
     getPageCount();
-  }, [documentId, authState.user]);
+  }, [documentId, authState.user, authState.session]);
 
   return { pageCount, isLoading, error };
 };

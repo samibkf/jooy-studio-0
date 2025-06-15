@@ -87,7 +87,7 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
     return Math.max(...regionNumbers, 0) + 1;
   };
 
-  // Enhanced PDF loading with user ID support
+  // Enhanced PDF loading with user ID support and proper Supabase URL
   useEffect(() => {
     if (!documentId || !authState.user) return;
     
@@ -100,15 +100,17 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
         console.log(`🔍 Starting PDF fetch for document: ${documentId}, user: ${authState.user.id}`);
         setDebugInfo(`Starting PDF fetch for document: ${documentId}, user: ${authState.user.id}`);
         
-        // Include user ID in the request to help Edge Function find the PDF
-        const url = `/functions/v1/stream-pdf?document_id=${documentId}&user_id=${authState.user.id}`;
+        // Use the full Supabase project URL for the Edge Function
+        const url = `https://bohxienpthilrfwktokd.supabase.co/functions/v1/stream-pdf?document_id=${documentId}&user_id=${authState.user.id}`;
         console.log(`🌐 Fetching from: ${url}`);
         
         const startTime = Date.now();
         const res = await fetch(url, {
           headers: {
             'Cache-Control': 'no-store',
-            'Accept': 'application/pdf,application/octet-stream,*/*'
+            'Accept': 'application/pdf,application/octet-stream,*/*',
+            'Authorization': `Bearer ${authState.session?.access_token}`,
+            'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJvaHhpZW5wdGhpbHJmd2t0b2tkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDU2OTc3OTcsImV4cCI6MjA2MTI3Mzc5N30.4UO_pFmDauRz6Km5wTr3VHM95_GwyWKc1-pxGO1mImg'
           }
         });
         
@@ -202,7 +204,7 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
     };
 
     fetchAndLoadPdf();
-  }, [documentId, authState.user]);
+  }, [documentId, authState.user, authState.session]);
 
   useEffect(() => {
     if (!pdf || !canvasRef.current) return;
