@@ -98,7 +98,7 @@ const TTSRequestModal = ({ isOpen, onOpenChange, documentId, documentName, onSuc
         requested_pages: parsedPages,
         cost_in_credits: costInCredits,
         extra_cost_da: extraCost,
-        status: 'pending',
+        status: 'pending', // Will be updated by edge function
       }).select().single();
 
       if (error) throw error;
@@ -118,8 +118,13 @@ const TTSRequestModal = ({ isOpen, onOpenChange, documentId, documentName, onSuc
       });
 
       if (taskError) throw taskError;
+
+      // Invoke the TTS generation edge function (non-blocking)
+      supabase.functions.invoke('generate-tts', {
+        body: { tts_request_id: requestData.id }
+      });
       
-      toast.success('TTS request submitted successfully!');
+      toast.success('TTS request submitted! Generation is now in progress.');
       await refreshProfile();
       onSuccess();
       onOpenChange(false);

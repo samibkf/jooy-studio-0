@@ -309,12 +309,57 @@ export type Database = {
           },
         ]
       }
+      tts_audio_files: {
+        Row: {
+          created_at: string
+          duration_seconds: number | null
+          file_size: number | null
+          id: string
+          page_number: number
+          status: string
+          storage_path: string
+          tts_request_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          duration_seconds?: number | null
+          file_size?: number | null
+          id?: string
+          page_number: number
+          status?: string
+          storage_path: string
+          tts_request_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          duration_seconds?: number | null
+          file_size?: number | null
+          id?: string
+          page_number?: number
+          status?: string
+          storage_path?: string
+          tts_request_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tts_audio_files_tts_request_id_fkey"
+            columns: ["tts_request_id"]
+            isOneToOne: false
+            referencedRelation: "tts_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tts_requests: {
         Row: {
           cost_in_credits: number
           created_at: string
           document_id: string
           extra_cost_da: number | null
+          final_audio_path: string | null
           id: string
           requested_pages: number[]
           status: string
@@ -326,6 +371,7 @@ export type Database = {
           created_at?: string
           document_id: string
           extra_cost_da?: number | null
+          final_audio_path?: string | null
           id?: string
           requested_pages: number[]
           status?: string
@@ -337,6 +383,7 @@ export type Database = {
           created_at?: string
           document_id?: string
           extra_cost_da?: number | null
+          final_audio_path?: string | null
           id?: string
           requested_pages?: number[]
           status?: string

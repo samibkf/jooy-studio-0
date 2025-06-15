@@ -486,6 +486,17 @@ const Admin = () => {
     setManagingTtsRequest(request);
   };
 
+  const getStatusBadgeVariant = (status: string) => {
+    switch (status) {
+        case 'completed': return 'default';
+        case 'pending': return 'secondary';
+        case 'processing': return 'secondary';
+        case 'generated': return 'outline';
+        case 'failed': return 'destructive';
+        default: return 'secondary';
+    }
+  };
+
   const filteredUsers = users.filter(user => 
     user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
     (user.full_name && user.full_name.toLowerCase().includes(searchTerm.toLowerCase()))
@@ -769,7 +780,7 @@ const Admin = () => {
                       {req.documents?.name}
                     </TableCell>
                     <TableCell>
-                      <Badge variant={req.status === 'completed' ? 'default' : req.status === 'pending' ? 'secondary' : 'destructive'}>
+                      <Badge variant={getStatusBadgeVariant(req.status)}>
                         {req.status}
                       </Badge>
                     </TableCell>
