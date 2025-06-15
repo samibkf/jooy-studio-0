@@ -7,7 +7,7 @@ import { Region } from '@/types/regions';
 import { useTextAssignment } from '@/contexts/TextAssignmentContext';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { getGeminiApiKey } from './GeminiApiKeyDialog';
+import { getGeminiApiKeys } from './GeminiApiKeyDialog';
 import { generateGuidanceFromImage } from '@/services/geminiService';
 import { pdfCacheService } from '@/services/pdfCacheService';
 import * as pdfjsLib from 'pdfjs-dist';
@@ -76,8 +76,8 @@ const TextInsert = ({
       toast.error('No document selected.');
       return;
     }
-    const apiKey = getGeminiApiKey();
-    if (!apiKey) {
+    const apiKeys = getGeminiApiKeys();
+    if (apiKeys.length === 0) {
       toast.error('Gemini API Key is not set. Please set it in the header.');
       return;
     }
@@ -110,7 +110,7 @@ const TextInsert = ({
 
       const imageBase64 = canvas.toDataURL('image/jpeg');
 
-      const generatedText = await generateGuidanceFromImage(systemInstructions, imageBase64, apiKey);
+      const generatedText = await generateGuidanceFromImage(systemInstructions, imageBase64, apiKeys);
 
       if (!generatedText || !generatedText.trim()) {
         throw new Error('AI returned empty content.');

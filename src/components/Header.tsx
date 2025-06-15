@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Upload, Download, File, LogOut, QrCode, FileText, Sparkles } from 'lucide-react';
 import type { Profile } from '@/types/auth';
 import QRCornerSelector from './QRCornerSelector';
-import { GeminiApiKeyDialog, getGeminiApiKey } from './GeminiApiKeyDialog';
+import { GeminiApiKeyDialog, getGeminiApiKeys } from './GeminiApiKeyDialog';
 
 interface HeaderProps {
   onUploadClick: () => void;
@@ -36,11 +36,11 @@ const Header = ({
   const [isGeminiKeySet, setGeminiKeySet] = useState(false);
 
   useEffect(() => {
-    setGeminiKeySet(!!getGeminiApiKey());
+    setGeminiKeySet(getGeminiApiKeys().length > 0);
   }, []);
 
   const handleKeySave = () => {
-    setGeminiKeySet(true);
+    setGeminiKeySet(getGeminiApiKeys().length > 0);
   };
   
   return (
