@@ -1,9 +1,12 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Upload, Download, File, LogOut, QrCode, FileText, Sparkles } from 'lucide-react';
+import { Upload, Download, File, LogOut, QrCode, FileText, Sparkles, History } from 'lucide-react';
 import type { Profile } from '@/types/auth';
 import QRCornerSelector from './QRCornerSelector';
 import { GeminiApiKeyDialog, getGeminiApiKeys } from './GeminiApiKeyDialog';
+import { Link } from 'react-router-dom';
+import CreditDisplay from './CreditDisplay';
 
 interface HeaderProps {
   onUploadClick: () => void;
@@ -54,9 +57,12 @@ const Header = ({
           
           <div className="flex items-center gap-4">
             {user && (
-              <span className="text-sm text-muted-foreground">
-                {user.full_name || user.email}
-              </span>
+              <>
+                <CreditDisplay credits={user.credits_remaining || 0} />
+                <span className="text-sm text-muted-foreground">
+                  {user.full_name || user.email}
+                </span>
+              </>
             )}
             
             <div className="flex items-center gap-3">
@@ -80,6 +86,13 @@ const Header = ({
                   Export Data
                 </Button>
               )}
+
+              <Button asChild variant="outline">
+                <Link to="/tts-history" title="View TTS History and request new conversions">
+                  <History className="h-4 w-4 mr-2" />
+                  TTS Requests
+                </Link>
+              </Button>
 
               <Button
                 onClick={() => setGeminiDialogOpen(true)}
