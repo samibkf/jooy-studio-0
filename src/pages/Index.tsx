@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { ChevronLeft, ChevronRight, Settings } from 'lucide-react';
@@ -203,6 +204,13 @@ const Index = () => {
     const files = e.target.files;
     if (!files || !files.length || !authState.user) return;
 
+    // Wait for profile to be loaded before proceeding with upload
+    if (!authState.profile) {
+      toast.info('Your profile is loading, please try uploading again in a moment.');
+      if (e.target) e.target.value = ''; // Clear the file input
+      return;
+    }
+
     const file = files[0];
     if (file.type !== 'application/pdf') {
       toast.error('Please select a PDF file');
@@ -270,7 +278,9 @@ const Index = () => {
         
         toast.success('Document PDF re-uploaded successfully', { id: 'pdf-upload' });
       } else {
+        console.log('Creating new document. Auth state profile:', authState.profile);
         const isSubscriber = !!authState.profile?.plan_id;
+        console.log(`Is user a subscriber? ${isSubscriber}. Plan ID: ${authState.profile?.plan_id}`);
         const newDocument: DocumentData = {
           id: documentId,
           name: file.name,
