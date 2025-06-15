@@ -1,3 +1,4 @@
+
 import { User, Session } from '@supabase/supabase-js';
 import { Tables } from "@/integrations/supabase/types";
 
@@ -25,6 +26,6 @@ export interface Profile {
 }
 
 export type TtsRequestWithDetails = Tables<'tts_requests'> & {
-  profiles: { full_name: string | null; email: string } | null;
+  profile: { full_name: string | null; email: string } | null;
   documents: { name: string } | null;
 };

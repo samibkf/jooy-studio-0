@@ -1,4 +1,3 @@
-
 import {
   Dialog,
   DialogContent,
@@ -77,7 +76,7 @@ export const ManageTtsRequestDialog = ({ request, open, onOpenChange, onSuccess 
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
-          <p><strong>User:</strong> {request.profiles?.full_name} ({request.profiles?.email})</p>
+          <p><strong>User:</strong> {request.profile?.full_name} ({request.profile?.email})</p>
           <p><strong>Submitted:</strong> {new Date(request.created_at).toLocaleString()}</p>
           <p><strong>Cost:</strong> {request.cost_in_credits} credits</p>
           <div className="grid grid-cols-4 items-center gap-4">

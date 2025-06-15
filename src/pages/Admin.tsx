@@ -266,7 +266,7 @@ const Admin = () => {
     try {
       const { data, error } = await supabase
         .from('tts_requests')
-        .select('*, profiles(full_name, email), documents(name)')
+        .select('*, profile:profiles(full_name, email), documents(name)')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -762,8 +762,8 @@ const Admin = () => {
                 {ttsRequests.map((req) => (
                   <TableRow key={req.id}>
                     <TableCell>
-                      <div className="font-medium">{req.profiles?.full_name}</div>
-                      <div className="text-sm text-muted-foreground">{req.profiles?.email}</div>
+                      <div className="font-medium">{req.profile?.full_name}</div>
+                      <div className="text-sm text-muted-foreground">{req.profile?.email}</div>
                     </TableCell>
                     <TableCell className="truncate max-w-xs">
                       {req.documents?.name}
