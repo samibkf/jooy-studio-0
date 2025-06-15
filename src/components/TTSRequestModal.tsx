@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useEffect } from 'react';
 import {
   Dialog,
@@ -91,44 +92,74 @@ const TTSRequestModal = ({ isOpen, onOpenChange, documentId, documentName, onSuc
     }
 
     setIsSubmitting(true);
-    try {
-      const { data: requestData, error } = await supabase.from('tts_requests').insert({
+    console.log("Submitting TTS request with profile ID:", authState.profile.id);
+
+    // Step 1: Insert the TTS request
+    const { data: requestData, error: requestError } = await supabase
+      .from('tts_requests')
+      .insert({
         user_id: authState.profile.id,
         document_id: documentId,
         requested_pages: parsedPages,
         cost_in_credits: costInCredits,
         extra_cost_da: extraCost,
         status: 'pending',
-      }).select().single();
+      })
+      .select()
+      .single();
 
-      if (error) throw error;
-      
-      const newCredits = creditsRemaining - creditsUsed;
+    if (requestError) {
+      console.error('Error inserting TTS request:', requestError);
+      toast.error(`Failed to submit TTS request: ${requestError.message}`);
+      setIsSubmitting(false);
+      return;
+    }
 
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .update({ credits_remaining: newCredits })
-        .eq('id', authState.profile.id);
+    toast.success('TTS request submitted successfully!');
+    let hadSubsequentErrors = false;
 
-      if (profileError) throw profileError;
-      
+    // Step 2: Update user credits
+    const newCredits = creditsRemaining - creditsUsed;
+    const { error: profileError } = await supabase
+      .from('profiles')
+      .update({ credits_remaining: newCredits })
+      .eq('id', authState.profile.id);
+
+    if (profileError) {
+      console.error('Failed to update user credits:', profileError);
+      toast.warning('Request submitted, but failed to update credits. Please contact support.');
+      hadSubsequentErrors = true;
+    }
+
+    // Step 3: Create a corresponding admin task
+    if (requestData) {
       const { error: taskError } = await supabase.from('admin_tasks').insert({
-          tts_request_id: requestData.id,
-          status: 'pending',
+        tts_request_id: requestData.id,
+        status: 'pending',
       });
 
-      if (taskError) throw taskError;
-      
-      toast.success('TTS request submitted successfully!');
+      if (taskError) {
+        console.error('Failed to create admin task:', taskError);
+        toast.error('Request submitted, but failed to create admin task. Please contact support.');
+        hadSubsequentErrors = true;
+      }
+    }
+
+    // Finalization
+    try {
       await refreshProfile();
       onSuccess();
-      onOpenChange(false);
-    } catch (error) {
-      console.error('Error submitting TTS request:', error);
-      toast.error('Failed to submit TTS request. Please try again.');
-    } finally {
-      setIsSubmitting(false);
+    } catch (e) {
+      console.error("Error refreshing data after submission", e);
+      toast.warning("Could not refresh data automatically.");
     }
+    
+    // Only close the modal if everything was successful
+    if (!hadSubsequentErrors) {
+      onOpenChange(false);
+    }
+    
+    setIsSubmitting(false);
   };
 
   return (
