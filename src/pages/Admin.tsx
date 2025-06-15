@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthProvider';
@@ -765,7 +766,7 @@ const Admin = () => {
                     <TableCell>
                       <Badge variant={req.status === 'completed' ? 'default' : req.status === 'pending' ? 'secondary' : 'destructive'}>
                         {req.status}
-                      </badge>
+                      </Badge>
                     </TableCell>
                     <TableCell>
                       <p>{req.cost_in_credits} credits</p>
