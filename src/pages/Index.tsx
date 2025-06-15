@@ -46,6 +46,7 @@ const Index = () => {
   const [isPDFQRExporting, setIsPDFQRExporting] = useState(false);
   const [qrCorner, setQrCorner] = useState<'top-left' | 'top-right'>('top-left');
   const [isSettingsDialogOpen, setIsSettingsDialogOpen] = useState(false);
+  const [documentVersion, setDocumentVersion] = useState(0);
 
   const {
     selectedRegionId,
@@ -263,9 +264,9 @@ const Index = () => {
           )
         );
 
-        const currentSelectedId = selectedDocumentId;
-        setSelectedDocumentId(null);
-        setTimeout(() => setSelectedDocumentId(currentSelectedId), 10);
+        // Force a re-render of the PDF viewer by updating the version,
+        // instead of setting the selectedDocumentId to null.
+        setDocumentVersion(v => v + 1);
         
         toast.success('Document PDF re-uploaded successfully', { id: 'pdf-upload' });
       } else {
@@ -890,6 +891,7 @@ const Index = () => {
               </div>
             ) : (
               <PdfViewer
+                key={`${selectedDocumentId}-${documentVersion}`}
                 documentId={selectedDocumentId}
                 regions={selectedDocument?.regions || []}
                 onRegionCreate={handleRegionCreate}
