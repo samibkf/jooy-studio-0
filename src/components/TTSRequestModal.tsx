@@ -112,13 +112,6 @@ const TTSRequestModal = ({ isOpen, onOpenChange, documentId, documentName, onSuc
 
       if (profileError) throw profileError;
       
-      const { error: taskError } = await supabase.from('admin_tasks').insert({
-          tts_request_id: requestData.id,
-          status: 'pending',
-      });
-
-      if (taskError) throw taskError;
-
       // Invoke the TTS generation edge function (non-blocking)
       supabase.functions.invoke('generate-tts', {
         body: { tts_request_id: requestData.id }
