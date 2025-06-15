@@ -10,6 +10,8 @@ import { Toggle } from '@/components/ui/toggle';
 import { TooltipProvider, TooltipTrigger, TooltipContent, Tooltip } from '@/components/ui/tooltip';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useAuth } from '@/contexts/AuthProvider';
+import { decryptData } from '@/utils/crypto';
+import { pdfCacheService } from '@/services/pdfCacheService';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
 
@@ -87,7 +89,7 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
     return Math.max(...regionNumbers, 0) + 1;
   };
 
-  // Enhanced PDF loading with user ID support and proper Supabase URL
+  // Enhanced PDF loading with decryption and caching
   useEffect(() => {
     if (!documentId || !authState.user) return;
     
@@ -96,55 +98,60 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
     setDebugInfo('');
     
     const fetchAndLoadPdf = async () => {
-      const functionUrl = `https://bohxienpthilrfwktokd.supabase.co/functions/v1/stream-pdf?document_id=${documentId}&user_id=${authState.user.id}`;
-      const headers = {
-        'Cache-Control': 'no-store',
-        'Accept': 'application/pdf,application/octet-stream,*/*',
-        'Authorization': `Bearer ${authState.session?.access_token}`,
-        'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJvaHhpZW5wdGhpbHJmd2t0b2tkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDU2OTc3OTcsImV4cCI6MjA2MTI3Mzc5N30.4UO_pFmDauRz6Km5wTr3VHM95_GwyWKc1-pxGO1mImg'
-      };
-
       try {
-        console.log(`[PDF VIEWER] 🔍 Starting PDF fetch for document: ${documentId}`);
-        setDebugInfo(`User: ${authState.user.id}\nDocument: ${documentId}\nFetching from: ${functionUrl}`);
-        console.log(`[PDF VIEWER] 🌐 Fetching from: ${functionUrl}`);
-        console.log('[PDF VIEWER] setRequestHeader', headers);
-        
-        const startTime = Date.now();
-        const res = await fetch(functionUrl, { headers });
-        
-        const fetchTime = Date.now() - startTime;
-        console.log(`[PDF VIEWER] 🌐 Fetch completed in ${fetchTime}ms, status: ${res.status}`);
-        
-        if (!res.ok) {
-          const errorText = await res.text();
-          console.error(`[PDF VIEWER] ❌ HTTP Error ${res.status}:`, errorText);
-          const detailedError = `HTTP Error ${res.status}. The server said: "${errorText.substring(0, 300)}"`;
-          setLoadError(detailedError);
-          setDebugInfo(prev => prev + `\n\nERROR\nStatus: ${res.status}\nResponse: ${errorText}`);
-          setLoading(false);
-          return;
+        const cachedPdf = await pdfCacheService.getCachedPDF(documentId);
+        let pdfData: ArrayBuffer;
+
+        if (cachedPdf) {
+          console.log(`[PDF VIEWER] ✅ Loaded PDF from cache: ${documentId}`);
+          setDebugInfo(`Loaded from cache.\nSize: ${cachedPdf.byteLength} bytes`);
+          pdfData = cachedPdf;
+        } else {
+          console.log(`[PDF VIEWER]  cache miss for: ${documentId}, fetching from server`);
+          const functionUrl = `https://bohxienpthilrfwktokd.supabase.co/functions/v1/stream-pdf?document_id=${documentId}&user_id=${authState.user.id}`;
+          const headers = {
+            'Cache-Control': 'no-store',
+            'Accept': 'application/pdf,application/octet-stream,*/*',
+            'Authorization': `Bearer ${authState.session?.access_token}`,
+            'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJvaHhpZW5wdGhpbHJmd2t0b2tkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDU2OTc3OTcsImV4cCI6MjA2MTI3Mzc5N30.4UO_pFmDauRz6Km5wTr3VHM95_GwyWKc1-pxGO1mImg'
+          };
+
+          console.log(`[PDF VIEWER] 🔍 Starting PDF fetch for document: ${documentId}`);
+          setDebugInfo(`User: ${authState.user.id}\nDocument: ${documentId}\nFetching from: ${functionUrl}`);
+          
+          const res = await fetch(functionUrl, { headers });
+          
+          if (!res.ok) {
+            const errorText = await res.text();
+            console.error(`[PDF VIEWER] ❌ HTTP Error ${res.status}:`, errorText);
+            const detailedError = `HTTP Error ${res.status}. The server said: "${errorText.substring(0, 300)}"`;
+            setLoadError(detailedError);
+            setDebugInfo(prev => prev + `\n\nERROR\nStatus: ${res.status}\nResponse: ${errorText}`);
+            setLoading(false);
+            return;
+          }
+
+          const encryptedData = await res.arrayBuffer();
+          const keyB64 = res.headers.get('X-Encryption-Key');
+          const ivB64 = res.headers.get('X-Encryption-IV');
+
+          if (!keyB64 || !ivB64) {
+            throw new Error('Encryption key or IV not found in response headers.');
+          }
+
+          setDebugInfo(prev => prev + `\nDecrypting data...`);
+          const decryptedData = await decryptData(encryptedData, keyB64, ivB64);
+          
+          console.log(`[PDF VIEWER] 📊 Decrypted ArrayBuffer received: ${decryptedData.byteLength} bytes`);
+          setDebugInfo(prev => prev + `\nDecrypted ArrayBuffer Size: ${decryptedData.byteLength} bytes`);
+          
+          await pdfCacheService.cachePDF(documentId, decryptedData);
+          console.log(`[PDF VIEWER] 💾 Cached decrypted PDF for document: ${documentId}`);
+          pdfData = decryptedData;
         }
 
-        // Check Content-Type
-        const contentType = res.headers.get('Content-Type');
-        console.log(`[PDF VIEWER] 📄 Response Content-Type: ${contentType}`);
-        
-        if (contentType && !contentType.includes('application/pdf') && !contentType.includes('application/octet-stream')) {
-          console.warn(`[PDF VIEWER] ⚠️ Unexpected Content-Type: ${contentType}`);
-          setDebugInfo(prev => prev + `\nWarning: Unexpected Content-Type received: ${contentType}`);
-        }
-
-        // Get the ArrayBuffer
-        const parseStart = Date.now();
-        const arrayBuffer = await res.arrayBuffer();
-        const parseTime = Date.now() - parseStart;
-        
-        console.log(`[PDF VIEWER] 📊 ArrayBuffer received: ${arrayBuffer.byteLength} bytes in ${parseTime}ms`);
-        setDebugInfo(prev => prev + `\nArrayBuffer Size: ${arrayBuffer.byteLength} bytes`);
-
-        // Validate PDF header
-        const uint8Array = new Uint8Array(arrayBuffer.slice(0, 8));
+        // Validate PDF header after decryption/retrieval
+        const uint8Array = new Uint8Array(pdfData.slice(0, 8));
         const pdfHeader = Array.from(uint8Array).map(b => String.fromCharCode(b)).join('');
         console.log(`[PDF VIEWER] 🔍 PDF Header check: "${pdfHeader}"`);
         
@@ -157,13 +164,12 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
           return;
         }
 
-        // Try to load with PDF.js
         console.log(`[PDF VIEWER] 📖 Attempting to load with PDF.js...`);
         setDebugInfo(prev => prev + `\nLoading with PDF.js...`);
         
         const loadingTask = pdfjsLib.getDocument({ 
-          data: arrayBuffer,
-          verbosity: 1 // Enable verbose logging from pdf.js
+          data: pdfData,
+          verbosity: 1
         });
         
         const pdfDocument = await loadingTask.promise;

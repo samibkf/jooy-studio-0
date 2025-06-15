@@ -1,11 +1,12 @@
-
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.4';
+import { encode } from "https://deno.land/std@0.168.0/encoding/base64.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, cache-control",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, cache-control, x-encryption-key, x-encryption-iv",
+  "Access-Control-Expose-Headers": "x-encryption-key, x-encryption-iv",
 };
 
 const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
@@ -52,11 +53,9 @@ serve(async (req) => {
     try {
       console.log(`[STREAM-PDF] 🔍 Attempting to fetch: ${bucket}/${filePath}`);
       
-      // Construct the storage URL
-      const storageUrl = `${supabaseUrl}/storage/v1/object/${bucket}/${filePath}`;
+      const storageUrl = `${supabaseUrl}/storage/v1/object/public/${bucket}/${filePath}`;
       console.log(`[STREAM-PDF] 🌐 Storage URL: ${storageUrl}`);
 
-      // Fetch the file from Supabase Storage
       const fileResp = await fetch(storageUrl, {
         headers: {
           authorization: `Bearer ${supabaseAnonKey}`,
@@ -67,50 +66,53 @@ serve(async (req) => {
       console.log(`[STREAM-PDF] 📊 Storage response status for ${filePath}: ${fileResp.status}`);
 
       if (fileResp.ok) {
-        // Check content type and size
-        const contentType = fileResp.headers.get("Content-Type");
-        const contentLength = fileResp.headers.get("Content-Length");
+        const arrayBuffer = await fileResp.arrayBuffer();
+        console.log(`[STREAM-PDF] encrypting file: ${arrayBuffer.byteLength} bytes`);
+
+        // 1. Generate AES-GCM key and IV
+        const key = await crypto.subtle.generateKey(
+          { name: "AES-GCM", length: 256 },
+          true,
+          ["encrypt", "decrypt"]
+        );
+        const iv = crypto.getRandomValues(new Uint8Array(12));
+
+        // 2. Encrypt the PDF data
+        const encryptedData = await crypto.subtle.encrypt(
+          { name: "AES-GCM", iv: iv },
+          key,
+          arrayBuffer
+        );
+
+        // 3. Export the key to be sent in headers
+        const exportedKey = await crypto.subtle.exportKey("raw", key);
+
+        // 4. Base64 encode key and IV for headers
+        const keyB64 = encode(exportedKey);
+        const ivB64 = encode(iv);
         
-        console.log(`[STREAM-PDF] 📄 File Content-Type: ${contentType}`);
-        console.log(`[STREAM-PDF] 📏 File Content-Length: ${contentLength}`);
-
-        // Validate that we're getting a PDF
-        if (contentType && !contentType.includes("application/pdf") && !contentType.includes("application/octet-stream")) {
-          console.warn(`[STREAM-PDF] ⚠️ Unexpected content type: ${contentType}`);
-        }
-
-        // Check if file is too small (likely corrupted)
-        if (contentLength && parseInt(contentLength) < 100) {
-          console.warn(`[STREAM-PDF] ⚠️ File seems too small: ${contentLength} bytes`);
-        }
-
-        // Set headers for PDF response
         const responseHeaders = {
           ...corsHeaders,
-          "Content-Type": contentType || "application/pdf",
-          "Content-Disposition": "inline",
+          "Content-Type": "application/octet-stream", // Disguise content type
+          "X-Encryption-Key": keyB64,
+          "X-Encryption-IV": ivB64,
+          "Content-Length": encryptedData.byteLength.toString(),
           "X-Robots-Tag": "noindex, nofollow, noarchive, nosnippet",
           "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
           "Pragma": "no-cache",
           "Expires": "0",
         };
 
-        // Add content length if available
-        if (contentLength) {
-          responseHeaders["Content-Length"] = contentLength;
-        }
+        console.log(`[STREAM-PDF] ✅ Successfully encrypting and serving PDF from path: ${filePath}`);
 
-        console.log(`[STREAM-PDF] ✅ Successfully serving PDF from path: ${filePath} (${contentLength || 'unknown'} bytes)`);
-
-        // Return the streamed body
-        return new Response(fileResp.body, {
+        return new Response(encryptedData, {
           status: 200,
           headers: responseHeaders,
         });
+
       } else {
         console.log(`[STREAM-PDF] ❌ Failed to fetch from ${filePath}: ${fileResp.status}`);
         
-        // If it's not a 404, log the error but continue trying other paths
         if (fileResp.status !== 404) {
           const errorText = await fileResp.text();
           console.error(`[STREAM-PDF] ❌ Non-404 error for ${filePath}:`, errorText.substring(0, 500));
@@ -119,7 +121,6 @@ serve(async (req) => {
 
     } catch (error) {
       console.error(`[STREAM-PDF] 💥 Error fetching from ${filePath}:`, error);
-      // Continue to next path
     }
   }
 
