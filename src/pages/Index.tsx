@@ -59,9 +59,9 @@ const Index = () => {
   const { authState, signOut } = useAuth();
   const navigate = useNavigate();
 
-  // Get PDF page count for QR code generation
+  // Fix 1: Get PDF page count by fetching PDF via Edge Function
   const { pageCount } = usePdfPageCount({
-    file: selectedDocument?.fileAvailable ? selectedDocument.file : null
+    documentId: selectedDocument ? selectedDocument.id : null,
   });
 
   // Initialize metadata management for selected document
@@ -626,22 +626,29 @@ const Index = () => {
     toast.success('Data exported successfully');
   };
 
+  const fetchPdfArrayBuffer = async (documentId: string): Promise<ArrayBuffer> => {
+    const response = await fetch(`/functions/v1/stream-pdf?document_id=${documentId}`, {
+      headers: { 'Cache-Control': 'no-store' },
+    });
+    if (!response.ok) throw new Error('Failed to fetch PDF');
+    return await response.arrayBuffer();
+  };
+
+  // Refactor: update to fetch ArrayBuffer for QR export/embedding
   const handleQRExport = async () => {
     if (!selectedDocument) {
       toast.error('No valid document selected');
       return;
     }
-
     if (pageCount === 0) {
       toast.error('Unable to determine page count for this document');
       return;
     }
-
     setIsQRExporting(true);
-    
+
     try {
       toast.loading('Generating QR codes...', { id: 'qr-export' });
-      
+
       // Generate QR codes for all pages
       const qrCodes = await generateBulkQRCodes(
         selectedDocument.id,
@@ -650,16 +657,16 @@ const Index = () => {
           toast.loading(`Generating QR codes... ${Math.round(progress)}%`, { id: 'qr-export' });
         }
       );
-
       toast.loading('Creating ZIP file...', { id: 'qr-export' });
-      
-      // Export as ZIP
       await exportQRCodesAsZip(qrCodes, selectedDocument.name);
-      
       toast.success(`Successfully exported ${qrCodes.length} QR codes`, { id: 'qr-export' });
     } catch (error) {
       console.error('Error exporting QR codes:', error);
-      toast.error('Failed to export QR codes: ' + (error instanceof Error ? error.message : 'Unknown error'), { id: 'qr-export' });
+      toast.error(
+        'Failed to export QR codes: ' +
+          (error instanceof Error ? error.message : 'Unknown error'),
+        { id: 'qr-export' }
+      );
     } finally {
       setIsQRExporting(false);
     }
@@ -670,44 +677,52 @@ const Index = () => {
       toast.error('No valid document selected');
       return;
     }
-
     if (pageCount === 0) {
       toast.error('Unable to determine page count for this document');
       return;
     }
-
     setIsPDFQRExporting(true);
-    
+
     try {
       toast.loading('Generating transparent QR codes...', { id: 'pdf-qr-export' });
-      
+
       // Generate transparent QR codes for all pages
       const qrCodes = await generateTransparentBulkQRCodes(
         selectedDocument.id,
         pageCount,
         (progress) => {
-          toast.loading(`Generating QR codes... ${Math.round(progress)}%`, { id: 'pdf-qr-export' });
+          toast.loading(
+            `Generating QR codes... ${Math.round(progress)}%`,
+            { id: 'pdf-qr-export' }
+          );
         }
       );
 
       toast.loading('Embedding QR codes into PDF...', { id: 'pdf-qr-export' });
-      
-      // Embed QR codes into PDF
+
+      // *** Refactor: Fetch PDF as arrayBuffer using stream-pdf ***
+      const arrayBuffer = await fetchPdfArrayBuffer(selectedDocument.id);
+
+      // Pass arrayBuffer to embedQRCodeIntoPDF
       const modifiedPdfBytes = await embedQRCodeIntoPDF(
-        selectedDocument.file,
+        arrayBuffer,
         qrCodes,
         corner
       );
 
       toast.loading('Preparing download...', { id: 'pdf-qr-export' });
-      
-      // Download the modified PDF
       await downloadPDFWithQRCodes(modifiedPdfBytes, selectedDocument.name);
-      
-      toast.success(`Successfully created PDF with ${qrCodes.length} embedded QR codes`, { id: 'pdf-qr-export' });
+      toast.success(
+        `Successfully created PDF with ${qrCodes.length} embedded QR codes`,
+        { id: 'pdf-qr-export' }
+      );
     } catch (error) {
       console.error('Error creating PDF with QR codes:', error);
-      toast.error('Failed to create PDF with QR codes: ' + (error instanceof Error ? error.message : 'Unknown error'), { id: 'pdf-qr-export' });
+      toast.error(
+        'Failed to create PDF with QR codes: ' +
+          (error instanceof Error ? error.message : 'Unknown error'),
+        { id: 'pdf-qr-export' }
+      );
     } finally {
       setIsPDFQRExporting(false);
     }
