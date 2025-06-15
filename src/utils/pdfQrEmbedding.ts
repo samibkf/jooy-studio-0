@@ -1,3 +1,4 @@
+
 import * as pdfjsLib from 'pdfjs-dist';
 import { PDFDocument, rgb } from 'pdf-lib';
 import QRCode from 'qrcode';
@@ -88,69 +89,78 @@ const convertQRCodeToImageBytes = async (qrCodeDataUrl: string): Promise<Uint8Ar
 
 /**
  * Embed QR codes into PDF pages at specified corners
- * Accepts ArrayBuffer (not File anymore!)
  */
 export const embedQRCodeIntoPDF = async (
-  pdfInput: ArrayBuffer,
+  pdfFile: File,
   qrCodes: QRCodeData[],
   corner: 'top-left' | 'top-right'
 ): Promise<Uint8Array> => {
   try {
     console.log('Starting PDF QR embedding process...');
+    
+    // Read the PDF file
+    const pdfArrayBuffer = await pdfFile.arrayBuffer();
+    
     // Load the PDF document using pdf-lib
-    const pdfDoc = await PDFDocument.load(pdfInput);
+    const pdfDoc = await PDFDocument.load(pdfArrayBuffer);
     const pages = pdfDoc.getPages();
+    
     console.log(`PDF loaded with ${pages.length} pages`);
+    
+    // Process each QR code
     for (const qrCode of qrCodes) {
-      const pageIndex = qrCode.pageNumber - 1;
+      const pageIndex = qrCode.pageNumber - 1; // Convert to 0-based index
+      
       if (pageIndex >= 0 && pageIndex < pages.length) {
         const page = pages[pageIndex];
         const { width, height } = page.getSize();
+        
         try {
           // Convert QR code to image bytes
-          const base64Data = qrCode.dataUrl.split(',')[1];
-          const binaryString = atob(base64Data);
-          const qrImageBytes = new Uint8Array(binaryString.length);
-          for (let i = 0; i < binaryString.length; i++) {
-            qrImageBytes[i] = binaryString.charCodeAt(i);
-          }
+          const qrImageBytes = await convertQRCodeToImageBytes(qrCode.dataUrl);
+          
           // Embed the PNG image
           const qrImage = await pdfDoc.embedPng(qrImageBytes);
-          // Calculate position
-          const qrSize = 60;
-          const margin = 15;
-          let x: number, y: number;
+          
+          // Calculate position based on corner selection
+          const qrSize = 60; // Size of QR code in PDF points
+          const margin = 15; // Margin from edges
+          
+          let x: number;
+          let y: number;
+          
           if (corner === 'top-left') {
             x = margin;
             y = height - margin - qrSize;
-          } else {
+          } else { // top-right
             x = width - margin - qrSize;
             y = height - margin - qrSize;
           }
+          
+          // Draw the QR code on the page
           page.drawImage(qrImage, {
             x,
             y,
             width: qrSize,
             height: qrSize,
           });
+          
           console.log(`QR code embedded on page ${qrCode.pageNumber} at ${corner}`);
         } catch (pageError) {
-          console.error(
-            `Error embedding QR code on page ${qrCode.pageNumber}:`,
-            pageError
-          );
+          console.error(`Error embedding QR code on page ${qrCode.pageNumber}:`, pageError);
+          // Continue with other pages even if one fails
         }
       }
     }
+    
+    // Save the modified PDF
     const modifiedPdfBytes = await pdfDoc.save();
     console.log('PDF QR embedding completed successfully');
+    
     return modifiedPdfBytes;
   } catch (error) {
     console.error('Error embedding QR codes into PDF:', error);
-    throw new Error(
-      'Failed to embed QR codes into PDF: ' +
-        (error instanceof Error ? error.message : 'Unknown error')
-    );
+    throw new Error('Failed to embed QR codes into PDF: ' + (error instanceof Error ? error.message : 'Unknown error'));
   }
 };
 
