@@ -73,9 +73,7 @@ const TTSRequestModal = ({ isOpen, onOpenChange, documentId, documentName, onSuc
   const parsedPages = useMemo(() => parsePageRanges(selectedPages, pageCount), [selectedPages, pageCount]);
   const costInCredits = parsedPages.length;
   const creditsRemaining = authState.profile?.credits_remaining || 0;
-  const creditsUsed = Math.min(costInCredits, creditsRemaining);
-  const creditsNeeded = Math.max(0, costInCredits - creditsRemaining);
-  const extraCost = creditsNeeded * 250; 
+  const hasEnoughCredits = creditsRemaining >= costInCredits;
 
   const handleSelectAll = () => {
     if (pageCount > 0) {
@@ -94,6 +92,11 @@ const TTSRequestModal = ({ isOpen, onOpenChange, documentId, documentName, onSuc
       return;
     }
 
+    if (!hasEnoughCredits) {
+      toast.error('You do not have enough credits to make this request.');
+      return;
+    }
+
     setIsSubmitting(true);
     console.log("Submitting TTS request with profile ID:", authState.profile.id);
 
@@ -105,7 +108,6 @@ const TTSRequestModal = ({ isOpen, onOpenChange, documentId, documentName, onSuc
         document_id: documentId,
         requested_pages: parsedPages,
         cost_in_credits: costInCredits,
-        extra_cost_da: extraCost,
         status: 'pending',
         voice_type: voiceType,
       })
@@ -123,7 +125,7 @@ const TTSRequestModal = ({ isOpen, onOpenChange, documentId, documentName, onSuc
     let hadSubsequentErrors = false;
 
     // Step 2: Update user credits
-    const newCredits = creditsRemaining - creditsUsed;
+    const newCredits = creditsRemaining - costInCredits;
     const { error: profileError } = await supabase
       .from('profiles')
       .update({ credits_remaining: newCredits })
@@ -241,20 +243,24 @@ const TTSRequestModal = ({ isOpen, onOpenChange, documentId, documentName, onSuc
                 </div>
                  <div className="flex justify-between">
                     <span>Credits that will be used:</span>
-                    <span className="font-medium">{creditsUsed}</span>
+                    <span className="font-medium">{costInCredits}</span>
                 </div>
-                {extraCost > 0 && (
-                    <div className="flex justify-between font-semibold text-amber-600 pt-2 border-t">
-                    <span>Extra cost:</span>
-                    <span>{extraCost.toLocaleString()} DA</span>
-                    </div>
+                {!hasEnoughCredits && parsedPages.length > 0 && (
+                  <div className="flex justify-between font-semibold text-destructive pt-2 border-t">
+                    <span>Credits needed:</span>
+                    <span>{costInCredits - creditsRemaining}</span>
+                  </div>
                 )}
                 </div>
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-              <Button onClick={handleSubmit} disabled={isSubmitting || parsedPages.length === 0 || !!pageCountError}>
-                {isSubmitting ? 'Submitting...' : `Submit for ${costInCredits} credits`}
+              <Button onClick={handleSubmit} disabled={isSubmitting || parsedPages.length === 0 || !!pageCountError || !hasEnoughCredits}>
+                {isSubmitting
+                  ? 'Submitting...'
+                  : !hasEnoughCredits && parsedPages.length > 0
+                  ? 'Insufficient Credits'
+                  : `Submit for ${costInCredits} credits`}
               </Button>
             </DialogFooter>
           </>

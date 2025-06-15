@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Mic, RefreshCw, Download } from 'lucide-react';
+import { ArrowLeft, Mic, RefreshCw } from 'lucide-react';
 import TTSRequestModal from '@/components/TTSRequestModal';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -105,7 +105,6 @@ const TTSHistory = () => {
                                         <TableHead>Document</TableHead>
                                         <TableHead>Status</TableHead>
                                         <TableHead>Pages</TableHead>
-                                        <TableHead>Action</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
@@ -114,9 +113,6 @@ const TTSHistory = () => {
                                             <TableCell className="truncate max-w-xs">{req.documents.name}</TableCell>
                                             <TableCell><Badge variant={req.status === 'completed' ? 'default' : 'secondary'}>{req.status}</Badge></TableCell>
                                             <TableCell>{req.requested_pages.length}</TableCell>
-                                            <TableCell>
-                                                <Button size="sm" disabled={req.status !== 'completed'}><Download className="h-4 w-4" /></Button>
-                                            </TableCell>
                                         </TableRow>
                                     ))}
                                 </TableBody>
