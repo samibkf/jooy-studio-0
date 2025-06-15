@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
@@ -194,18 +195,21 @@ const Index = () => {
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
-    if (!files || files.length === 0 || !authState.user) return;
-    
+    if (!files || !files.length || !authState.user) return;
+
     const file = files[0];
     if (file.type !== 'application/pdf') {
       toast.error('Please select a PDF file');
       return;
     }
     
-    // Check if we're re-uploading an existing document
+    const fileSizeLimit = 20 * 1024 * 1024; // 20MB
+    if (file.size > fileSizeLimit) {
+      toast.error(`File is too large. Maximum size is ${fileSizeLimit / 1024 / 1024}MB.`);
+      return;
+    }
+
     const reuploadDocId = selectedDocumentId;
-    
-    // Generate new 5-letter ID for new documents
     let documentId = reuploadDocId;
     if (!reuploadDocId) {
       try {
@@ -213,22 +217,26 @@ const Index = () => {
         console.log('Generated unique document ID:', documentId);
       } catch (error) {
         console.error('Failed to generate unique document ID:', error);
-        toast.error('Failed to generate document ID');
+        toast.error('Failed to generate document ID. Please try again.');
         return;
       }
     }
     
     try {
-      // Make sure storage is initialized
-      await initializeStorage();
+      const storageReady = await initializeStorage();
+      if (!storageReady) {
+        toast.error("Storage system is not available. Please try again later.", {
+          id: "storage-error"
+        });
+        return;
+      }
 
       toast.loading('Uploading PDF file...', { id: 'pdf-upload' });
       
-      // Store PDF in bucket root with 5-letter ID
       const filePath = `${documentId}.pdf`;
-      console.log(`Uploading PDF to ${filePath}`);
+      console.log(`Uploading PDF to storage path: ${filePath}`);
       
-      const { error: uploadError } = await supabase.storage
+      const { data: uploadData, error: uploadError } = await supabase.storage
         .from('pdfs')
         .upload(filePath, file, { upsert: true });
 
@@ -237,39 +245,49 @@ const Index = () => {
         toast.error('Failed to upload PDF file: ' + uploadError.message, { id: 'pdf-upload' });
         return;
       }
-      
+
+      console.log('PDF uploaded successfully to storage:', uploadData);
+
       if (reuploadDocId) {
-        // Update existing document
-        setDocuments(prev => 
-          prev.map(doc => 
-            doc.id === reuploadDocId 
-              ? { ...doc } 
-              : doc
+        await pdfCacheService.removeCachedPDF(reuploadDocId).catch(err => console.warn("Could not clear cache for re-uploaded document", err));
+        console.log(`Cache invalidated for document: ${reuploadDocId}`);
+
+        setDocuments(prev =>
+          prev.map(doc =>
+            doc.id === reuploadDocId ? { ...doc } : doc
           )
         );
+
+        const currentSelectedId = selectedDocumentId;
+        setSelectedDocumentId(null);
+        setTimeout(() => setSelectedDocumentId(currentSelectedId), 10);
         
         toast.success('Document PDF re-uploaded successfully', { id: 'pdf-upload' });
       } else {
-        // Create new document in database
+        const newDocument: DocumentData = {
+          id: documentId,
+          name: file.name,
+          regions: [],
+        };
+        
         const { error: dbError } = await supabase
           .from('documents')
           .insert({
-            id: documentId,
-            name: file.name,
+            id: newDocument.id,
+            name: newDocument.name,
             user_id: authState.user.id
           });
 
         if (dbError) {
           console.error('Database insert error:', dbError);
           toast.error('Failed to save document information: ' + dbError.message, { id: 'pdf-upload' });
+          
+          console.log(`Rolling back storage upload for: ${filePath}`);
+          await supabase.storage.from('pdfs').remove([filePath]);
+          console.log(`Storage rollback complete.`);
+          
           return;
         }
-
-        const newDocument: DocumentData = {
-          id: documentId,
-          name: file.name,
-          regions: [],
-        };
 
         setDocuments(prev => [...prev, newDocument]);
         setSelectedDocumentId(documentId);
@@ -278,24 +296,16 @@ const Index = () => {
         
         toast.success('Document added successfully', { id: 'pdf-upload' });
         
-        setRegionsCache(prev => ({
-          ...prev,
-          [documentId]: []
-        }));
+        setRegionsCache(prev => ({ ...prev, [documentId]: [] }));
 
-        // Trigger metadata sync for the new document
-        setTimeout(() => {
-          syncMetadata();
-        }, 1000);
+        setTimeout(syncMetadata, 1000);
       }
     } catch (error) {
       console.error('Error uploading document:', error);
-      toast.error('Failed to upload document', { id: 'pdf-upload' });
-    }
-    
-    // Clear file input
-    if (e.target) {
-      e.target.value = '';
+      const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
+      toast.error(`Failed to upload document: ${errorMessage}`, { id: 'pdf-upload' });
+    } finally {
+      if (e.target) e.target.value = '';
     }
   };
 
