@@ -1,12 +1,22 @@
 import React, { useState, useRef } from 'react';
 import { Textarea } from '@/components/ui/textarea';
-import { Button } from '@/components/ui/button';
+import { Button, buttonVariants } from '@/components/ui/button';
 import { toast } from 'sonner';
-import { Undo2, ArrowRight, Sparkles } from 'lucide-react';
+import { Undo2, ArrowRight, Sparkles, Settings, Trash2 } from 'lucide-react';
 import { Region } from '@/types/regions';
 import { useTextAssignment } from '@/contexts/TextAssignmentContext';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { getGeminiApiKeys } from './GeminiApiKeyDialog';
 import { generateGuidanceFromImage } from '@/services/geminiService';
 import { pdfCacheService } from '@/services/pdfCacheService';
@@ -20,6 +30,7 @@ interface TextInsertProps {
   onRegionSelect: (regionId: string) => void;
   documentId: string | null;
   currentPage: number;
+  showManualInsert: boolean;
 }
 
 const SYSTEM_INSTRUCTIONS_TEMPLATE = `Purpose and Goals:
@@ -50,12 +61,15 @@ const TextInsert = ({
   selectedRegion,
   onRegionSelect,
   documentId,
-  currentPage
+  currentPage,
+  showManualInsert,
 }: TextInsertProps) => {
   const [inputText, setInputText] = useState<string>('');
   const [activeTextIndex, setActiveTextIndex] = useState<number | null>(null);
   const [systemInstructions, setSystemInstructions] = useState(SYSTEM_INSTRUCTIONS_TEMPLATE);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [textToDelete, setTextToDelete] = useState<TitledText | null>(null);
+
   const {
     getCurrentDocumentTexts,
     assignTextsToRegions,
@@ -64,7 +78,8 @@ const TextInsert = ({
     undoRegionAssignment,
     assignTextToRegion,
     isRegionAssigned,
-    getUnassignedRegionsByPage
+    getUnassignedRegionsByPage,
+    deleteDocumentText,
   } = useTextAssignment();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -98,7 +113,7 @@ const TextInsert = ({
 
       const pdf = await pdfjsLib.getDocument({ data: cachedPdf }).promise;
       const page = await pdf.getPage(currentPage);
-      const viewport = page.getViewport({ scale: 2.0 }); // Higher scale for better image quality for the AI
+      const viewport = page.getViewport({ scale: 2.0 });
 
       const canvas = document.createElement('canvas');
       const context = canvas.getContext('2d');
@@ -117,7 +132,6 @@ const TextInsert = ({
         throw new Error('AI returned empty content.');
       }
       
-      // Use the new function to replace all content on the page
       const newTexts = await replaceAllContentForPage(generatedText, regions, documentId, currentPage);
 
       const currentPageRegions = regions.filter(r => r.page === currentPage);
@@ -140,18 +154,15 @@ const TextInsert = ({
           });
       }
 
-      // Now, update all regions on the current page
       currentPageRegions.forEach(region => {
           const newText = assignments.get(region.id);
           if (newText) {
-              // This region gets a new assignment
               assignTextToRegion(newText, region.id, documentId);
               onRegionUpdate({
                   ...region,
                   description: newText.content,
               });
           } else if (region.description) {
-              // This region was assigned before, but not anymore. Clear it.
               onRegionUpdate({
                   ...region,
                   description: null,
@@ -305,78 +316,114 @@ const TextInsert = ({
     }, 100);
   };
 
-  // Get unassigned texts and texts that are assigned (for current page only)
+  const handleDeleteText = async () => {
+    if (!textToDelete || !documentId) {
+      toast.error("No text selected for deletion.");
+      return;
+    }
+    try {
+      await deleteDocumentText(documentId, textToDelete.id);
+      toast.success(`"${textToDelete.title}" deleted successfully.`);
+    } catch (error) {
+      console.error("Error deleting text:", error);
+      toast.error("Failed to delete text.");
+    } finally {
+      setTextToDelete(null);
+    }
+  };
+
   const unassignedTexts = currentPageTexts.filter(text => !text.assignedRegionId);
   const assignedTexts = currentPageTexts.filter(text => text.assignedRegionId);
-
-  // Get unassigned regions for the current page only
   const unassignedRegionsByPage = documentId ? getUnassignedRegionsByPage(regions, currentPage, documentId) : [];
   
   return (
     <div className="space-y-4">
       {/* AI Generation Section */}
       <div className="space-y-2">
-        <label className="text-sm font-medium">AI System Instructions:</label>
-        <Textarea
-          value={systemInstructions}
-          onChange={(e) => setSystemInstructions(e.target.value)}
-          placeholder="Enter system instructions for the AI..."
-          className="min-h-0 h-32 text-xs"
-        />
+        <div className="flex items-center justify-between">
+          <label className="text-sm font-medium">AI Generation</label>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="ghost" size="icon">
+                <Settings className="h-4 w-4" />
+                <span className="sr-only">AI System Instructions</span>
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-80">
+              <div className="grid gap-4">
+                <div className="space-y-2">
+                  <h4 className="font-medium leading-none">System Instructions</h4>
+                  <p className="text-sm text-muted-foreground">
+                    Define the AI's behavior for content generation.
+                  </p>
+                </div>
+                <Textarea
+                  value={systemInstructions}
+                  onChange={(e) => setSystemInstructions(e.target.value)}
+                  placeholder="Enter system instructions for the AI..."
+                  className="min-h-0 h-48 text-xs"
+                />
+              </div>
+            </PopoverContent>
+          </Popover>
+        </div>
         <Button onClick={handleGenerateFromPage} disabled={isGenerating} className="w-full">
           <Sparkles className="h-4 w-4 mr-2" />
           {isGenerating ? 'Generating...' : `Generate from Page ${currentPage}`}
         </Button>
       </div>
 
-      <div className="relative">
-        <div className="absolute inset-0 flex items-center">
-          <span className="w-full border-t" />
-        </div>
-        <div className="relative flex justify-center text-xs uppercase">
-          <span className="bg-background px-2 text-muted-foreground">
-            Or
-          </span>
-        </div>
-      </div>
+      {showManualInsert && (
+        <>
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-background px-2 text-muted-foreground">Or</span>
+            </div>
+          </div>
 
-      <div className="space-y-3">
-        <div className="space-y-2">
-          <div className="flex justify-between items-center">
-            <label className="text-sm font-medium">Insert Text Manually:</label>
-            <span className="text-xs text-muted-foreground">Page {currentPage}</span>
-          </div>
-          <Textarea 
-            ref={textareaRef} 
-            value={inputText} 
-            onChange={e => setInputText(e.target.value)} 
-            placeholder="Paste your markdown text here..." 
-            className="min-h-0 h-24" 
-          />
-          <div className="flex space-x-2">
-            <Button onClick={handleInsertText} className="flex-1" disabled={!inputText.trim()}>
-              Insert to Page {currentPage}
-            </Button>
-            <Button onClick={handleUndo} variant="outline" className="flex-shrink-0" disabled={assignedTexts.length === 0}>
-              <Undo2 className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
-        
-        {currentPageTexts.length > 0 && (
           <div className="space-y-3">
-            {/* Unassigned Texts Section */}
-            {unassignedTexts.length > 0 && (
-              <div className="space-y-2">
-                <p className="text-sm font-medium">Unassigned Texts (Page {currentPage}):</p>
-                <ScrollArea className="h-[150px] border rounded-md p-2">
-                  <div className="space-y-2">
-                    {unassignedTexts.map((text, index) => {
-                      const textIndex = currentPageTexts.indexOf(text);
-                      return (
-                        <Popover key={`unassigned-${index}`} open={activeTextIndex === textIndex} onOpenChange={open => setActiveTextIndex(open ? textIndex : null)}>
+            <div className="space-y-2">
+              <div className="flex justify-between items-center">
+                <label className="text-sm font-medium">Insert Text Manually:</label>
+                <span className="text-xs text-muted-foreground">Page {currentPage}</span>
+              </div>
+              <Textarea 
+                ref={textareaRef} 
+                value={inputText} 
+                onChange={e => setInputText(e.target.value)} 
+                placeholder="Paste your markdown text here..." 
+                className="min-h-0 h-24" 
+              />
+              <div className="flex space-x-2">
+                <Button onClick={handleInsertText} className="flex-1" disabled={!inputText.trim()}>
+                  Insert to Page {currentPage}
+                </Button>
+                <Button onClick={handleUndo} variant="outline" className="flex-shrink-0" disabled={assignedTexts.length === 0}>
+                  <Undo2 className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+      
+      {currentPageTexts.length > 0 && (
+        <div className="space-y-3 pt-4">
+          {unassignedTexts.length > 0 && (
+            <div className="space-y-2">
+              <p className="text-sm font-medium">Unassigned Texts (Page {currentPage}):</p>
+              <ScrollArea className="h-[150px] border rounded-md p-2">
+                <div className="space-y-2">
+                  {unassignedTexts.map((text, index) => {
+                    const textIndex = currentPageTexts.indexOf(text);
+                    return (
+                      <div key={`unassigned-${index}`} className="relative group">
+                        <Popover open={activeTextIndex === textIndex} onOpenChange={open => setActiveTextIndex(open ? textIndex : null)}>
                           <PopoverTrigger asChild>
-                            <div className="p-2 border rounded-md cursor-pointer border-gray-300 bg-white hover:border-blue-300 hover:bg-blue-50 transition-colors">
+                            <div className="p-2 border rounded-md cursor-pointer border-gray-300 bg-white hover:border-blue-300 hover:bg-blue-50 transition-colors pr-8">
                               <p className="font-medium text-sm">{text.title}</p>
                               <p className="text-xs line-clamp-2">{text.content.substring(0, 50)}...</p>
                             </div>
@@ -406,47 +453,69 @@ const TextInsert = ({
                             </ScrollArea>
                           </PopoverContent>
                         </Popover>
-                      );
-                    })}
-                  </div>
-                </ScrollArea>
-              </div>
-            )}
-            
-            {/* Assigned Texts Section */}
-            {assignedTexts.length > 0 && (
-              <div className="space-y-2">
-                <p className="text-sm font-medium">Assigned Texts (Page {currentPage}):</p>
-                <ScrollArea className="h-[150px] border rounded-md p-2">
-                  <div className="space-y-2">
-                    {assignedTexts.map((text, index) => {
-                      // Find which region this text is assigned to
-                      const assignedRegion = regions.find(r => r.id === text.assignedRegionId);
-                      return (
-                        <div key={`assigned-${index}`} className="p-2 border rounded-md border-green-500 bg-green-50 cursor-pointer hover:bg-green-100 transition-colors" onClick={() => text.assignedRegionId && handleRegionSelect(text.assignedRegionId)}>
-                          <div className="flex justify-between items-center">
-                            <p className="font-medium text-sm">{text.title}</p>
-                            <Button onClick={e => {
-                              e.stopPropagation(); // Prevent region selection when undoing
-                              text.assignedRegionId && handleUndoSpecificText(text.assignedRegionId);
-                            }} size="sm" variant="ghost" className="h-6 px-1.5 text-xs text-blue-500 hover:text-blue-700">
-                              <Undo2 className="h-3.5 w-3.5" />
-                            </Button>
-                          </div>
-                          <p className="text-xs">{text.content.substring(0, 50)}...</p>
-                          {assignedRegion && (
-                            <p className="text-xs mt-1 text-green-700">Assigned to: {assignedRegion.name || 'Unnamed Region'}</p>
-                          )}
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="absolute top-1/2 -translate-y-1/2 right-1 h-7 w-7 text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
+                          onClick={(e) => { e.stopPropagation(); setTextToDelete(text); }}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                          <span className="sr-only">Delete Text</span>
+                        </Button>
+                      </div>
+                    );
+                  })}
+                </div>
+              </ScrollArea>
+            </div>
+          )}
+          
+          {assignedTexts.length > 0 && (
+            <div className="space-y-2">
+              <p className="text-sm font-medium">Assigned Texts (Page {currentPage}):</p>
+              <ScrollArea className="h-[150px] border rounded-md p-2">
+                <div className="space-y-2">
+                  {assignedTexts.map((text, index) => {
+                    const assignedRegion = regions.find(r => r.id === text.assignedRegionId);
+                    return (
+                      <div key={`assigned-${index}`} className="p-2 border rounded-md border-green-500 bg-green-50 cursor-pointer hover:bg-green-100 transition-colors" onClick={() => text.assignedRegionId && handleRegionSelect(text.assignedRegionId)}>
+                        <div className="flex justify-between items-center">
+                          <p className="font-medium text-sm">{text.title}</p>
+                          <Button onClick={e => {
+                            e.stopPropagation();
+                            text.assignedRegionId && handleUndoSpecificText(text.assignedRegionId);
+                          }} size="sm" variant="ghost" className="h-6 px-1.5 text-xs text-blue-500 hover:text-blue-700">
+                            <Undo2 className="h-3.5 w-3.5" />
+                          </Button>
                         </div>
-                      );
-                    })}
-                  </div>
-                </ScrollArea>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
+                        <p className="text-xs">{text.content.substring(0, 50)}...</p>
+                        {assignedRegion && (
+                          <p className="text-xs mt-1 text-green-700">Assigned to: {assignedRegion.name || 'Unnamed Region'}</p>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </ScrollArea>
+            </div>
+          )}
+        </div>
+      )}
+
+      <AlertDialog open={!!textToDelete} onOpenChange={() => setTextToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete the text titled "{textToDelete?.title}". This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteText} className={buttonVariants({ variant: "destructive" })}>Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

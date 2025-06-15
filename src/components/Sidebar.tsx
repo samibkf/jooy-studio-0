@@ -2,7 +2,7 @@
 import React, { useRef, useState, useEffect, useContext } from 'react';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
-import { Trash2, Undo2 } from 'lucide-react';
+import { Trash2, Undo2, Settings } from 'lucide-react';
 import { Region } from '@/types/regions';
 import { toast } from 'sonner';
 import TextInsert from './TextInsert';
@@ -31,11 +31,10 @@ const Sidebar = ({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [localDescription, setLocalDescription] = useState<string>('');
   const saveTimeoutRef = useRef<NodeJS.Timeout>();
+  const [showManualInsert, setShowManualInsert] = useState(false);
   
-  // Use context directly to avoid throwing an error, allowing for a graceful fallback.
   const textAssignmentContext = useContext(TextAssignmentContext);
   
-  // Guard against undefined context
   if (!textAssignmentContext) {
     console.error('TextAssignmentContext is not available');
     return (
@@ -51,7 +50,6 @@ const Sidebar = ({
 
   const { isRegionAssigned, undoRegionAssignment } = textAssignmentContext;
 
-  // Update local description when selected region changes
   useEffect(() => {
     setLocalDescription(selectedRegion?.description || '');
   }, [selectedRegion?.id, selectedRegion?.description]);
@@ -60,12 +58,10 @@ const Sidebar = ({
     const newDescription = e.target.value;
     setLocalDescription(newDescription);
 
-    // Clear any existing timeout
     if (saveTimeoutRef.current) {
       clearTimeout(saveTimeoutRef.current);
     }
 
-    // Set new timeout to save after 1 second of no typing
     saveTimeoutRef.current = setTimeout(() => {
       if (selectedRegion) {
         onRegionUpdate({
@@ -98,7 +94,6 @@ const Sidebar = ({
     toast.success('Text assignment undone');
   };
 
-  // Cleanup timeout on unmount
   useEffect(() => {
     return () => {
       if (saveTimeoutRef.current) {
@@ -111,8 +106,15 @@ const Sidebar = ({
     <div className="h-full w-full flex flex-col bg-background border-l" style={{
       width: '400px'
     }}>
-      <div className="flex flex-col flex-1 p-4 h-full overflow-y-auto px-[24px] py-[8px] rounded-none">
-        {/* Text Insert Section - Always visible */}
+      <div className="flex items-center justify-between p-4 border-b">
+        <h2 className="text-lg font-semibold">Content Tools</h2>
+        <Button variant="ghost" size="icon" onClick={() => setShowManualInsert(prev => !prev)}>
+          <Settings className="h-5 w-5" />
+          <span className="sr-only">Toggle Manual Text Input</span>
+        </Button>
+      </div>
+
+      <div className="flex flex-col flex-1 p-4 h-full overflow-y-auto">
         <TextInsert 
           regions={regions} 
           onRegionUpdate={onRegionUpdate} 
@@ -120,9 +122,9 @@ const Sidebar = ({
           onRegionSelect={onRegionSelect}
           documentId={documentId}
           currentPage={currentPage}
+          showManualInsert={showManualInsert}
         />
         
-        {/* Selected Region Info - Only visible when a region is selected */}
         {selectedRegion && (
           <>
             <Separator className="my-4" />
@@ -155,8 +157,7 @@ const Sidebar = ({
         )}
       </div>
       
-      {/* Select Region Message - Visible when no region is selected */}
-      {!selectedRegion && regions.length > 0 && (
+      {!selectedRegion && (
         <div className="p-4 border-t text-center">
           <p className="text-sm text-muted-foreground">Select a region to edit its details</p>
         </div>
