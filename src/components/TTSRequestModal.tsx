@@ -13,12 +13,14 @@ import { Label } from '@/components/ui/label';
 import { useAuth } from '@/contexts/AuthProvider';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+import { usePdfPageCount } from '@/hooks/usePdfPageCount';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface TTSRequestModalProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
   documentId: string | null;
-  pageCount: number;
+  documentName: string;
   onSuccess: () => void;
 }
 
@@ -52,10 +54,11 @@ function parsePageRanges(input: string, maxPage: number): number[] {
   return Array.from(pages).sort((a, b) => a - b);
 }
 
-const TTSRequestModal = ({ isOpen, onOpenChange, documentId, pageCount, onSuccess }: TTSRequestModalProps) => {
+const TTSRequestModal = ({ isOpen, onOpenChange, documentId, documentName, onSuccess }: TTSRequestModalProps) => {
   const { authState, refreshProfile } = useAuth();
   const [selectedPages, setSelectedPages] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { pageCount, isLoading: isLoadingPageCount, error: pageCountError } = usePdfPageCount({ documentId });
 
   useEffect(() => {
     if (isOpen) {
@@ -69,6 +72,12 @@ const TTSRequestModal = ({ isOpen, onOpenChange, documentId, pageCount, onSucces
   const creditsUsed = Math.min(costInCredits, creditsRemaining);
   const creditsNeeded = Math.max(0, costInCredits - creditsRemaining);
   const extraCost = creditsNeeded * 250; 
+
+  const handleSelectAll = () => {
+    if (pageCount > 0) {
+      setSelectedPages(`1-${pageCount}`);
+    }
+  };
 
   const handleSubmit = async () => {
     if (!documentId || !authState.profile) {
@@ -126,51 +135,75 @@ const TTSRequestModal = ({ isOpen, onOpenChange, documentId, pageCount, onSucces
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Request Text-to-Speech</DialogTitle>
+          <DialogTitle>Request TTS for "{documentName}"</DialogTitle>
           <DialogDescription>
-            Select the pages you want to convert to audio. The document has {pageCount} pages.
+            {isLoadingPageCount ? (
+              'Loading document details...'
+            ) : pageCountError ? (
+              <span className="text-destructive">Could not load PDF details. Please try again.</span>
+            ) : (
+              `Select the pages you want to convert to audio. The document has ${pageCount} pages.`
+            )}
           </DialogDescription>
         </DialogHeader>
-        <div className="grid gap-4 py-4">
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="pages" className="text-right">
-              Pages
-            </Label>
-            <Input
-              id="pages"
-              value={selectedPages}
-              onChange={(e) => setSelectedPages(e.target.value)}
-              className="col-span-3"
-              placeholder="e.g., 1, 3-5, 8"
-            />
+        {isLoadingPageCount ? (
+          <div className="space-y-4 py-4">
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-24 w-full" />
           </div>
-          <div className="space-y-2 text-sm p-4 bg-slate-50 rounded-md">
-            <div className="flex justify-between">
-              <span>Total pages selected:</span>
-              <span className="font-medium">{costInCredits}</span>
-            </div>
-            <div className="flex justify-between">
-              <span>Your credits:</span>
-              <span className="font-medium">{creditsRemaining}</span>
-            </div>
-             <div className="flex justify-between">
-                <span>Credits that will be used:</span>
-                <span className="font-medium">{creditsUsed}</span>
-            </div>
-            {extraCost > 0 && (
-                <div className="flex justify-between font-semibold text-amber-600 pt-2 border-t">
-                <span>Extra cost:</span>
-                <span>{extraCost.toLocaleString()} DA</span>
+        ) : pageCountError ? (
+          <div className="py-4 text-center text-destructive">
+            <p>Failed to load document information. Please close this and try again.</p>
+          </div>
+        ) : (
+          <>
+            <div className="grid gap-4 py-4">
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="pages" className="text-right">
+                  Pages
+                </Label>
+                <Input
+                  id="pages"
+                  value={selectedPages}
+                  onChange={(e) => setSelectedPages(e.target.value)}
+                  className="col-span-3"
+                  placeholder="e.g., 1, 3-5, 8"
+                />
+              </div>
+              <div className="flex justify-end -mt-2">
+                <Button variant="link" size="sm" onClick={handleSelectAll} className="p-0 h-auto text-xs">
+                  Select all pages
+                </Button>
+              </div>
+              <div className="space-y-2 text-sm p-4 bg-slate-50 rounded-md">
+                <div className="flex justify-between">
+                  <span>Total pages selected:</span>
+                  <span className="font-medium">{costInCredits}</span>
                 </div>
-            )}
+                <div className="flex justify-between">
+                  <span>Your credits:</span>
+                  <span className="font-medium">{creditsRemaining}</span>
+                </div>
+                 <div className="flex justify-between">
+                    <span>Credits that will be used:</span>
+                    <span className="font-medium">{creditsUsed}</span>
+                </div>
+                {extraCost > 0 && (
+                    <div className="flex justify-between font-semibold text-amber-600 pt-2 border-t">
+                    <span>Extra cost:</span>
+                    <span>{extraCost.toLocaleString()} DA</span>
+                    </div>
+                )}
+                </div>
             </div>
-        </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-          <Button onClick={handleSubmit} disabled={isSubmitting || parsedPages.length === 0}>
-            {isSubmitting ? 'Submitting...' : `Submit for ${costInCredits} credits`}
-          </Button>
-        </DialogFooter>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+              <Button onClick={handleSubmit} disabled={isSubmitting || parsedPages.length === 0 || !!pageCountError}>
+                {isSubmitting ? 'Submitting...' : `Submit for ${costInCredits} credits`}
+              </Button>
+            </DialogFooter>
+          </>
+        )}
       </DialogContent>
     </Dialog>
   );

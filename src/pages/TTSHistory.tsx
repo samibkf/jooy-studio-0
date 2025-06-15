@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthProvider';
 import { supabase } from '@/integrations/supabase/client';
@@ -7,7 +6,6 @@ import { Button } from '@/components/ui/button';
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Mic, RefreshCw, Download } from 'lucide-react';
 import TTSRequestModal from '@/components/TTSRequestModal';
-import { getDocumentPageCount } from '@/utils/pdfUtils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
@@ -17,17 +15,13 @@ interface DocForTTS {
     name: string;
 }
 
-interface DocumentWithPageCount extends DocForTTS {
-    pageCount?: number;
-}
-
 const TTSHistory = () => {
     const { authState } = useAuth();
     const navigate = useNavigate();
     const [documents, setDocuments] = useState<DocForTTS[]>([]);
     const [ttsRequests, setTtsRequests] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
-    const [selectedDocument, setSelectedDocument] = useState<DocumentWithPageCount | null>(null);
+    const [selectedDocument, setSelectedDocument] = useState<DocForTTS | null>(null);
 
     const fetchAllData = useCallback(async () => {
         if (!authState.user) return;
@@ -60,18 +54,8 @@ const TTSHistory = () => {
     }, [authState, navigate, fetchAllData]);
     
 
-    const handleRequestTTS = async (doc: DocForTTS) => {
-        if (!authState.user) return;
-        toast.loading('Loading document details...');
-        try {
-            const pageCount = await getDocumentPageCount(doc.id, authState.user.id);
-            toast.dismiss();
-            setSelectedDocument({ ...doc, pageCount });
-        } catch (error) {
-            toast.dismiss();
-            toast.error('Could not load PDF to get page count.');
-            console.error(error);
-        }
+    const handleRequestTTS = (doc: DocForTTS) => {
+        setSelectedDocument(doc);
     };
     
     return (
@@ -147,7 +131,7 @@ const TTSHistory = () => {
                     isOpen={!!selectedDocument}
                     onOpenChange={(isOpen) => !isOpen && setSelectedDocument(null)}
                     documentId={selectedDocument.id}
-                    pageCount={selectedDocument.pageCount || 0}
+                    documentName={selectedDocument.name}
                     onSuccess={fetchAllData}
                 />
             )}
