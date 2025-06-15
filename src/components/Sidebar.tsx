@@ -1,12 +1,12 @@
 
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect, useContext } from 'react';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Trash2, Undo2 } from 'lucide-react';
 import { Region } from '@/types/regions';
 import { toast } from 'sonner';
 import TextInsert from './TextInsert';
-import { useTextAssignment } from '@/contexts/TextAssignmentContext';
+import { TextAssignmentContext } from '@/contexts/TextAssignmentContext';
 import { Separator } from '@/components/ui/separator';
 
 interface SidebarProps {
@@ -32,8 +32,8 @@ const Sidebar = ({
   const [localDescription, setLocalDescription] = useState<string>('');
   const saveTimeoutRef = useRef<NodeJS.Timeout>();
   
-  // Add error boundary for the context hook
-  const textAssignmentContext = useTextAssignment();
+  // Use context directly to avoid throwing an error, allowing for a graceful fallback.
+  const textAssignmentContext = useContext(TextAssignmentContext);
   
   // Guard against undefined context
   if (!textAssignmentContext) {

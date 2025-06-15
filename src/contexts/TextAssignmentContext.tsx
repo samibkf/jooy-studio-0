@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Region } from '@/types/regions';
 import { parseTitledText } from '@/utils/textProcessing';
@@ -36,7 +37,7 @@ type TextAssignmentContextType = {
 
 const LOCAL_STORAGE_KEY = 'textAssignmentsByDocument';
 
-const TextAssignmentContext = createContext<TextAssignmentContextType | null>(null);
+export const TextAssignmentContext = createContext<TextAssignmentContextType | null>(null);
 
 export const useTextAssignment = () => {
   const context = useContext(TextAssignmentContext);
