@@ -1,10 +1,11 @@
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Region } from '@/types/regions';
 import { parseTitledText } from '@/utils/textProcessing';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthProvider';
 
-type TitledText = {
+export type TitledText = {
   title: string;
   content: string;
   assignedRegionId?: string;
