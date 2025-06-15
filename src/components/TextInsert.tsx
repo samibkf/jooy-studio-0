@@ -11,6 +11,7 @@ import { getGeminiApiKeys } from './GeminiApiKeyDialog';
 import { generateGuidanceFromImage } from '@/services/geminiService';
 import { pdfCacheService } from '@/services/pdfCacheService';
 import * as pdfjsLib from 'pdfjs-dist';
+import { TitledText } from '@/contexts/TextAssignmentContext';
 
 interface TextInsertProps {
   regions: Region[];
@@ -117,9 +118,50 @@ const TextInsert = ({
       }
       
       // Use the new function to replace all content on the page
-      await replaceAllContentForPage(generatedText, regions, documentId, currentPage);
+      const newTexts = await replaceAllContentForPage(generatedText, regions, documentId, currentPage);
 
-      toast.success('AI guidance generated and replaced all page content!', { id: 'gemini-generate' });
+      const currentPageRegions = regions.filter(r => r.page === currentPage);
+      const sortedRegions = [...currentPageRegions].sort((a, b) => {
+        const aName = a.name.split('_').map(Number);
+        const bName = b.name.split('_').map(Number);
+        if (aName[0] !== bName[0]) {
+          return aName[0] - bName[0];
+        }
+        return aName[1] - bName[1];
+      });
+
+      const assignments = new Map<string, TitledText>();
+      if (newTexts) {
+          newTexts.forEach((text, index) => {
+              if (index < sortedRegions.length) {
+                  const regionId = sortedRegions[index].id;
+                  assignments.set(regionId, text);
+              }
+          });
+      }
+
+      // Now, update all regions on the current page
+      currentPageRegions.forEach(region => {
+          const newText = assignments.get(region.id);
+          if (newText) {
+              // This region gets a new assignment
+              assignTextToRegion(newText, region.id, documentId);
+              onRegionUpdate({
+                  ...region,
+                  description: newText.content,
+              });
+          } else if (region.description) {
+              // This region was assigned before, but not anymore. Clear it.
+              onRegionUpdate({
+                  ...region,
+                  description: null,
+              });
+          }
+      });
+      
+      const assignedCount = assignments.size;
+      toast.success(`AI guidance generated and assigned to ${assignedCount} regions!`, { id: 'gemini-generate' });
+
     } catch (error) {
       console.error("Error generating guidance:", error);
       toast.error(error instanceof Error ? error.message : 'An unknown error occurred.', { id: 'gemini-generate' });
@@ -162,27 +204,16 @@ const TextInsert = ({
 
     // Assign texts to regions in order
     if (processedTexts && processedTexts.length > 0) {
-      // Find the actual indices in the full document texts array for the new texts
-      const updatedAllTexts = documentId ? getCurrentDocumentTexts(documentId) : [];
-      
       processedTexts.forEach((text, index) => {
         if (index < sortedRegions.length) {
-          const regionId = sortedRegions[index].id;
-          
-          // Find the actual index of this text in the full document texts array
-          const actualTextIndex = updatedAllTexts.findIndex(t => 
-            t.title === text.title && t.content === text.content && t.page === currentPage
-          );
-          
-          if (actualTextIndex !== -1) {
-            assignTextToRegion(actualTextIndex, regionId, documentId);
+          const region = sortedRegions[index];
+          assignTextToRegion(text, region.id, documentId);
 
-            // Update region description through parent component
-            onRegionUpdate({
-              ...sortedRegions[index],
-              description: text.content
-            });
-          }
+          // Update region description through parent component
+          onRegionUpdate({
+            ...region,
+            description: text.content
+          });
         }
       });
       toast.success(`Text assigned to ${processedTexts.length} regions on page ${currentPage}`);
@@ -234,11 +265,9 @@ const TextInsert = ({
     toast.success(`Text unassigned from region ${region.name || regionId}`);
   };
 
-  const handleAssignToRegion = (textIndex: number, regionId: string) => {
+  const handleAssignToRegion = (text: TitledText, regionId: string) => {
     if (!documentId) return;
 
-    // Find the text and region
-    const text = currentPageTexts[textIndex];
     const region = regions.find(r => r.id === regionId);
     if (!text || !region) return;
 
@@ -248,15 +277,8 @@ const TextInsert = ({
       return;
     }
 
-    // Find the actual index in the full document texts array
-    const actualTextIndex = allDocumentTexts.findIndex(t => 
-      t.title === text.title && t.content === text.content && t.page === currentPage
-    );
-
-    if (actualTextIndex === -1) return;
-
     // Assign text to region
-    assignTextToRegion(actualTextIndex, regionId, documentId);
+    assignTextToRegion(text, regionId, documentId);
 
     // Update region description
     onRegionUpdate({
@@ -367,7 +389,7 @@ const TextInsert = ({
                               {unassignedRegionsByPage.length > 0 ? (
                                 <div className="p-1">
                                   {unassignedRegionsByPage.map(region => (
-                                    <div key={region.id} className="p-2 hover:bg-muted rounded-md cursor-pointer flex items-center justify-between" onClick={() => handleAssignToRegion(textIndex, region.id)}>
+                                    <div key={region.id} className="p-2 hover:bg-muted rounded-md cursor-pointer flex items-center justify-between" onClick={() => handleAssignToRegion(text, region.id)}>
                                       <div>
                                         <p className="font-medium">{region.name || 'Unnamed Region'}</p>
                                         <p className="text-xs text-muted-foreground">Page: {region.page}</p>

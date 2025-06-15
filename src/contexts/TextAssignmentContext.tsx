@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Region } from '@/types/regions';
 import { parseTitledText } from '@/utils/textProcessing';
@@ -24,7 +23,7 @@ type TextAssignmentContextType = {
   replaceAllContentForPage: (text: string, regions: Region[], documentId: string, page: number) => Promise<TitledText[]>;
   undoAllAssignments: (documentId: string, page?: number) => void;
   undoRegionAssignment: (regionId: string, documentId: string) => void;
-  assignTextToRegion: (textIndex: number, regionId: string, documentId: string) => void;
+  assignTextToRegion: (textToAssign: TitledText, regionId: string, documentId: string) => void;
   getAssignedText: (regionId: string, documentId: string) => string | null;
   isRegionAssigned: (regionId: string, documentId: string) => boolean;
   resetAssignments: (documentId?: string) => void;
@@ -605,11 +604,8 @@ export const TextAssignmentProvider: React.FC<{ children: React.ReactNode }> = (
     }
   };
 
-  const assignTextToRegion = async (textIndex: number, regionId: string, documentId: string) => {
-    console.log(`Assigning text ${textIndex} to region ${regionId} in document ${documentId}`);
-    
-    const currentTexts = documentAssignments[documentId]?.titledTexts || [];
-    const textToAssign = currentTexts[textIndex];
+  const assignTextToRegion = async (textToAssign: TitledText, regionId: string, documentId: string) => {
+    console.log(`Assigning text "${textToAssign.title}" to region ${regionId} in document ${documentId}`);
     
     if (!textToAssign) {
       console.error('Text to assign not found');
@@ -621,18 +617,30 @@ export const TextAssignmentProvider: React.FC<{ children: React.ReactNode }> = (
     
     if (success) {
       // Update local state only if database operation succeeded
-      setDocumentAssignments(prev => ({
-        ...prev,
-        [documentId]: {
-          ...prev[documentId],
-          titledTexts: (prev[documentId]?.titledTexts || []).map((text, index) => 
-            index === textIndex 
-              ? { ...text, assignedRegionId: regionId } 
-              : text
-          )
+      setDocumentAssignments(prev => {
+        const currentTexts = prev[documentId]?.titledTexts || [];
+        const textIndex = currentTexts.findIndex(t => t.title === textToAssign.title && t.content === textToAssign.content && t.page === textToAssign.page);
+
+        if (textIndex === -1) {
+            console.error('Could not find text in context to assign.');
+            return prev;
         }
-      }));
-      console.log(`Successfully assigned text ${textIndex} to region ${regionId}`);
+
+        const updatedTexts = currentTexts.map((text, index) =>
+            index === textIndex
+                ? { ...text, assignedRegionId: regionId }
+                : text
+        );
+
+        return {
+            ...prev,
+            [documentId]: {
+                ...prev[documentId],
+                titledTexts: updatedTexts
+            }
+        };
+      });
+      console.log(`Successfully assigned text "${textToAssign.title}" to region ${regionId}`);
     } else {
       console.error('Failed to save assignment to database');
     }
