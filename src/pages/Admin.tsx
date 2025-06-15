@@ -708,6 +708,7 @@ const Admin = () => {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Document</TableHead>
+                    <TableHead>Status</TableHead>
                     <TableHead>Regions</TableHead>
                     <TableHead>Actions</TableHead>
                   </TableRow>
@@ -717,6 +718,12 @@ const Admin = () => {
                     <TableRow key={document.id}>
                       <TableCell>
                         <span className="px-2 py-1">{document.name}</span>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex flex-col items-start gap-1">
+                          {document.is_private && <Badge variant="secondary">Private</Badge>}
+                          {(document.drm_protected_pages === true || (Array.isArray(document.drm_protected_pages) && document.drm_protected_pages.length > 0)) && <Badge variant="outline">DRM</Badge>}
+                        </div>
                       </TableCell>
                       <TableCell>{document.regions.length}</TableCell>
                       <TableCell>
