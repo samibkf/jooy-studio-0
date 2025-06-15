@@ -40,6 +40,7 @@ import {
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { ManageTtsRequestDialog } from '@/components/admin/ManageTtsRequestDialog';
+import { CreditManagementDialog } from '@/components/admin/CreditManagementDialog';
 
 const Admin = () => {
   const { authState, signOut } = useAuth();
@@ -57,6 +58,7 @@ const Admin = () => {
   const [creatorPlan, setCreatorPlan] = useState<CreditPlan | null>(null);
   const [ttsRequests, setTtsRequests] = useState<TtsRequestWithDetails[]>([]);
   const [managingTtsRequest, setManagingTtsRequest] = useState<TtsRequestWithDetails | null>(null);
+  const [managingCreditsUser, setManagingCreditsUser] = useState<Profile | null>(null);
 
   const cleanupChannels = useCallback(() => {
     const channels = supabase.getChannels();
@@ -646,6 +648,13 @@ const Admin = () => {
                         >
                           View Documents
                         </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setManagingCreditsUser(user)}
+                        >
+                          Manage Credits
+                        </Button>
                         {creatorPlan && user.plan_id !== creatorPlan.id && (
                           <Button
                             variant="default"
@@ -799,6 +808,18 @@ const Admin = () => {
         open={!!managingTtsRequest}
         onOpenChange={(open) => !open && setManagingTtsRequest(null)}
         onSuccess={fetchTtsRequests}
+      />
+      <CreditManagementDialog
+        open={!!managingCreditsUser}
+        onOpenChange={(open) => !open && setManagingCreditsUser(null)}
+        user={managingCreditsUser}
+        onSuccess={() => {
+          fetchUsers();
+          if (selectedUser && managingCreditsUser && selectedUser.id === managingCreditsUser.id) {
+            // Also refresh selected user profile if they are being edited
+            setSelectedUser(prev => prev ? {...prev, credits_remaining: managingCreditsUser.credits_remaining} : null)
+          }
+        }}
       />
     </div>
   );
