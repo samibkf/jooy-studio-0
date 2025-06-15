@@ -9,6 +9,78 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      admin_tasks: {
+        Row: {
+          assigned_to: string | null
+          created_at: string
+          id: string
+          notes: string | null
+          status: string
+          tts_request_id: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          status?: string
+          tts_request_id: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_to?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          status?: string
+          tts_request_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "admin_tasks_assigned_to_fkey"
+            columns: ["assigned_to"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "admin_tasks_tts_request_id_fkey"
+            columns: ["tts_request_id"]
+            isOneToOne: false
+            referencedRelation: "tts_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      credit_plans: {
+        Row: {
+          created_at: string
+          credits_included: number
+          duration_days: number | null
+          id: string
+          name: string
+          price: number
+        }
+        Insert: {
+          created_at?: string
+          credits_included: number
+          duration_days?: number | null
+          id?: string
+          name: string
+          price?: number
+        }
+        Update: {
+          created_at?: string
+          credits_included?: number
+          duration_days?: number | null
+          id?: string
+          name?: string
+          price?: number
+        }
+        Relationships: []
+      }
       document_regions: {
         Row: {
           created_at: string
@@ -131,29 +203,70 @@ export type Database = {
         }
         Relationships: []
       }
+      notifications: {
+        Row: {
+          created_at: string
+          id: string
+          is_read: boolean
+          link: string | null
+          message: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          link?: string | null
+          message: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          link?: string | null
+          message?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
+          credits_remaining: number
           email: string
           full_name: string | null
           id: string
+          plan_id: string | null
           role: Database["public"]["Enums"]["user_role"]
         }
         Insert: {
           created_at?: string
+          credits_remaining?: number
           email: string
           full_name?: string | null
           id: string
+          plan_id?: string | null
           role?: Database["public"]["Enums"]["user_role"]
         }
         Update: {
           created_at?: string
+          credits_remaining?: number
           email?: string
           full_name?: string | null
           id?: string
+          plan_id?: string | null
           role?: Database["public"]["Enums"]["user_role"]
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "credit_plans"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       text_assignments: {
         Row: {
@@ -189,6 +302,50 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "text_assignments_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tts_requests: {
+        Row: {
+          cost_in_credits: number
+          created_at: string
+          document_id: string
+          extra_cost_da: number | null
+          id: string
+          requested_pages: number[]
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          cost_in_credits: number
+          created_at?: string
+          document_id: string
+          extra_cost_da?: number | null
+          id?: string
+          requested_pages: number[]
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          cost_in_credits?: number
+          created_at?: string
+          document_id?: string
+          extra_cost_da?: number | null
+          id?: string
+          requested_pages?: number[]
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tts_requests_document_id_fkey"
             columns: ["document_id"]
             isOneToOne: false
             referencedRelation: "documents"

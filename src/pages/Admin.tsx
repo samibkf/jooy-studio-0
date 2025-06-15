@@ -4,6 +4,7 @@ import { useAuth } from '@/contexts/AuthProvider';
 import { Profile } from '@/types/auth';
 import { supabase, initializeStorage } from '@/integrations/supabase/client';
 import { DocumentData } from '@/types/documents';
+import { CreditPlan } from '@/types/credits';
 import {
   Table,
   TableBody,
@@ -51,6 +52,7 @@ const Admin = () => {
   const [storageInitialized, setStorageInitialized] = useState(false);
   const [initializingStorage, setInitializingStorage] = useState(false);
   const [showStorageHelp, setShowStorageHelp] = useState(false);
+  const [creatorPlan, setCreatorPlan] = useState<CreditPlan | null>(null);
 
   const cleanupChannels = useCallback(() => {
     const channels = supabase.getChannels();
@@ -183,6 +185,30 @@ const Admin = () => {
 
   useEffect(() => {
     initStorage();
+  }, []);
+
+  useEffect(() => {
+    const fetchCreatorPlan = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('credit_plans')
+          .select('*')
+          .eq('name', 'Creator')
+          .maybeSingle();
+
+        if (error) throw error;
+        
+        if (data) {
+          setCreatorPlan(data);
+        } else {
+          console.warn('"Creator" plan not found in database.');
+        }
+      } catch (error) {
+        console.error('Error fetching Creator plan:', error);
+        toast.error('Could not load Creator plan details.');
+      }
+    };
+    fetchCreatorPlan();
   }, []);
 
   useEffect(() => {
@@ -395,6 +421,32 @@ const Admin = () => {
     }
   };
 
+  const handleUpgradeUser = async (userToUpgrade: Profile) => {
+    if (!creatorPlan) {
+      toast.error('Creator plan details not loaded yet.');
+      return;
+    }
+    
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          plan_id: creatorPlan.id,
+          credits_remaining: (userToUpgrade.credits_remaining || 0) + creatorPlan.credits_included,
+        })
+        .eq('id', userToUpgrade.id);
+      
+      if (error) throw error;
+      
+      toast.success(`${userToUpgrade.email} upgraded to Creator plan.`);
+      // Refetch users to update the UI
+      fetchUsers();
+    } catch (error) {
+      console.error('Error upgrading user:', error);
+      toast.error('Failed to upgrade user.');
+    }
+  };
+
   const handleSignOut = async () => {
     try {
       await signOut();
@@ -543,7 +595,7 @@ const Admin = () => {
               <TableHeader>
                 <TableRow>
                   <TableHead>User</TableHead>
-                  <TableHead>Action</TableHead>
+                  <TableHead>Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -555,17 +607,36 @@ const Admin = () => {
                         <div>
                           <p className="font-medium">{user.full_name || 'Unnamed User'}</p>
                           <p className="text-sm text-muted-foreground">{user.email}</p>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Credits: {user.credits_remaining}
+                          </p>
                         </div>
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleUserSelect(user)}
-                      >
-                        View Documents
-                      </Button>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleUserSelect(user)}
+                        >
+                          View Documents
+                        </Button>
+                        {creatorPlan && user.plan_id !== creatorPlan.id && (
+                          <Button
+                            variant="default"
+                            size="sm"
+                            onClick={() => handleUpgradeUser(user)}
+                          >
+                            Upgrade to Creator
+                          </Button>
+                        )}
+                        {creatorPlan && user.plan_id === creatorPlan.id && (
+                          <span className="text-xs px-2 py-1 bg-green-100 text-green-800 rounded-full">
+                            Creator Plan
+                          </span>
+                        )}
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}

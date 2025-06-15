@@ -20,4 +20,6 @@ export interface Profile {
   full_name: string | null;
   role: 'user' | 'admin';
   created_at: string;
+  plan_id: string | null;
+  credits_remaining: number;
 }
