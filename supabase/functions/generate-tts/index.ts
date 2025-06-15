@@ -86,7 +86,7 @@ async function generateAudio(req: Request, supabaseAdmin: any) {
     
     console.log(`[${tts_request_id}] Found ${texts.length} text pages to process.`);
 
-    // 3. Generate audio for each page using Google Cloud Text-to-Speech API
+    // 3. Generate audio for each page using Gemini Text-to-Speech API
     for (const text of texts) {
       console.log(`[${tts_request_id}] Generating audio for page ${text.page}.`);
       const apiKey = Deno.env.get("GEMINI_API_KEY");
@@ -94,26 +94,27 @@ async function generateAudio(req: Request, supabaseAdmin: any) {
         throw new Error("GEMINI_API_KEY is not set in environment variables.");
       }
 
-      const ttsResponse = await fetch(`https://texttospeech.googleapis.com/v1beta/text:synthesize?key=${apiKey}`, {
+      const ttsResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/text:synthesizeSpeech?key=${apiKey}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-            synthesisInput: { text: text.content },
-            voiceSelectionParams: {
-                languageCode: "en-US",
-                name: "en-US-Wavenet-A"
+            input: { text: text.content },
+            voice: {
+                // Using the voice from the user's plan.
+                name: "zephyr"
             },
             audioConfig: { 
               audioEncoding: "LINEAR16",
               sampleRateHertz: 24000
             },
+            model: "gemini-2.5-flash-preview-tts"
         }),
       });
 
       if (!ttsResponse.ok) {
         const errorBody = await ttsResponse.text();
-        console.error(`[${tts_request_id}] Google TTS API error for page ${text.page}: ${ttsResponse.status} ${errorBody}`);
-        throw new Error(`Google TTS API error: ${ttsResponse.status}`);
+        console.error(`[${tts_request_id}] Gemini TTS API error for page ${text.page}: ${ttsResponse.status} ${errorBody}`);
+        throw new Error(`Gemini TTS API error: ${ttsResponse.status} - ${errorBody}`);
       }
       
       const responseData = await ttsResponse.json();
