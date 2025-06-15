@@ -7,6 +7,7 @@ import { Region } from '@/types/regions';
 import { useTextAssignment } from '@/contexts/TextAssignmentContext';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -70,6 +71,7 @@ const TextInsert = ({
   const [isGenerating, setIsGenerating] = useState(false);
   const [textToDelete, setTextToDelete] = useState<TitledText | null>(null);
   const [textToPreview, setTextToPreview] = useState<TitledText | null>(null);
+  const [autoAssign, setAutoAssign] = useState(false);
 
   const {
     getCurrentDocumentTexts,
@@ -87,6 +89,30 @@ const TextInsert = ({
   // Get texts for current document and filter by current page
   const allDocumentTexts = documentId ? getCurrentDocumentTexts(documentId) : [];
   const currentPageTexts = documentId ? getCurrentDocumentTexts(documentId, currentPage) : [];
+
+  const sortRegionsByName = (regionsToSort: Region[]): Region[] => {
+    return [...regionsToSort].sort((a, b) => {
+      const aNameParts = a.name.split('_').map(Number);
+      const bNameParts = b.name.split('_').map(Number);
+
+      // Fallback for names not in "number_number" format
+      if (
+        aNameParts.length !== 2 ||
+        bNameParts.length !== 2 ||
+        isNaN(aNameParts[0]) ||
+        isNaN(aNameParts[1]) ||
+        isNaN(bNameParts[0]) ||
+        isNaN(bNameParts[1])
+      ) {
+        return a.name.localeCompare(b.name);
+      }
+
+      if (aNameParts[0] !== bNameParts[0]) {
+        return aNameParts[0] - bNameParts[0];
+      }
+      return aNameParts[1] - bNameParts[1];
+    });
+  };
 
   const handleGenerateFromPage = async () => {
     if (!documentId) {
@@ -142,8 +168,24 @@ const TextInsert = ({
       
       const newTexts = await replaceAllContentForPage(generatedText, regions, documentId, currentPage);
 
-      if (newTexts) {
-          toast.success(`AI guidance generated with ${newTexts.length} texts. Please assign them manually.`, { id: 'gemini-generate' });
+      if (newTexts && newTexts.length > 0) {
+          if (autoAssign) {
+              const currentPageRegions = regions.filter(region => region.page === currentPage);
+              const sortedRegions = sortRegionsByName(currentPageRegions);
+
+              let assignedCount = 0;
+              newTexts.forEach((text, index) => {
+                  if (index < sortedRegions.length) {
+                      const region = sortedRegions[index];
+                      assignTextToRegion(text, region.id, documentId);
+                      onRegionUpdate({ ...region, description: text.content });
+                      assignedCount++;
+                  }
+              });
+              toast.success(`AI guidance generated and automatically assigned to ${assignedCount} regions.`, { id: 'gemini-generate' });
+          } else {
+              toast.success(`AI guidance generated with ${newTexts.length} texts. Please assign them manually.`, { id: 'gemini-generate' });
+          }
       } else {
           throw new Error('AI guidance was generated but could not be saved.');
       }
@@ -179,14 +221,7 @@ const TextInsert = ({
     const processedTexts = await assignTextsToRegions(inputText, currentPageRegions, documentId, currentPage);
 
     // Sort regions by their name to ensure proper assignment order
-    const sortedRegions = [...currentPageRegions].sort((a, b) => {
-      const aName = a.name.split('_').map(Number);
-      const bName = b.name.split('_').map(Number);
-      if (aName[0] !== bName[0]) {
-        return aName[0] - bName[0];
-      }
-      return aName[1] - bName[1];
-    });
+    const sortedRegions = sortRegionsByName(currentPageRegions);
 
     // Assign texts to regions in order
     if (processedTexts && processedTexts.length > 0) {
@@ -309,7 +344,7 @@ const TextInsert = ({
 
   const unassignedTexts = currentPageTexts.filter(text => !text.assignedRegionId);
   const assignedTexts = currentPageTexts.filter(text => text.assignedRegionId);
-  const unassignedRegionsByPage = documentId ? getUnassignedRegionsByPage(regions, currentPage, documentId) : [];
+  const unassignedRegionsByPage = documentId ? sortRegionsByName(getUnassignedRegionsByPage(regions, currentPage, documentId)) : [];
   
   return (
     <div className="space-y-4">
@@ -341,6 +376,15 @@ const TextInsert = ({
               </div>
             </PopoverContent>
           </Popover>
+        </div>
+        <div className="flex items-center space-x-2 pt-1">
+            <Checkbox id="auto-assign" checked={autoAssign} onCheckedChange={(checked) => setAutoAssign(Boolean(checked))} />
+            <label
+                htmlFor="auto-assign"
+                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+            >
+                Auto-assign to regions on this page
+            </label>
         </div>
         <Button onClick={handleGenerateFromPage} disabled={isGenerating} className="w-full">
           <Sparkles className="h-4 w-4 mr-2" />
