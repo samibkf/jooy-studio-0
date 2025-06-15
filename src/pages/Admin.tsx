@@ -266,7 +266,7 @@ const Admin = () => {
     try {
       const { data, error } = await supabase
         .from('tts_requests')
-        .select('*, profile:profiles!user_id(full_name, email), documents:documents!document_id(name)')
+        .select('*, profile:profiles(full_name, email), documents:documents(name)')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
