@@ -12,8 +12,11 @@ const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
 const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
 
 serve(async (req) => {
+  console.log(`\n--- New PDF Request: ${new Date().toISOString()} ---`);
+  
   // Handle CORS preflight
   if (req.method === "OPTIONS") {
+    console.log(" responding to OPTIONS request");
     return new Response(null, { headers: corsHeaders });
   }
 
@@ -21,10 +24,10 @@ serve(async (req) => {
   const documentId = searchParams.get("document_id");
   const userId = searchParams.get("user_id");
   
-  console.log(`📋 Request received for document: ${documentId}, user: ${userId}`);
+  console.log(`[STREAM-PDF] Request received for document: ${documentId}, user: ${userId}`);
   
   if (!documentId) {
-    console.error("❌ No document_id provided");
+    console.error("[STREAM-PDF] ❌ No document_id provided");
     return new Response(JSON.stringify({ error: "No document_id provided" }), {
       status: 400,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -32,8 +35,8 @@ serve(async (req) => {
   }
 
   // Log environment variables (without exposing full values)
-  console.log(`🔧 Supabase URL configured: ${supabaseUrl ? "✅" : "❌"}`);
-  console.log(`🔑 Supabase Key configured: ${supabaseAnonKey ? "✅" : "❌"}`);
+  console.log(`[STREAM-PDF] 🔧 Supabase URL configured: ${supabaseUrl ? "✅" : "❌"}`);
+  console.log(`[STREAM-PDF] 🔑 Supabase Key configured: ${supabaseAnonKey ? "✅" : "❌"}`);
 
   const bucket = "pdfs";
   
@@ -43,15 +46,15 @@ serve(async (req) => {
     userId ? `${userId}/${documentId}.pdf` : null // User-specific pattern
   ].filter(Boolean);
   
-  console.log(`📁 Will try these paths:`, filePaths);
+  console.log(`[STREAM-PDF] 📁 Will try these paths:`, filePaths);
 
   for (const filePath of filePaths) {
     try {
-      console.log(`🔍 Attempting to fetch: ${bucket}/${filePath}`);
+      console.log(`[STREAM-PDF] 🔍 Attempting to fetch: ${bucket}/${filePath}`);
       
       // Construct the storage URL
       const storageUrl = `${supabaseUrl}/storage/v1/object/${bucket}/${filePath}`;
-      console.log(`🌐 Storage URL: ${storageUrl}`);
+      console.log(`[STREAM-PDF] 🌐 Storage URL: ${storageUrl}`);
 
       // Fetch the file from Supabase Storage
       const fileResp = await fetch(storageUrl, {
@@ -61,24 +64,24 @@ serve(async (req) => {
         },
       });
 
-      console.log(`📊 Storage response status for ${filePath}: ${fileResp.status}`);
+      console.log(`[STREAM-PDF] 📊 Storage response status for ${filePath}: ${fileResp.status}`);
 
       if (fileResp.ok) {
         // Check content type and size
         const contentType = fileResp.headers.get("Content-Type");
         const contentLength = fileResp.headers.get("Content-Length");
         
-        console.log(`📄 File Content-Type: ${contentType}`);
-        console.log(`📏 File Content-Length: ${contentLength}`);
+        console.log(`[STREAM-PDF] 📄 File Content-Type: ${contentType}`);
+        console.log(`[STREAM-PDF] 📏 File Content-Length: ${contentLength}`);
 
         // Validate that we're getting a PDF
         if (contentType && !contentType.includes("application/pdf") && !contentType.includes("application/octet-stream")) {
-          console.warn(`⚠️ Unexpected content type: ${contentType}`);
+          console.warn(`[STREAM-PDF] ⚠️ Unexpected content type: ${contentType}`);
         }
 
         // Check if file is too small (likely corrupted)
         if (contentLength && parseInt(contentLength) < 100) {
-          console.warn(`⚠️ File seems too small: ${contentLength} bytes`);
+          console.warn(`[STREAM-PDF] ⚠️ File seems too small: ${contentLength} bytes`);
         }
 
         // Set headers for PDF response
@@ -97,7 +100,7 @@ serve(async (req) => {
           responseHeaders["Content-Length"] = contentLength;
         }
 
-        console.log(`✅ Successfully serving PDF from path: ${filePath} (${contentLength || 'unknown'} bytes)`);
+        console.log(`[STREAM-PDF] ✅ Successfully serving PDF from path: ${filePath} (${contentLength || 'unknown'} bytes)`);
 
         // Return the streamed body
         return new Response(fileResp.body, {
@@ -105,31 +108,31 @@ serve(async (req) => {
           headers: responseHeaders,
         });
       } else {
-        console.log(`❌ Failed to fetch from ${filePath}: ${fileResp.status}`);
+        console.log(`[STREAM-PDF] ❌ Failed to fetch from ${filePath}: ${fileResp.status}`);
         
         // If it's not a 404, log the error but continue trying other paths
         if (fileResp.status !== 404) {
           const errorText = await fileResp.text();
-          console.error(`❌ Non-404 error for ${filePath}:`, errorText);
+          console.error(`[STREAM-PDF] ❌ Non-404 error for ${filePath}:`, errorText.substring(0, 500));
         }
       }
 
     } catch (error) {
-      console.error(`💥 Error fetching from ${filePath}:`, error);
+      console.error(`[STREAM-PDF] 💥 Error fetching from ${filePath}:`, error);
       // Continue to next path
     }
   }
 
   // If we get here, no path worked
-  console.error(`❌ PDF not found in any of the attempted paths:`, filePaths);
+  console.error(`[STREAM-PDF] ❌ PDF not found in any of the attempted paths:`, filePaths);
   
   return new Response(JSON.stringify({ 
-    error: `PDF file not found`,
+    error: `PDF file not found after trying all paths.`,
     details: { 
       documentId,
       userId,
       attemptedPaths: filePaths,
-      message: "The PDF was not found in storage. It may have been moved or deleted."
+      message: "The PDF was not found in storage. Check if the file exists at one of the attempted paths and that the Edge Function has permission to read it."
     }
   }), {
     status: 404,
