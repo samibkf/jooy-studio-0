@@ -47,7 +47,6 @@ const Index = () => {
   const [qrCorner, setQrCorner] = useState<'top-left' | 'top-right'>('top-left');
   const [isSettingsDialogOpen, setIsSettingsDialogOpen] = useState(false);
   const [documentVersion, setDocumentVersion] = useState(0);
-  const [isSettingsButtonVisible, setIsSettingsButtonVisible] = useState(false);
 
   const {
     selectedRegionId,
@@ -195,16 +194,6 @@ const Index = () => {
     
     loadDocuments();
   }, [authState.user]);
-
-  useEffect(() => {
-    if (selectedDocumentId) {
-      setIsSettingsButtonVisible(true);
-    } else {
-      // Delay hiding to prevent flickering during transitions
-      const timer = setTimeout(() => setIsSettingsButtonVisible(false), 150);
-      return () => clearTimeout(timer);
-    }
-  }, [selectedDocumentId]);
 
   const handleFileUpload = () => {
     fileInputRef.current?.click();
@@ -847,6 +836,10 @@ const Index = () => {
     setCurrentPage(page); // page is now consistently 1-based from PdfViewer
   };
 
+  const handleSettingsClick = () => {
+    setIsSettingsDialogOpen(true);
+  };
+
   return (
     <ProtectedRoute>
       <div className="flex flex-col h-screen">
@@ -863,6 +856,7 @@ const Index = () => {
           onExport={handleExport}
           onQRExport={handleQRExport}
           onPDFQRExport={handlePDFQRExport}
+          onSettingsClick={handleSettingsClick}
           hasDocument={!!selectedDocument}
           isQRExporting={isQRExporting}
           isPDFQRExporting={isPDFQRExporting}
@@ -884,18 +878,6 @@ const Index = () => {
           />
 
           <div className="flex-1 overflow-hidden relative">
-            {isSettingsButtonVisible && (
-              <Button
-                variant="outline"
-                size="sm"
-                className="absolute top-2 right-2 z-10 bg-background"
-                onClick={() => setIsSettingsDialogOpen(true)}
-                disabled={!selectedDocument}
-              >
-                <Settings className="h-4 w-4 mr-2" />
-                Settings
-              </Button>
-            )}
             {isLoading ? (
               <div className="flex items-center justify-center h-full">
                 <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>

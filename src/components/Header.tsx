@@ -1,7 +1,6 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Upload, Download, File, LogOut, QrCode, FileText, Sparkles, History } from 'lucide-react';
+import { Upload, Download, File, LogOut, QrCode, FileText, Sparkles, History, Settings } from 'lucide-react';
 import type { Profile } from '@/types/auth';
 import QRCornerSelector from './QRCornerSelector';
 import { GeminiApiKeyDialog, getGeminiApiKeys } from './GeminiApiKeyDialog';
@@ -13,6 +12,7 @@ interface HeaderProps {
   onExport: () => void;
   onQRExport: () => void;
   onPDFQRExport: (corner: 'top-left' | 'top-right') => void;
+  onSettingsClick: () => void;
   hasDocument: boolean;
   isQRExporting: boolean;
   isPDFQRExporting: boolean;
@@ -27,6 +27,7 @@ const Header = ({
   onExport, 
   onQRExport,
   onPDFQRExport,
+  onSettingsClick,
   hasDocument, 
   isQRExporting,
   isPDFQRExporting,
@@ -92,6 +93,17 @@ const Header = ({
                   <History className="h-4 w-4 mr-2" />
                   TTS Requests
                 </Link>
+              </Button>
+
+              <Button
+                onClick={onSettingsClick}
+                disabled={!hasDocument}
+                variant="outline"
+                className="flex items-center gap-2"
+                title={!hasDocument ? "Select a document to view settings" : "Document Settings"}
+              >
+                <Settings className="h-4 w-4" />
+                Settings
               </Button>
 
               <Button
