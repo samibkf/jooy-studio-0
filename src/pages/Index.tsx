@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { ChevronLeft, ChevronRight, Settings } from 'lucide-react';
@@ -223,17 +222,14 @@ const Index = () => {
       return;
     }
 
-    const reuploadDocId = selectedDocumentId;
-    let documentId = reuploadDocId;
-    if (!reuploadDocId) {
-      try {
-        documentId = await generateUniqueDocumentId(authState.user.id);
-        console.log('Generated unique document ID:', documentId);
-      } catch (error) {
-        console.error('Failed to generate unique document ID:', error);
-        toast.error('Failed to generate document ID. Please try again.');
-        return;
-      }
+    let documentId: string;
+    try {
+      documentId = await generateUniqueDocumentId(authState.user.id);
+      console.log('Generated unique document ID:', documentId);
+    } catch (error) {
+      console.error('Failed to generate unique document ID:', error);
+      toast.error('Failed to generate document ID. Please try again.');
+      return;
     }
     
     try {
@@ -252,7 +248,7 @@ const Index = () => {
       
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('pdfs')
-        .upload(filePath, file, { upsert: true });
+        .upload(filePath, file, { upsert: false }); // Set upsert to false to avoid accidental replacement
 
       if (uploadError) {
         console.error('Storage upload error:', uploadError);
@@ -262,65 +258,49 @@ const Index = () => {
 
       console.log('PDF uploaded successfully to storage:', uploadData);
 
-      if (reuploadDocId) {
-        await pdfCacheService.removeCachedPDF(reuploadDocId).catch(err => console.warn("Could not clear cache for re-uploaded document", err));
-        console.log(`Cache invalidated for document: ${reuploadDocId}`);
+      // This logic now only handles new document creation.
+      console.log('Creating new document. Auth state profile:', authState.profile);
+      const isSubscriber = !!authState.profile?.plan_id;
+      console.log(`Is user a subscriber? ${isSubscriber}. Plan ID: ${authState.profile?.plan_id}`);
+      const newDocument: DocumentData = {
+        id: documentId,
+        name: file.name,
+        regions: [],
+        is_private: isSubscriber,
+        drm_protected_pages: null,
+      };
+      
+      const { error: dbError } = await supabase
+        .from('documents')
+        .insert({
+          id: newDocument.id,
+          name: newDocument.name,
+          user_id: authState.user.id,
+          is_private: newDocument.is_private,
+          drm_protected_pages: newDocument.drm_protected_pages
+        });
 
-        setDocuments(prev =>
-          prev.map(doc =>
-            doc.id === reuploadDocId ? { ...doc } : doc
-          )
-        );
-
-        // Force a re-render of the PDF viewer by updating the version,
-        // instead of setting the selectedDocumentId to null.
-        setDocumentVersion(v => v + 1);
+      if (dbError) {
+        console.error('Database insert error:', dbError);
+        toast.error('Failed to save document information: ' + dbError.message, { id: 'pdf-upload' });
         
-        toast.success('Document PDF re-uploaded successfully', { id: 'pdf-upload' });
-      } else {
-        console.log('Creating new document. Auth state profile:', authState.profile);
-        const isSubscriber = !!authState.profile?.plan_id;
-        console.log(`Is user a subscriber? ${isSubscriber}. Plan ID: ${authState.profile?.plan_id}`);
-        const newDocument: DocumentData = {
-          id: documentId,
-          name: file.name,
-          regions: [],
-          is_private: isSubscriber,
-          drm_protected_pages: null,
-        };
+        console.log(`Rolling back storage upload for: ${filePath}`);
+        await supabase.storage.from('pdfs').remove([filePath]);
+        console.log(`Storage rollback complete.`);
         
-        const { error: dbError } = await supabase
-          .from('documents')
-          .insert({
-            id: newDocument.id,
-            name: newDocument.name,
-            user_id: authState.user.id,
-            is_private: newDocument.is_private,
-            drm_protected_pages: newDocument.drm_protected_pages
-          });
-
-        if (dbError) {
-          console.error('Database insert error:', dbError);
-          toast.error('Failed to save document information: ' + dbError.message, { id: 'pdf-upload' });
-          
-          console.log(`Rolling back storage upload for: ${filePath}`);
-          await supabase.storage.from('pdfs').remove([filePath]);
-          console.log(`Storage rollback complete.`);
-          
-          return;
-        }
-
-        setDocuments(prev => [...prev, newDocument]);
-        setSelectedDocumentId(documentId);
-        resetStates();
-        setIsDocumentListCollapsed(false);
-        
-        toast.success('Document added successfully', { id: 'pdf-upload' });
-        
-        setRegionsCache(prev => ({ ...prev, [documentId]: [] }));
-
-        setTimeout(syncMetadata, 1000);
+        return;
       }
+
+      setDocuments(prev => [...prev, newDocument]);
+      setSelectedDocumentId(documentId);
+      resetStates();
+      setIsDocumentListCollapsed(false);
+      
+      toast.success('Document added successfully', { id: 'pdf-upload' });
+      
+      setRegionsCache(prev => ({ ...prev, [documentId]: [] }));
+
+      setTimeout(syncMetadata, 1000);
     } catch (error) {
       console.error('Error uploading document:', error);
       const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
