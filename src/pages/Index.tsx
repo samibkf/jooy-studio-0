@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { ChevronLeft, ChevronRight, Settings } from 'lucide-react';
@@ -152,8 +153,12 @@ const Index = () => {
           
           // Add the document with or without the file
           const documentData: DocumentData = {
-            ...doc,
+            id: doc.id,
+            name: doc.name,
+            user_id: doc.user_id || undefined,
             regions: typedRegions,
+            is_private: doc.is_private,
+            drm_protected_pages: doc.drm_protected_pages as (boolean | number[] | null),
           };
           
           validDocuments.push(documentData);
