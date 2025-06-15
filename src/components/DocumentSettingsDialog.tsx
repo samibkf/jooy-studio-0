@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import {
   Dialog,
@@ -34,19 +33,20 @@ export const DocumentSettingsDialog: React.FC<DocumentSettingsDialogProps> = ({
   pageCount,
   onUpdate,
 }) => {
-  const [isPrivate, setIsPrivate] = useState(document?.is_private || false);
+  const isSubscriber = !!user?.plan_id;
+  const [isPrivate, setIsPrivate] = useState(isSubscriber || document?.is_private || false);
   const [drmPages, setDrmPages] = useState<boolean | number[]>(document?.drm_protected_pages || []);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (document) {
-      setIsPrivate(document.is_private);
+      // For subscribers, always default the toggle to ON.
+      // For non-subscribers, reflect the document's saved state.
+      setIsPrivate(isSubscriber || document.is_private);
       setDrmPages(document.drm_protected_pages || []);
     }
-  }, [document, open]);
+  }, [document, open, isSubscriber]);
   
-  const isSubscriber = !!user?.plan_id;
-
   const handleSave = () => {
     if (!document) return;
     setLoading(true);
