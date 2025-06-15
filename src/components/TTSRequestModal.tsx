@@ -16,6 +16,7 @@ import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { usePdfPageCount } from '@/hooks/usePdfPageCount';
 import { Skeleton } from '@/components/ui/skeleton';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 
 interface TTSRequestModalProps {
   isOpen: boolean;
@@ -58,12 +59,14 @@ function parsePageRanges(input: string, maxPage: number): number[] {
 const TTSRequestModal = ({ isOpen, onOpenChange, documentId, documentName, onSuccess }: TTSRequestModalProps) => {
   const { authState, refreshProfile } = useAuth();
   const [selectedPages, setSelectedPages] = useState('');
+  const [voiceType, setVoiceType] = useState<'male' | 'female'>('female');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { pageCount, isLoading: isLoadingPageCount, error: pageCountError } = usePdfPageCount({ documentId });
 
   useEffect(() => {
     if (isOpen) {
       setSelectedPages('');
+      setVoiceType('female');
     }
   }, [isOpen]);
 
@@ -104,6 +107,7 @@ const TTSRequestModal = ({ isOpen, onOpenChange, documentId, documentName, onSuc
         cost_in_credits: costInCredits,
         extra_cost_da: extraCost,
         status: 'pending',
+        voice_type: voiceType,
       })
       .select()
       .single();
@@ -200,6 +204,26 @@ const TTSRequestModal = ({ isOpen, onOpenChange, documentId, documentName, onSuc
                   className="col-span-3"
                   placeholder="e.g., 1, 3-5, 8"
                 />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="voice" className="text-right">
+                  Voice
+                </Label>
+                <RadioGroup
+                  defaultValue="female"
+                  onValueChange={(value: 'male' | 'female') => setVoiceType(value)}
+                  value={voiceType}
+                  className="col-span-3 flex items-center space-x-4"
+                >
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="female" id="r-female" />
+                    <Label htmlFor="r-female">Female</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="male" id="r-male" />
+                    <Label htmlFor="r-male">Male</Label>
+                  </div>
+                </RadioGroup>
               </div>
               <div className="flex justify-end -mt-2">
                 <Button variant="link" size="sm" onClick={handleSelectAll} className="p-0 h-auto text-xs">

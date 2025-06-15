@@ -365,6 +365,7 @@ export type Database = {
           status: string
           updated_at: string
           user_id: string
+          voice_type: string | null
         }
         Insert: {
           cost_in_credits: number
@@ -377,6 +378,7 @@ export type Database = {
           status?: string
           updated_at?: string
           user_id: string
+          voice_type?: string | null
         }
         Update: {
           cost_in_credits?: number
@@ -389,6 +391,7 @@ export type Database = {
           status?: string
           updated_at?: string
           user_id?: string
+          voice_type?: string | null
         }
         Relationships: [
           {
