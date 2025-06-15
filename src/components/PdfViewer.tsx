@@ -9,10 +9,12 @@ import { ArrowLeft, ArrowRight, MousePointer, Copy } from 'lucide-react';
 import { Toggle } from '@/components/ui/toggle';
 import { TooltipProvider, TooltipTrigger, TooltipContent, Tooltip } from '@/components/ui/tooltip';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { useAuth } from '@/contexts/AuthProvider';
+
 pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
 
 interface PdfViewerProps {
-  file: File | null;
+  documentId: string | null;
   regions: Region[];
   onRegionCreate: (region: Omit<Region, 'id'>) => void;
   onRegionUpdate: (region: Region) => void;
@@ -22,12 +24,11 @@ interface PdfViewerProps {
   isSelectionMode: boolean;
   currentSelectionType: 'area' | null;
   onCurrentSelectionTypeChange: (type: 'area' | null) => void;
-  documentId: string | null;
   onPageChange?: (page: number) => void;
 }
 
 const PdfViewer: React.FC<PdfViewerProps> = ({
-  file,
+  documentId,
   regions,
   onRegionCreate,
   onRegionUpdate,
@@ -37,11 +38,12 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
   isSelectionMode,
   currentSelectionType,
   onCurrentSelectionTypeChange,
-  documentId,
   onPageChange
 }) => {
+  const { authState } = useAuth();
+  
   const [pdf, setPdf] = useState<PDFDocumentProxy | null>(null);
-  const [currentPage, setCurrentPage] = useState(1); // Changed from 0 to 1
+  const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(0);
   const [scale, setScale] = useState(1.0);
   const [isSelecting, setIsSelecting] = useState(false);
@@ -68,6 +70,11 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const [pageInputValue, setPageInputValue] = useState('');
   
+  // Enhanced loading and error states
+  const [loading, setLoading] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [debugInfo, setDebugInfo] = useState<string>('');
+
   const getNextRegionNumber = (pageNumber: number): number => {
     const pageRegions = regions.filter(region => region.page === pageNumber);
     if (pageRegions.length === 0) {
@@ -79,33 +86,129 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
     }).filter(num => !isNaN(num));
     return Math.max(...regionNumbers, 0) + 1;
   };
-  
+
+  // Enhanced PDF loading with user ID support
   useEffect(() => {
-    if (!file) return;
-    const loadPdf = async () => {
+    if (!documentId || !authState.user) return;
+    
+    setLoading(true);
+    setLoadError(null);
+    setDebugInfo('');
+    
+    const fetchAndLoadPdf = async () => {
       try {
-        const fileArrayBuffer = await file.arrayBuffer();
-        const loadingTask = pdfjsLib.getDocument({
-          data: fileArrayBuffer
+        console.log(`🔍 Starting PDF fetch for document: ${documentId}, user: ${authState.user.id}`);
+        setDebugInfo(`Starting PDF fetch for document: ${documentId}, user: ${authState.user.id}`);
+        
+        // Include user ID in the request to help Edge Function find the PDF
+        const url = `/functions/v1/stream-pdf?document_id=${documentId}&user_id=${authState.user.id}`;
+        console.log(`🌐 Fetching from: ${url}`);
+        
+        const startTime = Date.now();
+        const res = await fetch(url, {
+          headers: {
+            'Cache-Control': 'no-store',
+            'Accept': 'application/pdf,application/octet-stream,*/*'
+          }
         });
+        
+        const fetchTime = Date.now() - startTime;
+        console.log(`🌐 Fetch completed in ${fetchTime}ms, status: ${res.status}`);
+        
+        if (!res.ok) {
+          const errorText = await res.text();
+          console.error(`❌ HTTP Error ${res.status}:`, errorText);
+          setLoadError(`HTTP Error ${res.status}: ${errorText.substring(0, 200)}`);
+          setDebugInfo(`HTTP Error ${res.status}. Response: ${errorText.substring(0, 500)}`);
+          setLoading(false);
+          return;
+        }
+
+        // Check Content-Type
+        const contentType = res.headers.get('Content-Type');
+        console.log(`📄 Response Content-Type: ${contentType}`);
+        
+        if (contentType && !contentType.includes('application/pdf') && !contentType.includes('application/octet-stream')) {
+          console.warn(`⚠️ Unexpected Content-Type: ${contentType}`);
+          setDebugInfo(`Warning: Unexpected Content-Type: ${contentType}`);
+        }
+
+        // Get the ArrayBuffer
+        const parseStart = Date.now();
+        const arrayBuffer = await res.arrayBuffer();
+        const parseTime = Date.now() - parseStart;
+        
+        console.log(`📊 ArrayBuffer received: ${arrayBuffer.byteLength} bytes in ${parseTime}ms`);
+        setDebugInfo(prev => prev + `\nArrayBuffer: ${arrayBuffer.byteLength} bytes`);
+
+        // Validate PDF header
+        const uint8Array = new Uint8Array(arrayBuffer);
+        const pdfHeader = Array.from(uint8Array.slice(0, 8)).map(b => String.fromCharCode(b)).join('');
+        console.log(`🔍 PDF Header: "${pdfHeader}"`);
+        
+        if (!pdfHeader.startsWith('%PDF-')) {
+          console.error('❌ Invalid PDF header:', pdfHeader);
+          setLoadError(`Invalid PDF file - header: "${pdfHeader}"`);
+          setDebugInfo(prev => prev + `\nInvalid PDF header: "${pdfHeader}"`);
+          setLoading(false);
+          return;
+        }
+
+        // Check PDF footer
+        const footerBytes = uint8Array.slice(-10);
+        const footerStr = Array.from(footerBytes).map(b => String.fromCharCode(b)).join('');
+        console.log(`🔍 PDF Footer (last 10 bytes): "${footerStr}"`);
+
+        // Try to load with PDF.js
+        console.log(`📖 Attempting to load PDF with PDF.js...`);
+        setDebugInfo(prev => prev + `\nLoading with PDF.js...`);
+        
+        const loadingTask = pdfjsLib.getDocument({ 
+          data: arrayBuffer,
+          verbosity: 1 // Enable verbose logging
+        });
+        
         const pdfDocument = await loadingTask.promise;
+        
+        console.log(`✅ PDF loaded successfully: ${pdfDocument.numPages} pages`);
+        setDebugInfo(prev => prev + `\nSuccess: ${pdfDocument.numPages} pages loaded`);
+        
         setPdf(pdfDocument);
         setTotalPages(pdfDocument.numPages);
-        setCurrentPage(1); // Start at page 1
+        setCurrentPage(1);
         toast.success(`PDF loaded with ${pdfDocument.numPages} pages`);
+        
       } catch (error) {
-        console.error('Error loading PDF:', error);
-        toast.error('Failed to load PDF');
+        console.error('❌ PDF loading error:', error);
+        
+        let errorMessage = 'Unknown error';
+        let debugDetails = '';
+        
+        if (error instanceof Error) {
+          errorMessage = error.message;
+          debugDetails = `${error.name}: ${error.message}`;
+          if (error.stack) {
+            debugDetails += `\n${error.stack.substring(0, 500)}`;
+          }
+        }
+        
+        setLoadError(`Failed to load PDF: ${errorMessage}`);
+        setDebugInfo(prev => prev + `\nError: ${debugDetails}`);
+        toast.error(`Failed to load PDF: ${errorMessage}`);
+        setPdf(null);
       }
+      
+      setLoading(false);
     };
-    loadPdf();
-  }, [file]);
-  
+
+    fetchAndLoadPdf();
+  }, [documentId, authState.user]);
+
   useEffect(() => {
     if (!pdf || !canvasRef.current) return;
     const renderPage = async () => {
       try {
-        const page = await pdf.getPage(currentPage); // currentPage is now 1-based, matching PDF.js expectation
+        const page = await pdf.getPage(currentPage);
         const viewport = page.getViewport({
           scale
         });
@@ -137,7 +240,6 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [selectedRegionId, onRegionDelete]);
   
-  // Clear the timeout when component unmounts
   useEffect(() => {
     return () => {
       if (creationTimeoutId !== null) {
@@ -153,10 +255,10 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
     height: number;
   }) => {
     if (rect.width > 10 && rect.height > 10) {
-      const nextNumber = getNextRegionNumber(currentPage); // currentPage is now 1-based
+      const nextNumber = getNextRegionNumber(currentPage);
       const regionName = `${currentPage}_${nextNumber}`;
       const newRegion: Omit<Region, 'id'> = {
-        page: currentPage, // Use currentPage directly (1-based)
+        page: currentPage,
         x: rect.x,
         y: rect.y,
         width: rect.width,
@@ -166,10 +268,8 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
         description: ''
       };
       
-      // Create region
       onRegionCreate(newRegion);
       
-      // Block further region creation temporarily
       setIsTemporarilyBlocked(true);
       const timeoutId = window.setTimeout(() => {
         setIsTemporarilyBlocked(false);
@@ -177,7 +277,7 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
       setCreationTimeoutId(timeoutId);
     }
   };
-  
+
   const handleMouseDown = (e: React.MouseEvent) => {
     if (!isSelectionMode && !isDoubleClickMode || !containerRef.current || isTemporarilyBlocked) return;
     const rect = containerRef.current.getBoundingClientRect();
@@ -191,7 +291,6 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
         height: selectionRect.height
       };
       
-      // Reset selection
       setSelectionRect({
         x: 0,
         y: 0,
@@ -202,7 +301,6 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
       setIsSelecting(false);
       setIsDoubleClickMode(false);
       
-      // Create region outside of the render flow
       createRegion(currentRect);
     } else {
       setSelectionPoint({
@@ -273,7 +371,7 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
     if (currentPage < totalPages) {
       const newPage = currentPage + 1;
       setCurrentPage(newPage);
-      onPageChange?.(newPage); // Pass 1-based page number
+      onPageChange?.(newPage);
       window.getSelection()?.removeAllRanges();
       setSelectionPoint(null);
       setSelectionRect({
@@ -289,10 +387,10 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
   };
   
   const handlePrevPage = () => {
-    if (currentPage > 1) { // Changed from 0 to 1
+    if (currentPage > 1) {
       const newPage = currentPage - 1;
       setCurrentPage(newPage);
-      onPageChange?.(newPage); // Pass 1-based page number
+      onPageChange?.(newPage);
       window.getSelection()?.removeAllRanges();
       setSelectionPoint(null);
       setSelectionRect({
@@ -328,7 +426,6 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
     }
   };
   
-  // Function to copy the current page as an image to clipboard
   const copyPageToClipboard = async () => {
     if (!canvasRef.current) {
       toast.error('Canvas not available');
@@ -338,11 +435,8 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
     try {
       setIsCopyingPage(true);
       
-      // Simply copy the current PDF page without any regions or annotations
-      // Get the canvas element that contains the PDF page
       const canvas = canvasRef.current;
       
-      // Convert to blob
       const blob = await new Promise<Blob>((resolve) => {
         canvas.toBlob((blob) => {
           if (blob) resolve(blob);
@@ -350,7 +444,6 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
         }, 'image/png');
       });
       
-      // Create ClipboardItem and write to clipboard
       const clipboardItem = new ClipboardItem({ 'image/png': blob });
       await navigator.clipboard.write([clipboardItem]);
       
@@ -368,7 +461,7 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
     return () => window.removeEventListener('keydown', handleEscKey);
   }, [selectionPoint]);
   
-  const pageRegions = regions.filter(region => region.page === currentPage); // currentPage is now 1-based
+  const pageRegions = regions.filter(region => region.page === currentPage);
   
   useEffect(() => {
     setPreventCreateRegion(false);
@@ -377,10 +470,9 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
   const handleGoToPage = () => {
     const pageNum = parseInt(pageInputValue);
     if (pageNum >= 1 && pageNum <= totalPages) {
-      setCurrentPage(pageNum); // Use 1-based page number directly
-      onPageChange?.(pageNum); // Pass 1-based page number
+      setCurrentPage(pageNum);
+      onPageChange?.(pageNum);
       setPageInputValue('');
-      // Clear selection state when changing pages
       setSelectionPoint(null);
       setSelectionRect({ x: 0, y: 0, width: 0, height: 0 });
       setIsSelecting(false);
@@ -397,7 +489,7 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
     }
   };
 
-  if (!file) {
+  if (!documentId) {
     return <div className="flex flex-col items-center justify-center h-[calc(100vh-72px)] bg-muted">
         <div className="text-center p-10">
           <h2 className="font-bold mb-2 text-3xl">Welcome to Jooy Studio</h2>
@@ -406,6 +498,52 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
       </div>;
   }
   
+  if (!authState.user) {
+    return <div className="flex flex-col items-center justify-center h-[calc(100vh-72px)]">
+      <span className="text-muted-foreground">Please log in to view PDFs</span>
+    </div>;
+  }
+  
+  if (loading) {
+    return <div className="flex flex-col items-center justify-center h-[calc(100vh-72px)]">
+      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+      <span className="mt-3">Loading PDF...</span>
+      {debugInfo && (
+        <div className="mt-4 text-sm text-muted-foreground max-w-md text-center">
+          <details>
+            <summary className="cursor-pointer">Debug Info</summary>
+            <pre className="whitespace-pre-wrap text-xs mt-2 p-2 bg-muted rounded">
+              {debugInfo}
+            </pre>
+          </details>
+        </div>
+      )}
+    </div>
+  }
+  
+  if (loadError) {
+    return <div className="flex flex-col items-center justify-center h-[calc(100vh-72px)]">
+      <span className="text-destructive mb-4">{loadError}</span>
+      {debugInfo && (
+        <div className="text-sm text-muted-foreground max-w-md">
+          <details>
+            <summary className="cursor-pointer">Debug Info</summary>
+            <pre className="whitespace-pre-wrap text-xs mt-2 p-2 bg-muted rounded">
+              {debugInfo}
+            </pre>
+          </details>
+        </div>
+      )}
+      <Button 
+        onClick={() => window.location.reload()} 
+        variant="outline" 
+        className="mt-4"
+      >
+        Retry
+      </Button>
+    </div>
+  }
+
   return <div className="flex flex-col h-full w-full">
       <div className="bg-white border-b border-gray-200 p-2 w-full sticky top-0 z-10">
         <div className="flex items-center justify-between max-w-[1200px] mx-auto">

@@ -59,9 +59,9 @@ const Index = () => {
   const { authState, signOut } = useAuth();
   const navigate = useNavigate();
 
-  // Get PDF page count for QR code generation
+  // Fix 1: Get PDF page count by fetching PDF via Edge Function
   const { pageCount } = usePdfPageCount({
-    file: selectedDocument?.fileAvailable ? selectedDocument.file : null
+    documentId: selectedDocument ? selectedDocument.id : null,
   });
 
   // Initialize metadata management for selected document
@@ -147,96 +147,14 @@ const Index = () => {
             created_at: r.created_at
           }));
           
-          // PRIORITIZE CACHE: Try to get PDF from cache FIRST
-          let pdfFile: File | null = await pdfCacheService.getCachedPDF(doc.id);
-          let fileFound = !!pdfFile;
-          
-          if (pdfFile) {
-            console.log(`Using cached PDF for document ${doc.name}`);
-          } else {
-            console.log(`PDF not in cache for document ${doc.name}, downloading...`);
-            
-            // Updated file paths - PDFs now stored in root, with fallbacks
-            const filePaths = [
-              `${doc.id}.pdf`, // Primary: Store in root
-              `${authState.user.id}/${doc.id}.pdf`, // Fallback for user folders
-              `public/${doc.id}.pdf` // Legacy fallback
-            ];
-
-            // Try each path with direct download
-            for (const path of filePaths) {
-              if (fileFound) continue;
-              
-              console.log(`Attempting to download PDF file directly: ${path}`);
-              try {
-                const { data: fileData, error: downloadError } = await supabase.storage
-                  .from('pdfs')
-                  .download(path);
-
-                if (!downloadError && fileData) {
-                  pdfFile = new File([fileData], doc.name, { type: 'application/pdf' });
-                  fileFound = true;
-                  
-                  // Cache the PDF for future use
-                  await pdfCacheService.cachePDF(doc.id, pdfFile);
-                  console.log(`Successfully loaded and cached document ${doc.name} from ${path}`);
-                  break;
-                }
-              } catch (downloadError) {
-                console.warn(`Direct download failed for ${path}:`, downloadError);
-              }
-            }
-            
-            // If direct download failed, try with signed URLs
-            if (!fileFound) {
-              for (const path of filePaths) {
-                if (fileFound) continue;
-                
-                try {
-                  console.log(`Trying signed URL for: ${path}`);
-                  const { data: signedUrlData, error: signedUrlError } = await supabase.storage
-                    .from('pdfs')
-                    .createSignedUrl(path, 3600);
-
-                  if (!signedUrlError && signedUrlData?.signedUrl) {
-                    try {
-                      const response = await fetch(signedUrlData.signedUrl);
-                      if (response.ok) {
-                        const blob = await response.blob();
-                        pdfFile = new File([blob], doc.name, { type: 'application/pdf' });
-                        fileFound = true;
-                        
-                        // Cache the PDF for future use
-                        await pdfCacheService.cachePDF(doc.id, pdfFile);
-                        console.log(`Successfully loaded and cached document ${doc.name} with signed URL from ${path}`);
-                        break;
-                      }
-                    } catch (fetchError) {
-                      console.warn(`Fetch from signed URL failed for ${path}:`, fetchError);
-                    }
-                  }
-                } catch (signedUrlError) {
-                  console.warn(`Failed to get signed URL for ${path}:`, signedUrlError);
-                }
-              }
-            }
-          }
-          
           // Add the document with or without the file
           const documentData: DocumentData = {
             ...doc,
-            file: pdfFile || new File([], doc.name, { type: 'application/pdf' }),
             regions: typedRegions,
-            fileAvailable: fileFound,
-            uploadRequired: !fileFound
           };
           
           validDocuments.push(documentData);
           newCache[doc.id] = typedRegions;
-          
-          if (!fileFound) {
-            documentWithIssues++;
-          }
           
         } catch (docError) {
           console.error('Error processing document:', docError);
@@ -248,12 +166,6 @@ const Index = () => {
       setDocumentsLoaded(true);
       
       console.log("Processed documents:", validDocuments.length, "Documents with issues:", documentWithIssues);
-      
-      if (documentWithIssues > 0 && isInitialLoad) {
-        toast.warning(`${documentWithIssues} document(s) have PDF access issues. You may need to re-upload them.`, {
-          duration: 8000
-        });
-      }
       
       // Clean expired cache entries in the background
       pdfCacheService.clearExpiredCache().catch(console.error);
@@ -290,7 +202,7 @@ const Index = () => {
     }
     
     // Check if we're re-uploading an existing document
-    const reuploadDocId = selectedDocumentId && selectedDocument?.uploadRequired ? selectedDocumentId : null;
+    const reuploadDocId = selectedDocumentId;
     
     // Generate new 5-letter ID for new documents
     let documentId = reuploadDocId;
@@ -325,15 +237,12 @@ const Index = () => {
         return;
       }
       
-      // Cache the uploaded file
-      await pdfCacheService.cachePDF(documentId, file);
-      
       if (reuploadDocId) {
         // Update existing document
         setDocuments(prev => 
           prev.map(doc => 
             doc.id === reuploadDocId 
-              ? { ...doc, file, fileAvailable: true, uploadRequired: false } 
+              ? { ...doc } 
               : doc
           )
         );
@@ -358,9 +267,7 @@ const Index = () => {
         const newDocument: DocumentData = {
           id: documentId,
           name: file.name,
-          file,
           regions: [],
-          fileAvailable: true
         };
 
         setDocuments(prev => [...prev, newDocument]);
@@ -395,18 +302,6 @@ const Index = () => {
     if (selectedDocumentId === documentId) return;
     
     const docToSelect = documents.find(doc => doc.id === documentId);
-    
-    if (docToSelect && !docToSelect.fileAvailable) {
-      toast.warning(`PDF file for "${docToSelect.name}" is not available. You may need to re-upload it.`, {
-        action: {
-          label: "Re-upload",
-          onClick: () => {
-            setSelectedDocumentId(documentId);
-            fileInputRef.current?.click();
-          }
-        }
-      });
-    }
     
     if (selectedDocumentId && selectedDocument) {
       setDocuments(prev => 
@@ -731,22 +626,29 @@ const Index = () => {
     toast.success('Data exported successfully');
   };
 
+  const fetchPdfArrayBuffer = async (documentId: string): Promise<ArrayBuffer> => {
+    const response = await fetch(`/functions/v1/stream-pdf?document_id=${documentId}`, {
+      headers: { 'Cache-Control': 'no-store' },
+    });
+    if (!response.ok) throw new Error('Failed to fetch PDF');
+    return await response.arrayBuffer();
+  };
+
+  // Refactor: update to fetch ArrayBuffer for QR export/embedding
   const handleQRExport = async () => {
-    if (!selectedDocument || !selectedDocument.fileAvailable) {
+    if (!selectedDocument) {
       toast.error('No valid document selected');
       return;
     }
-
     if (pageCount === 0) {
       toast.error('Unable to determine page count for this document');
       return;
     }
-
     setIsQRExporting(true);
-    
+
     try {
       toast.loading('Generating QR codes...', { id: 'qr-export' });
-      
+
       // Generate QR codes for all pages
       const qrCodes = await generateBulkQRCodes(
         selectedDocument.id,
@@ -755,64 +657,72 @@ const Index = () => {
           toast.loading(`Generating QR codes... ${Math.round(progress)}%`, { id: 'qr-export' });
         }
       );
-
       toast.loading('Creating ZIP file...', { id: 'qr-export' });
-      
-      // Export as ZIP
       await exportQRCodesAsZip(qrCodes, selectedDocument.name);
-      
       toast.success(`Successfully exported ${qrCodes.length} QR codes`, { id: 'qr-export' });
     } catch (error) {
       console.error('Error exporting QR codes:', error);
-      toast.error('Failed to export QR codes: ' + (error instanceof Error ? error.message : 'Unknown error'), { id: 'qr-export' });
+      toast.error(
+        'Failed to export QR codes: ' +
+          (error instanceof Error ? error.message : 'Unknown error'),
+        { id: 'qr-export' }
+      );
     } finally {
       setIsQRExporting(false);
     }
   };
 
   const handlePDFQRExport = async (corner: 'top-left' | 'top-right') => {
-    if (!selectedDocument || !selectedDocument.fileAvailable) {
+    if (!selectedDocument) {
       toast.error('No valid document selected');
       return;
     }
-
     if (pageCount === 0) {
       toast.error('Unable to determine page count for this document');
       return;
     }
-
     setIsPDFQRExporting(true);
-    
+
     try {
       toast.loading('Generating transparent QR codes...', { id: 'pdf-qr-export' });
-      
+
       // Generate transparent QR codes for all pages
       const qrCodes = await generateTransparentBulkQRCodes(
         selectedDocument.id,
         pageCount,
         (progress) => {
-          toast.loading(`Generating QR codes... ${Math.round(progress)}%`, { id: 'pdf-qr-export' });
+          toast.loading(
+            `Generating QR codes... ${Math.round(progress)}%`,
+            { id: 'pdf-qr-export' }
+          );
         }
       );
 
       toast.loading('Embedding QR codes into PDF...', { id: 'pdf-qr-export' });
-      
-      // Embed QR codes into PDF
+
+      // *** Refactor: Fetch PDF as arrayBuffer using stream-pdf ***
+      const arrayBuffer = await fetchPdfArrayBuffer(selectedDocument.id);
+
+      // Pass arrayBuffer to embedQRCodeIntoPDF
       const modifiedPdfBytes = await embedQRCodeIntoPDF(
-        selectedDocument.file,
+        arrayBuffer,
         qrCodes,
         corner
       );
 
       toast.loading('Preparing download...', { id: 'pdf-qr-export' });
-      
-      // Download the modified PDF
       await downloadPDFWithQRCodes(modifiedPdfBytes, selectedDocument.name);
-      
-      toast.success(`Successfully created PDF with ${qrCodes.length} embedded QR codes`, { id: 'pdf-qr-export' });
+      toast.success(
+        `Successfully created PDF with ${qrCodes.length} embedded QR codes`,
+        { id: 'pdf-qr-export' }
+      );
     } catch (error) {
       console.error('Error creating PDF with QR codes:', error);
-      toast.error('Failed to create PDF with QR codes: ' + (error instanceof Error ? error.message : 'Unknown error'), { id: 'pdf-qr-export' });
+      toast.error(
+        'Failed to create PDF with QR codes: ' +
+          (error instanceof Error ? error.message : 'Unknown error'),
+        { id: 'pdf-qr-export' }
+      );
     } finally {
       setIsPDFQRExporting(false);
     }
@@ -839,63 +749,6 @@ const Index = () => {
         toast.error('Document not found', { id: 'retry-load' });
         return;
       }
-      
-      // First check cache again
-      let pdfFile = await pdfCacheService.getCachedPDF(selectedDocumentId);
-      
-      if (pdfFile) {
-        console.log('Found document in cache during retry');
-        setDocuments(prev => 
-          prev.map(d => 
-            d.id === selectedDocumentId ? { ...d, file: pdfFile!, fileAvailable: true, uploadRequired: false } : d
-          )
-        );
-        toast.success('Document loaded from cache', { id: 'retry-load' });
-        return;
-      }
-      
-      const filePath = `${selectedDocumentId}.pdf`;
-      
-      // Try direct download first
-      const { data: fileData, error: downloadError } = await supabase.storage
-        .from('pdfs')
-        .download(filePath);
-        
-      if (downloadError || !fileData) {
-        console.warn(`Direct retry download failed:`, downloadError);
-        
-        // Try with signed URL as fallback
-        const { data: signedUrlData, error: signedUrlError } = await supabase.storage
-          .from('pdfs')
-          .createSignedUrl(filePath, 3600);
-          
-        if (signedUrlError || !signedUrlData?.signedUrl) {
-          toast.error('PDF file still not accessible. Please try re-uploading.', { id: 'retry-load' });
-          return;
-        }
-        
-        const response = await fetch(signedUrlData.signedUrl);
-        if (!response.ok) {
-          toast.error('Failed to fetch PDF. Please try re-uploading.', { id: 'retry-load' });
-          return;
-        }
-        
-        const blob = await response.blob();
-        pdfFile = new File([blob], doc.name, { type: 'application/pdf' });
-      } else {
-        // Direct download succeeded
-        pdfFile = new File([fileData], doc.name, { type: 'application/pdf' });
-      }
-      
-      // Cache the successfully loaded file
-      await pdfCacheService.cachePDF(selectedDocumentId, pdfFile);
-      
-      // Update document with file
-      setDocuments(prev => 
-        prev.map(d => 
-          d.id === selectedDocumentId ? { ...d, file: pdfFile!, fileAvailable: true, uploadRequired: false } : d
-        )
-      );
       
       toast.success('Document loaded successfully', { id: 'retry-load' });
     } catch (error) {
@@ -924,7 +777,7 @@ const Index = () => {
           onExport={handleExport}
           onQRExport={handleQRExport}
           onPDFQRExport={handlePDFQRExport}
-          hasDocument={!!selectedDocument && selectedDocument.fileAvailable}
+          hasDocument={!!selectedDocument}
           isQRExporting={isQRExporting}
           isPDFQRExporting={isPDFQRExporting}
           qrCorner={qrCorner}
@@ -950,37 +803,9 @@ const Index = () => {
                 <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
                 <span className="ml-3">Loading documents...</span>
               </div>
-            ) : selectedDocument && !selectedDocument.fileAvailable ? (
-              <div className="flex flex-col items-center justify-center h-full p-4">
-                <Alert className="max-w-md mb-4 bg-amber-50 border-amber-300">
-                  <AlertTitle className="text-amber-800">PDF File Not Available</AlertTitle>
-                  <AlertDescription className="text-amber-700">
-                    The PDF file for "{selectedDocument.name}" could not be accessed. 
-                    This can happen when accessing your documents from a new device.
-                  </AlertDescription>
-                </Alert>
-                
-                <div className="flex gap-4 mt-4">
-                  <Button 
-                    onClick={handleRetryLoadDocument} 
-                    variant="outline"
-                    disabled={retryCount[selectedDocumentId] > 2}
-                  >
-                    Retry Loading
-                  </Button>
-                  
-                  <Button onClick={() => fileInputRef.current?.click()}>
-                    Re-upload PDF
-                  </Button>
-                </div>
-                
-                <p className="mt-8 text-sm text-muted-foreground max-w-md text-center">
-                  All your region data is still available and will be reconnected when the PDF is uploaded again.
-                </p>
-              </div>
             ) : (
               <PdfViewer
-                file={selectedDocument?.fileAvailable ? selectedDocument.file : null}
+                documentId={selectedDocumentId}
                 regions={selectedDocument?.regions || []}
                 onRegionCreate={handleRegionCreate}
                 onRegionUpdate={handleRegionUpdate}
@@ -990,7 +815,6 @@ const Index = () => {
                 isSelectionMode={!!currentSelectionType}
                 currentSelectionType={currentSelectionType}
                 onCurrentSelectionTypeChange={setCurrentSelectionType}
-                documentId={selectedDocumentId}
                 onPageChange={handlePageChange}
               />
             )}

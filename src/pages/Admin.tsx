@@ -110,7 +110,6 @@ const Admin = () => {
                       ? { 
                           ...doc,
                           name: payload.new.name,
-                          fileAvailable: fileExists
                         } 
                       : doc
                   )
@@ -142,8 +141,6 @@ const Admin = () => {
                     name: payload.new.name,
                     user_id: payload.new.user_id,
                     regions: [],
-                    file: null as unknown as File,
-                    fileAvailable: fileExists
                   }
                 ]);
               } catch (error) {
@@ -297,13 +294,11 @@ const Admin = () => {
         return {
           ...doc,
           regions: regions || [],
-          file: null as unknown as File,
-          fileAvailable: fileExists,
           user_id: doc.user_id
         } as DocumentData;
       }));
 
-      const availableFileCount = docsWithRegions.filter(d => d.fileAvailable).length;
+      const availableFileCount = docsWithRegions.filter(d => fileList?.some(file => file.name === `${d.id}.pdf`)).length;
       console.log(`Processed ${docsWithRegions.length} documents, ${availableFileCount} files available`);
       
       setUserDocuments(docsWithRegions);
@@ -326,11 +321,6 @@ const Admin = () => {
   };
 
   const handleDownload = async (doc: DocumentData) => {
-    if (!doc.fileAvailable) {
-      toast.error('File not available for download');
-      return;
-    }
-
     const storageReady = await initializeStorage();
     setStorageInitialized(storageReady);
     
@@ -362,7 +352,7 @@ const Admin = () => {
           setUserDocuments(prev => 
             prev.map(d => 
               d.id === doc.id 
-                ? { ...d, fileAvailable: false } 
+                ? { ...d } 
                 : d
             )
           );
@@ -611,7 +601,6 @@ const Admin = () => {
                   <TableRow>
                     <TableHead>Document</TableHead>
                     <TableHead>Regions</TableHead>
-                    <TableHead>Status</TableHead>
                     <TableHead>Actions</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -623,20 +612,12 @@ const Admin = () => {
                       </TableCell>
                       <TableCell>{document.regions.length}</TableCell>
                       <TableCell>
-                        <span className={`px-2 py-1 rounded text-xs ${document.fileAvailable ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-                          {document.fileAvailable ? 'Available' : 'Unavailable'}
-                        </span>
-                      </TableCell>
-                      <TableCell>
                         <div className="flex items-center gap-2">
                           <Button
                             variant="outline"
                             size="sm"
                             onClick={() => handleDownload(document)}
-                            disabled={!document.fileAvailable || !storageInitialized}
-                            title={!storageInitialized ? "PDF storage not configured" : 
-                                  !document.fileAvailable ? "File not available" : 
-                                  "Download document"}
+                            title="Download document"
                           >
                             <Download className="h-4 w-4" />
                           </Button>
