@@ -64,6 +64,7 @@ export type Database = {
       }
       document_texts: {
         Row: {
+          assigned_region_id: string | null
           content: string
           created_at: string
           document_id: string
@@ -73,6 +74,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          assigned_region_id?: string | null
           content: string
           created_at?: string
           document_id: string
@@ -82,6 +84,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          assigned_region_id?: string | null
           content?: string
           created_at?: string
           document_id?: string
@@ -96,6 +99,13 @@ export type Database = {
             columns: ["document_id"]
             isOneToOne: false
             referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_document_regions"
+            columns: ["assigned_region_id"]
+            isOneToOne: false
+            referencedRelation: "document_regions"
             referencedColumns: ["id"]
           },
         ]

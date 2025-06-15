@@ -210,7 +210,7 @@ export const TextAssignmentProvider = ({ children }: { children: React.ReactNode
 
     supabase
       .from('document_texts')
-      .update({ assigned_region_id: regionId } as any)
+      .update({ assigned_region_id: regionId })
       .eq('id', text.id)
       .then(({ error }) => {
         if (error) {
@@ -237,7 +237,7 @@ export const TextAssignmentProvider = ({ children }: { children: React.ReactNode
 
     supabase
       .from('document_texts')
-      .update({ assigned_region_id: null } as any)
+      .update({ assigned_region_id: null })
       .eq('assigned_region_id', regionId)
       .eq('document_id', documentId)
       .then(({ error }) => {
@@ -272,7 +272,7 @@ export const TextAssignmentProvider = ({ children }: { children: React.ReactNode
   
     supabase
       .from('document_texts')
-      .update({ assigned_region_id: null } as any)
+      .update({ assigned_region_id: null })
       .eq('document_id', documentId)
       .eq('page', page)
       .then(({ error }) => {
