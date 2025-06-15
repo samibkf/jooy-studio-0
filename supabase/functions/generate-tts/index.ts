@@ -1,6 +1,6 @@
-
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { GoogleGenAI } from "https://esm.sh/@google/genai@0.4.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -87,42 +87,61 @@ async function generateAudio(req: Request, supabaseAdmin: any) {
     console.log(`[${tts_request_id}] Found ${texts.length} text pages to process.`);
 
     // 3. Generate audio for each page using Gemini Text-to-Speech API
+    const apiKey = Deno.env.get("GEMINI_API_KEY");
+    if (!apiKey) {
+      throw new Error("GEMINI_API_KEY is not set in environment variables.");
+    }
+    const genAI = new GoogleGenAI({ apiKey });
+    const model = 'gemini-2.5-flash-preview-tts';
+    const config = {
+        responseModalities: ['audio'],
+        speechConfig: {
+          voiceConfig: {
+            prebuiltVoiceConfig: {
+              voiceName: 'Zephyr',
+            }
+          }
+        },
+    };
+
     for (const text of texts) {
       console.log(`[${tts_request_id}] Generating audio for page ${text.page}.`);
-      const apiKey = Deno.env.get("GEMINI_API_KEY");
-      if (!apiKey) {
-        throw new Error("GEMINI_API_KEY is not set in environment variables.");
-      }
+      
+      const contents = [{
+        role: 'user',
+        parts: [{ text: text.content }],
+      }];
 
-      const ttsResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/text:synthesizeSpeech?key=${apiKey}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            input: { text: text.content },
-            voice: {
-                // Using the voice from the user's plan.
-                name: "zephyr"
-            },
-            audioConfig: { 
-              audioEncoding: "LINEAR16",
-              sampleRateHertz: 24000
-            },
-            model: "gemini-2.5-flash-preview-tts"
-        }),
-      });
+      let audioContentB64 = '';
+      let mimeType = '';
 
-      if (!ttsResponse.ok) {
-        const errorBody = await ttsResponse.text();
-        console.error(`[${tts_request_id}] Gemini TTS API error for page ${text.page}: ${ttsResponse.status} ${errorBody}`);
-        throw new Error(`Gemini TTS API error: ${ttsResponse.status} - ${errorBody}`);
+      try {
+        const response = await genAI.models.generateContentStream({
+            model,
+            config,
+            contents,
+        });
+
+        for await (const chunk of response) {
+            const part = chunk.candidates?.[0]?.content?.parts?.[0];
+            if (part?.inlineData) {
+                audioContentB64 += part.inlineData.data;
+                if (!mimeType) {
+                    mimeType = part.inlineData.mimeType;
+                }
+            } else if (chunk.text) {
+                console.warn(`[${tts_request_id}] Gemini returned text instead of audio for page ${text.page}: ${chunk.text}`);
+            }
+        }
+      } catch (e) {
+          console.error(`[${tts_request_id}] Gemini TTS API error for page ${text.page}:`, e);
+          throw new Error(`Gemini TTS API error for page ${text.page}: ${e.message}`);
       }
       
-      const responseData = await ttsResponse.json();
-      const audioContent = responseData.audioContent;
 
-      if (audioContent) {
-        console.log(`[${tts_request_id}] Received audio content for page ${text.page}.`);
-        const binaryString = atob(audioContent);
+      if (audioContentB64) {
+        console.log(`[${tts_request_id}] Received audio content for page ${text.page}. Mime type: ${mimeType}`);
+        const binaryString = atob(audioContentB64);
         const len = binaryString.length;
         const pcmData = new Uint8Array(len);
         for (let i = 0; i < len; i++) {
@@ -168,6 +187,8 @@ async function generateAudio(req: Request, supabaseAdmin: any) {
           file_size: wavData.length,
         });
         console.log(`[${tts_request_id}] Successfully processed page ${text.page}.`);
+      } else {
+        throw new Error(`No audio content received from Gemini for page ${text.page}.`);
       }
     }
 
