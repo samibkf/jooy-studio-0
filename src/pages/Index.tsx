@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { ChevronLeft, ChevronRight, Settings } from 'lucide-react';
@@ -873,7 +872,7 @@ const Index = () => {
           />
 
           <div className="flex-1 overflow-hidden relative">
-            {selectedDocument && (
+            {selectedDocumentId && (
               <Button
                 variant="outline"
                 size="sm"
