@@ -118,6 +118,8 @@ const Admin = () => {
                       ? { 
                           ...doc,
                           name: payload.new.name,
+                          is_private: payload.new.is_private,
+                          drm_protected_pages: payload.new.drm_protected_pages as (boolean | number[] | null),
                         } 
                       : doc
                   )
@@ -149,6 +151,8 @@ const Admin = () => {
                     name: payload.new.name,
                     user_id: payload.new.user_id,
                     regions: [],
+                    is_private: payload.new.is_private,
+                    drm_protected_pages: payload.new.drm_protected_pages as (boolean | number[] | null),
                   }
                 ]);
               } catch (error) {
