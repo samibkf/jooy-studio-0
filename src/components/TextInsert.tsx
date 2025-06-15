@@ -105,6 +105,13 @@ const TextInsert = ({
     setIsGenerating(true);
     toast.loading('Generating guidance from page...', { id: 'gemini-generate' });
 
+    const currentPageRegionsCheck = regions.filter(r => r.page === currentPage);
+    if (currentPageRegionsCheck.length === 0) {
+      toast.warning(`No regions found on page ${currentPage}. Please add regions first.`, { id: 'gemini-generate' });
+      setIsGenerating(false);
+      return;
+    }
+
     try {
       const cachedPdf = await pdfCacheService.getCachedPDF(documentId);
       if (!cachedPdf) {
