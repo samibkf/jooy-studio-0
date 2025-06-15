@@ -47,6 +47,7 @@ const Index = () => {
   const [qrCorner, setQrCorner] = useState<'top-left' | 'top-right'>('top-left');
   const [isSettingsDialogOpen, setIsSettingsDialogOpen] = useState(false);
   const [documentVersion, setDocumentVersion] = useState(0);
+  const [isSettingsButtonVisible, setIsSettingsButtonVisible] = useState(false);
 
   const {
     selectedRegionId,
@@ -194,6 +195,16 @@ const Index = () => {
     
     loadDocuments();
   }, [authState.user]);
+
+  useEffect(() => {
+    if (selectedDocumentId) {
+      setIsSettingsButtonVisible(true);
+    } else {
+      // Delay hiding to prevent flickering during transitions
+      const timer = setTimeout(() => setIsSettingsButtonVisible(false), 150);
+      return () => clearTimeout(timer);
+    }
+  }, [selectedDocumentId]);
 
   const handleFileUpload = () => {
     fileInputRef.current?.click();
@@ -873,12 +884,13 @@ const Index = () => {
           />
 
           <div className="flex-1 overflow-hidden relative">
-            {selectedDocumentId && (
+            {isSettingsButtonVisible && (
               <Button
                 variant="outline"
                 size="sm"
                 className="absolute top-2 right-2 z-10 bg-background"
                 onClick={() => setIsSettingsDialogOpen(true)}
+                disabled={!selectedDocument}
               >
                 <Settings className="h-4 w-4 mr-2" />
                 Settings
