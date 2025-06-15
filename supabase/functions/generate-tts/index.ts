@@ -86,7 +86,7 @@ async function generateAudio(req: Request, supabaseAdmin: any) {
     
     console.log(`[${tts_request_id}] Found ${texts.length} text pages to process.`);
 
-    // 3. Generate audio for each page using Gemini Text-to-Speech API
+    // 3. Generate audio for each page using Google Cloud Text-to-Speech API
     for (const text of texts) {
       console.log(`[${tts_request_id}] Generating audio for page ${text.page}.`);
       const apiKey = Deno.env.get("GEMINI_API_KEY");
@@ -100,8 +100,8 @@ async function generateAudio(req: Request, supabaseAdmin: any) {
         body: JSON.stringify({
             synthesisInput: { text: text.content },
             voiceSelectionParams: {
-                // Using a plausible voice name, adjust if needed
-                name: "en-US-Studio-Q"
+                languageCode: "en-US",
+                name: "en-US-Wavenet-A"
             },
             audioConfig: { 
               audioEncoding: "LINEAR16",
@@ -112,8 +112,8 @@ async function generateAudio(req: Request, supabaseAdmin: any) {
 
       if (!ttsResponse.ok) {
         const errorBody = await ttsResponse.text();
-        console.error(`[${tts_request_id}] Gemini TTS API error for page ${text.page}: ${ttsResponse.status} ${errorBody}`);
-        throw new Error(`Gemini TTS API error: ${ttsResponse.status}`);
+        console.error(`[${tts_request_id}] Google TTS API error for page ${text.page}: ${ttsResponse.status} ${errorBody}`);
+        throw new Error(`Google TTS API error: ${ttsResponse.status}`);
       }
       
       const responseData = await ttsResponse.json();
