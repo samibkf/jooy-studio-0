@@ -40,7 +40,7 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
   onCurrentSelectionTypeChange,
   onPageChange
 }) => {
-  const { user } = useAuth();
+  const { authState } = useAuth();
   
   const [pdf, setPdf] = useState<PDFDocumentProxy | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
@@ -89,7 +89,7 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
 
   // Enhanced PDF loading with user ID support
   useEffect(() => {
-    if (!documentId || !user) return;
+    if (!documentId || !authState.user) return;
     
     setLoading(true);
     setLoadError(null);
@@ -97,11 +97,11 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
     
     const fetchAndLoadPdf = async () => {
       try {
-        console.log(`🔍 Starting PDF fetch for document: ${documentId}, user: ${user.id}`);
-        setDebugInfo(`Starting PDF fetch for document: ${documentId}, user: ${user.id}`);
+        console.log(`🔍 Starting PDF fetch for document: ${documentId}, user: ${authState.user.id}`);
+        setDebugInfo(`Starting PDF fetch for document: ${documentId}, user: ${authState.user.id}`);
         
         // Include user ID in the request to help Edge Function find the PDF
-        const url = `/functions/v1/stream-pdf?document_id=${documentId}&user_id=${user.id}`;
+        const url = `/functions/v1/stream-pdf?document_id=${documentId}&user_id=${authState.user.id}`;
         console.log(`🌐 Fetching from: ${url}`);
         
         const startTime = Date.now();
@@ -202,7 +202,7 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
     };
 
     fetchAndLoadPdf();
-  }, [documentId, user]);
+  }, [documentId, authState.user]);
 
   useEffect(() => {
     if (!pdf || !canvasRef.current) return;
@@ -498,7 +498,7 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
       </div>;
   }
   
-  if (!user) {
+  if (!authState.user) {
     return <div className="flex flex-col items-center justify-center h-[calc(100vh-72px)]">
       <span className="text-muted-foreground">Please log in to view PDFs</span>
     </div>;

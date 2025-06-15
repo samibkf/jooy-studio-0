@@ -8,13 +8,13 @@ interface UsePdfPageCountProps {
 }
 
 export const usePdfPageCount = ({ documentId }: UsePdfPageCountProps) => {
-  const { user } = useAuth();
+  const { authState } = useAuth();
   const [pageCount, setPageCount] = useState<number>(0);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!documentId || !user) {
+    if (!documentId || !authState.user) {
       setPageCount(0);
       setError(null);
       return;
@@ -26,7 +26,7 @@ export const usePdfPageCount = ({ documentId }: UsePdfPageCountProps) => {
 
       try {
         // Include user ID in the request
-        const url = `/functions/v1/stream-pdf?document_id=${documentId}&user_id=${user.id}`;
+        const url = `/functions/v1/stream-pdf?document_id=${documentId}&user_id=${authState.user.id}`;
         const resp = await fetch(url, {
           headers: { 'Cache-Control': 'no-store' },
         });
@@ -44,7 +44,7 @@ export const usePdfPageCount = ({ documentId }: UsePdfPageCountProps) => {
     };
 
     getPageCount();
-  }, [documentId, user]);
+  }, [documentId, authState.user]);
 
   return { pageCount, isLoading, error };
 };
