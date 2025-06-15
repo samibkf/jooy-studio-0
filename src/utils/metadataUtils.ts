@@ -1,4 +1,3 @@
-
 // Legacy metadata utilities - kept for backward compatibility
 // New projects should use useDocumentMetadata hook instead
 
@@ -9,7 +8,7 @@ import { DocumentData } from '@/types/documents';
 export interface DocumentMetadata {
   documentName: string;
   documentId: string;
-  drmProtectedPages: number[];
+  drmProtectedPages: boolean | number[];
   regions: Array<{
     page: number;
     x: number;
@@ -20,6 +19,7 @@ export interface DocumentMetadata {
     name: string;
     description: string[];
   }>;
+  isPrivate: boolean;
 }
 
 // Legacy function - use useDocumentMetadata hook instead
@@ -59,7 +59,7 @@ export const generateMetadata = async (
   });
 
   // Sort regions: first by page number, then by region name
-  const sortedRegions = processedRegions.sort((a, b) => {
+  const sortedRegions = (document.regions || []).sort((a, b) => {
     // First sort by page number
     if (a.page !== b.page) {
       return a.page - b.page;
@@ -74,8 +74,18 @@ export const generateMetadata = async (
   return {
     documentName: document.name,
     documentId: documentId,
-    drmProtectedPages: [], // Initialize as empty array - can be populated based on document data if needed
-    regions: sortedRegions
+    drmProtectedPages: document.drm_protected_pages || [],
+    isPrivate: document.is_private,
+    regions: sortedRegions.map(r => ({
+        page: r.page,
+        x: r.x,
+        y: r.y,
+        width: r.width,
+        height: r.height,
+        type: r.type,
+        name: r.name,
+        description: Array.isArray(r.description) ? r.description : (r.description || "").split(',').map(s => s.trim()).filter(Boolean),
+    }))
   };
 };
 
@@ -136,7 +146,8 @@ export const updateMetadata = async (
         documentName: '',
         documentId: documentId,
         drmProtectedPages: [],
-        regions: []
+        regions: [],
+        isPrivate: false,
       };
     }
 

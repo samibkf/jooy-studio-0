@@ -7,7 +7,7 @@ import { DocumentData } from '@/types/documents';
 interface DocumentMetadata {
   documentName: string;
   documentId: string;
-  drmProtectedPages: number[];
+  drmProtectedPages: boolean | number[];
   regions: Array<{
     page: number;
     x: number;
@@ -18,6 +18,7 @@ interface DocumentMetadata {
     name: string;
     description: string[];
   }>;
+  isPrivate: boolean;
 }
 
 interface UseDocumentMetadataProps {
@@ -86,7 +87,8 @@ export const useDocumentMetadata = ({
     return {
       documentName: docData.name,
       documentId: docId,
-      drmProtectedPages: [], // Initialize as empty array - can be populated based on document data if needed
+      drmProtectedPages: docData.drm_protected_pages || [],
+      isPrivate: docData.is_private,
       regions: sortedRegions
     };
   }, [authState.user]);

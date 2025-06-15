@@ -185,19 +185,25 @@ export type Database = {
       documents: {
         Row: {
           created_at: string
+          drm_protected_pages: Json | null
           id: string
+          is_private: boolean
           name: string
           user_id: string | null
         }
         Insert: {
           created_at?: string
+          drm_protected_pages?: Json | null
           id?: string
+          is_private?: boolean
           name: string
           user_id?: string | null
         }
         Update: {
           created_at?: string
+          drm_protected_pages?: Json | null
           id?: string
+          is_private?: boolean
           name?: string
           user_id?: string | null
         }

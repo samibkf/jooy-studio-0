@@ -1,7 +1,6 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Header from '@/components/Header';
 import Sidebar from '@/components/Sidebar';
@@ -29,6 +28,7 @@ import {
   downloadPDFWithQRCodes 
 } from '@/utils/pdfQrEmbedding';
 import { decryptData } from '@/utils/crypto';
+import { DocumentSettingsDialog } from '@/components/DocumentSettingsDialog';
 
 const Index = () => {
   const [documents, setDocuments] = useState<DocumentData[]>([]);
@@ -45,6 +45,7 @@ const Index = () => {
   const [isQRExporting, setIsQRExporting] = useState(false);
   const [isPDFQRExporting, setIsPDFQRExporting] = useState(false);
   const [qrCorner, setQrCorner] = useState<'top-left' | 'top-right'>('top-left');
+  const [isSettingsDialogOpen, setIsSettingsDialogOpen] = useState(false);
 
   const {
     selectedRegionId,
@@ -264,10 +265,13 @@ const Index = () => {
         
         toast.success('Document PDF re-uploaded successfully', { id: 'pdf-upload' });
       } else {
+        const isSubscriber = !!authState.profile?.plan_id;
         const newDocument: DocumentData = {
           id: documentId,
           name: file.name,
           regions: [],
+          is_private: isSubscriber,
+          drm_protected_pages: null,
         };
         
         const { error: dbError } = await supabase
@@ -275,7 +279,9 @@ const Index = () => {
           .insert({
             id: newDocument.id,
             name: newDocument.name,
-            user_id: authState.user.id
+            user_id: authState.user.id,
+            is_private: newDocument.is_private,
+            drm_protected_pages: newDocument.drm_protected_pages
           });
 
         if (dbError) {
@@ -409,6 +415,34 @@ const Index = () => {
     } catch (error) {
       console.error('Error in handleDocumentDelete:', error);
       toast.error('Failed to delete document');
+    }
+  };
+
+  const handleDocumentSettingsUpdate = async (updates: Partial<Pick<DocumentData, 'is_private' | 'drm_protected_pages'>>) => {
+    if (!selectedDocumentId || !authState.user) return;
+
+    try {
+      const { error } = await supabase
+        .from('documents')
+        .update(updates)
+        .eq('id', selectedDocumentId)
+        .eq('user_id', authState.user.id);
+
+      if (error) throw error;
+
+      setDocuments(prev =>
+        prev.map(doc =>
+          doc.id === selectedDocumentId ? { ...doc, ...updates } : doc
+        )
+      );
+
+      toast.success('Document settings updated.');
+
+      // Trigger metadata sync after a short delay to allow state to update
+      setTimeout(syncMetadata, 500);
+    } catch (error) {
+      console.error('Error updating document settings:', error);
+      toast.error('Failed to update document settings.');
     }
   };
 
@@ -834,6 +868,17 @@ const Index = () => {
           />
 
           <div className="flex-1 overflow-hidden relative">
+            {selectedDocument && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="absolute top-2 right-2 z-10 bg-background"
+                onClick={() => setIsSettingsDialogOpen(true)}
+              >
+                <Settings className="h-4 w-4 mr-2" />
+                Settings
+              </Button>
+            )}
             {isLoading ? (
               <div className="flex items-center justify-center h-full">
                 <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
@@ -882,6 +927,14 @@ const Index = () => {
             </div>
           </div>
         </div>
+        <DocumentSettingsDialog
+          open={isSettingsDialogOpen}
+          onOpenChange={setIsSettingsDialogOpen}
+          document={selectedDocument || null}
+          user={authState.profile}
+          pageCount={pageCount}
+          onUpdate={handleDocumentSettingsUpdate}
+        />
       </div>
     </ProtectedRoute>
   );

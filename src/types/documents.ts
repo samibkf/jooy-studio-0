@@ -1,3 +1,4 @@
+
 import { Region } from './regions';
 
 export interface DocumentData {
@@ -6,6 +7,8 @@ export interface DocumentData {
   regions: Region[];
   user_id?: string;
   lastAttemptedAccess?: Date;
+  is_private: boolean;
+  drm_protected_pages: boolean | number[] | null;
   // Removed: fileAvailable, file, uploadRequired
 }
 
