@@ -2,7 +2,7 @@ import React, { useState, useRef } from 'react';
 import { Textarea } from '@/components/ui/textarea';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { toast } from 'sonner';
-import { Undo2, ArrowRight, Sparkles, Settings, Trash2 } from 'lucide-react';
+import { Undo2, ArrowRight, Sparkles, Settings, Trash2, Text } from 'lucide-react';
 import { Region } from '@/types/regions';
 import { useTextAssignment } from '@/contexts/TextAssignmentContext';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -69,6 +69,7 @@ const TextInsert = ({
   const [systemInstructions, setSystemInstructions] = useState(SYSTEM_INSTRUCTIONS_TEMPLATE);
   const [isGenerating, setIsGenerating] = useState(false);
   const [textToDelete, setTextToDelete] = useState<TitledText | null>(null);
+  const [textToPreview, setTextToPreview] = useState<TitledText | null>(null);
 
   const {
     getCurrentDocumentTexts,
@@ -141,44 +142,11 @@ const TextInsert = ({
       
       const newTexts = await replaceAllContentForPage(generatedText, regions, documentId, currentPage);
 
-      const currentPageRegions = regions.filter(r => r.page === currentPage);
-      const sortedRegions = [...currentPageRegions].sort((a, b) => {
-        const aName = a.name.split('_').map(Number);
-        const bName = b.name.split('_').map(Number);
-        if (aName[0] !== bName[0]) {
-          return aName[0] - bName[0];
-        }
-        return aName[1] - bName[1];
-      });
-
-      const assignments = new Map<string, TitledText>();
       if (newTexts) {
-          newTexts.forEach((text, index) => {
-              if (index < sortedRegions.length) {
-                  const regionId = sortedRegions[index].id;
-                  assignments.set(regionId, text);
-              }
-          });
+          toast.success(`AI guidance generated with ${newTexts.length} texts. Please assign them manually.`, { id: 'gemini-generate' });
+      } else {
+          throw new Error('AI guidance was generated but could not be saved.');
       }
-
-      currentPageRegions.forEach(region => {
-          const newText = assignments.get(region.id);
-          if (newText) {
-              assignTextToRegion(newText, region.id, documentId);
-              onRegionUpdate({
-                  ...region,
-                  description: newText.content,
-              });
-          } else if (region.description) {
-              onRegionUpdate({
-                  ...region,
-                  description: null,
-              });
-          }
-      });
-      
-      const assignedCount = assignments.size;
-      toast.success(`AI guidance generated and assigned to ${assignedCount} regions!`, { id: 'gemini-generate' });
 
     } catch (error) {
       console.error("Error generating guidance:", error);
@@ -430,7 +398,7 @@ const TextInsert = ({
                       <div key={`unassigned-${index}`} className="relative group">
                         <Popover open={activeTextIndex === textIndex} onOpenChange={open => setActiveTextIndex(open ? textIndex : null)}>
                           <PopoverTrigger asChild>
-                            <div className="p-2 border rounded-md cursor-pointer border-gray-300 bg-white hover:border-blue-300 hover:bg-blue-50 transition-colors pr-8">
+                            <div className="p-2 border rounded-md cursor-pointer border-gray-300 bg-white hover:border-blue-300 hover:bg-blue-50 transition-colors pr-20">
                               <p className="font-medium text-sm">{text.title}</p>
                               <p className="text-xs line-clamp-2">{text.content.substring(0, 50)}...</p>
                             </div>
@@ -460,15 +428,26 @@ const TextInsert = ({
                             </ScrollArea>
                           </PopoverContent>
                         </Popover>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="absolute top-1/2 -translate-y-1/2 right-1 h-7 w-7 text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
-                          onClick={(e) => { e.stopPropagation(); setTextToDelete(text); }}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                          <span className="sr-only">Delete Text</span>
-                        </Button>
+                        <div className="absolute top-1/2 -translate-y-1/2 right-1 flex items-center opacity-0 group-hover:opacity-100 transition-opacity">
+                           <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 text-muted-foreground hover:text-foreground"
+                            onClick={(e) => { e.stopPropagation(); setTextToPreview(text); }}
+                          >
+                            <Text className="h-4 w-4" />
+                            <span className="sr-only">Preview Text</span>
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 text-destructive"
+                            onClick={(e) => { e.stopPropagation(); setTextToDelete(text); }}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                            <span className="sr-only">Delete Text</span>
+                          </Button>
+                        </div>
                       </div>
                     );
                   })}
@@ -520,6 +499,22 @@ const TextInsert = ({
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={handleDeleteText} className={buttonVariants({ variant: "destructive" })}>Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={!!textToPreview} onOpenChange={() => setTextToPreview(null)}>
+        <AlertDialogContent className="max-w-2xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle>{textToPreview?.title}</AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <ScrollArea className="max-h-[60vh] mt-4 pr-4">
+                <p className="text-sm text-foreground whitespace-pre-wrap">{textToPreview?.content}</p>
+              </ScrollArea>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction onClick={() => setTextToPreview(null)}>Close</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
