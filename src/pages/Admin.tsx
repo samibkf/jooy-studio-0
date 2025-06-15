@@ -1,8 +1,7 @@
-
 import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthProvider';
-import { Profile } from '@/types/auth';
+import { Profile, TtsRequestWithDetails } from '@/types/auth';
 import { supabase, initializeStorage } from '@/integrations/supabase/client';
 import { DocumentData } from '@/types/documents';
 import { CreditPlan } from '@/types/credits';
@@ -40,6 +39,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
+import { ManageTtsRequestDialog } from '@/components/admin/ManageTtsRequestDialog';
 
 const Admin = () => {
   const { authState, signOut } = useAuth();
@@ -55,7 +55,8 @@ const Admin = () => {
   const [initializingStorage, setInitializingStorage] = useState(false);
   const [showStorageHelp, setShowStorageHelp] = useState(false);
   const [creatorPlan, setCreatorPlan] = useState<CreditPlan | null>(null);
-  const [ttsRequests, setTtsRequests] = useState<any[]>([]);
+  const [ttsRequests, setTtsRequests] = useState<TtsRequestWithDetails[]>([]);
+  const [managingTtsRequest, setManagingTtsRequest] = useState<TtsRequestWithDetails | null>(null);
 
   const cleanupChannels = useCallback(() => {
     const channels = supabase.getChannels();
@@ -269,7 +270,7 @@ const Admin = () => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setTtsRequests(data || []);
+      setTtsRequests((data as TtsRequestWithDetails[]) || []);
     } catch (error) {
       console.error('Error fetching TTS requests:', error);
       toast.error('Failed to load TTS requests.');
@@ -479,6 +480,10 @@ const Admin = () => {
 
   const handleRetryStorage = () => {
     initStorage();
+  };
+
+  const handleManageTtsRequest = (request: TtsRequestWithDetails) => {
+    setManagingTtsRequest(request);
   };
 
   const filteredUsers = users.filter(user => 
@@ -778,7 +783,7 @@ const Admin = () => {
                       {new Date(req.created_at).toLocaleString()}
                     </TableCell>
                     <TableCell>
-                      <Button variant="outline" size="sm">Manage</Button>
+                      <Button variant="outline" size="sm" onClick={() => handleManageTtsRequest(req)}>Manage</Button>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -789,6 +794,12 @@ const Admin = () => {
           )}
         </CardContent>
       </Card>
+      <ManageTtsRequestDialog
+        request={managingTtsRequest}
+        open={!!managingTtsRequest}
+        onOpenChange={(open) => !open && setManagingTtsRequest(null)}
+        onSuccess={fetchTtsRequests}
+      />
     </div>
   );
 };
