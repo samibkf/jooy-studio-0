@@ -38,6 +38,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
 
 const Admin = () => {
   const { authState, signOut } = useAuth();
@@ -53,6 +54,7 @@ const Admin = () => {
   const [initializingStorage, setInitializingStorage] = useState(false);
   const [showStorageHelp, setShowStorageHelp] = useState(false);
   const [creatorPlan, setCreatorPlan] = useState<CreditPlan | null>(null);
+  const [ttsRequests, setTtsRequests] = useState<any[]>([]);
 
   const cleanupChannels = useCallback(() => {
     const channels = supabase.getChannels();
@@ -234,6 +236,7 @@ const Admin = () => {
       
       console.log('Admin page - Admin confirmed, fetching users');
       fetchUsers();
+      fetchTtsRequests();
     };
 
     checkAdminStatus();
@@ -254,6 +257,21 @@ const Admin = () => {
       toast.error('Failed to load users');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchTtsRequests = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('tts_requests')
+        .select('*, profiles(full_name, email), documents(name)')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setTtsRequests(data || []);
+    } catch (error) {
+      console.error('Error fetching TTS requests:', error);
+      toast.error('Failed to load TTS requests.');
     }
   };
 
@@ -714,6 +732,62 @@ const Admin = () => {
           )}
         </div>
       </div>
+
+      <Card className="mt-6">
+        <CardHeader>
+          <CardTitle>All TTS Requests</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {loading ? (
+            <p>Loading TTS requests...</p>
+          ) : ttsRequests.length > 0 ? (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>User</TableHead>
+                  <TableHead>Document</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Cost</TableHead>
+                  <TableHead>Submitted</TableHead>
+                  <TableHead>Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {ttsRequests.map((req) => (
+                  <TableRow key={req.id}>
+                    <TableCell>
+                      <div className="font-medium">{req.profiles?.full_name}</div>
+                      <div className="text-sm text-muted-foreground">{req.profiles?.email}</div>
+                    </TableCell>
+                    <TableCell className="truncate max-w-xs">
+                      {req.documents?.name}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={req.status === 'completed' ? 'default' : req.status === 'pending' ? 'secondary' : 'destructive'}>
+                        {req.status}
+                      </badge>
+                    </TableCell>
+                    <TableCell>
+                      <p>{req.cost_in_credits} credits</p>
+                      {req.extra_cost_da > 0 && (
+                        <p className="text-xs text-muted-foreground">{req.extra_cost_da.toLocaleString()} DA</p>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {new Date(req.created_at).toLocaleString()}
+                    </TableCell>
+                    <TableCell>
+                      <Button variant="outline" size="sm">Manage</Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          ) : (
+            <p>No TTS requests found.</p>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 };
