@@ -12,7 +12,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
 
 interface PdfViewerProps {
-  file: File | null;
+  documentId: string | null;
   regions: Region[];
   onRegionCreate: (region: Omit<Region, 'id'>) => void;
   onRegionUpdate: (region: Region) => void;
@@ -22,12 +22,11 @@ interface PdfViewerProps {
   isSelectionMode: boolean;
   currentSelectionType: 'area' | null;
   onCurrentSelectionTypeChange: (type: 'area' | null) => void;
-  documentId: string | null;
   onPageChange?: (page: number) => void;
 }
 
 const PdfViewer: React.FC<PdfViewerProps> = ({
-  file,
+  documentId,
   regions,
   onRegionCreate,
   onRegionUpdate,
@@ -37,11 +36,10 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
   isSelectionMode,
   currentSelectionType,
   onCurrentSelectionTypeChange,
-  documentId,
   onPageChange
 }) => {
   const [pdf, setPdf] = useState<PDFDocumentProxy | null>(null);
-  const [currentPage, setCurrentPage] = useState(1); // Changed from 0 to 1
+  const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(0);
   const [scale, setScale] = useState(1.0);
   const [isSelecting, setIsSelecting] = useState(false);
@@ -80,26 +78,45 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
     return Math.max(...regionNumbers, 0) + 1;
   };
   
+  // Track loading state and error for fetching PDF
+  const [loading, setLoading] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
+
+  // Use effect to fetch PDF via stream when the documentId changes
   useEffect(() => {
-    if (!file) return;
-    const loadPdf = async () => {
+    if (!documentId) return;
+    setLoading(true);
+    setLoadError(null);
+    const fetchAndLoadPdf = async () => {
       try {
-        const fileArrayBuffer = await file.arrayBuffer();
-        const loadingTask = pdfjsLib.getDocument({
-          data: fileArrayBuffer
+        const res = await fetch(`/functions/v1/stream-pdf?document_id=${documentId}`, {
+          headers: {
+            // Additional anti-caching (helps prevent download-detection)
+            'Cache-Control': 'no-store'
+          }
         });
+        if (!res.ok) {
+          setLoadError('Failed to fetch PDF');
+          setLoading(false);
+          return;
+        }
+        // As ArrayBuffer
+        const arrayBuffer = await res.arrayBuffer();
+        const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
         const pdfDocument = await loadingTask.promise;
         setPdf(pdfDocument);
         setTotalPages(pdfDocument.numPages);
-        setCurrentPage(1); // Start at page 1
+        setCurrentPage(1);
         toast.success(`PDF loaded with ${pdfDocument.numPages} pages`);
       } catch (error) {
-        console.error('Error loading PDF:', error);
+        setLoadError('Failed to load PDF');
         toast.error('Failed to load PDF');
+        setPdf(null);
       }
+      setLoading(false);
     };
-    loadPdf();
-  }, [file]);
+    fetchAndLoadPdf();
+  }, [documentId]);
   
   useEffect(() => {
     if (!pdf || !canvasRef.current) return;
@@ -397,7 +414,7 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
     }
   };
 
-  if (!file) {
+  if (!documentId) {
     return <div className="flex flex-col items-center justify-center h-[calc(100vh-72px)] bg-muted">
         <div className="text-center p-10">
           <h2 className="font-bold mb-2 text-3xl">Welcome to Jooy Studio</h2>
@@ -406,6 +423,18 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
       </div>;
   }
   
+  if (loading) {
+    return <div className="flex flex-col items-center justify-center h-[calc(100vh-72px)]">
+      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+      <span className="mt-3">Loading PDF...</span>
+    </div>
+  }
+  if (loadError) {
+    return <div className="flex flex-col items-center justify-center h-[calc(100vh-72px)]">
+      <span className="text-destructive">{loadError}</span>
+    </div>
+  }
+
   return <div className="flex flex-col h-full w-full">
       <div className="bg-white border-b border-gray-200 p-2 w-full sticky top-0 z-10">
         <div className="flex items-center justify-between max-w-[1200px] mx-auto">
