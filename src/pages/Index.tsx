@@ -202,7 +202,7 @@ const Index = () => {
     }
     
     // Check if we're re-uploading an existing document
-    const reuploadDocId = selectedDocumentId && selectedDocument?.uploadRequired ? selectedDocumentId : null;
+    const reuploadDocId = selectedDocumentId;
     
     // Generate new 5-letter ID for new documents
     let documentId = reuploadDocId;

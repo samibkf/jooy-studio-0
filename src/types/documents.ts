@@ -6,6 +6,7 @@ export interface DocumentData {
   regions: Region[];
   user_id?: string;
   lastAttemptedAccess?: Date;
+  // Removed: fileAvailable, file, uploadRequired
 }
 
 // Keep the Document type as an alias for backward compatibility
