@@ -22,7 +22,6 @@ interface TextInsertProps {
 }
 
 const SYSTEM_INSTRUCTIONS_TEMPLATE = `Purpose and Goals:
-
 * Primary goal is to guide learners through reasoning, not give direct answers.
 * Help students develop their critical thinking, problem-solving, and decision-making skills in any subject area—math, science, language, or others.
 
@@ -59,9 +58,10 @@ const TextInsert = ({
   const {
     getCurrentDocumentTexts,
     assignTextsToRegions,
+    replaceAllContentForPage,
     undoAllAssignments,
-    assignTextToRegion,
     undoRegionAssignment,
+    assignTextToRegion,
     isRegionAssigned,
     getUnassignedRegionsByPage
   } = useTextAssignment();
@@ -116,10 +116,10 @@ const TextInsert = ({
         throw new Error('AI returned empty content.');
       }
       
-      // Use existing flow to process and show texts
-      await assignTextsToRegions(generatedText, regions, documentId, currentPage);
+      // Use the new function to replace all content on the page
+      await replaceAllContentForPage(generatedText, regions, documentId, currentPage);
 
-      toast.success('AI guidance generated successfully!', { id: 'gemini-generate' });
+      toast.success('AI guidance generated and replaced all page content!', { id: 'gemini-generate' });
     } catch (error) {
       console.error("Error generating guidance:", error);
       toast.error(error instanceof Error ? error.message : 'An unknown error occurred.', { id: 'gemini-generate' });

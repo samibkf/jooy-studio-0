@@ -20,6 +20,7 @@ type TextAssignmentContextType = {
   getCurrentDocumentTexts: (documentId: string, page?: number) => TitledText[];
   setTitledTexts: (documentId: string, texts: TitledText[]) => void;
   assignTextsToRegions: (text: string, regions: Region[], documentId: string, page?: number) => Promise<TitledText[]>;
+  replaceAllContentForPage: (text: string, regions: Region[], documentId: string, page: number) => Promise<TitledText[]>;
   undoAllAssignments: (documentId: string, page?: number) => void;
   undoRegionAssignment: (regionId: string, documentId: string) => void;
   assignTextToRegion: (textIndex: number, regionId: string, documentId: string) => void;
@@ -502,6 +503,37 @@ export const TextAssignmentProvider: React.FC<{ children: React.ReactNode }> = (
     return newTitledTexts;
   };
 
+  const replaceAllContentForPage = async (text: string, regions: Region[], documentId: string, page: number): Promise<TitledText[]> => {
+    if (!authState.user) {
+        throw new Error('User not authenticated');
+    }
+
+    console.log(`Replacing all content on page ${page} for document ${documentId}`);
+    
+    // 1. Get all region IDs for the current page
+    const pageRegionIds = regions.filter(r => r.page === page).map(r => r.id);
+
+    // 2. Unassign all regions on the current page by deleting from DB
+    if (pageRegionIds.length > 0) {
+        const { error: assignmentError } = await supabase
+            .from('text_assignments')
+            .delete()
+            .eq('user_id', authState.user.id)
+            .eq('document_id', documentId)
+            .in('region_id', pageRegionIds);
+
+        if (assignmentError) {
+            console.error('Error removing old assignments from database:', assignmentError);
+            throw assignmentError;
+        }
+    }
+    
+    // 3. Let assignTextsToRegions handle replacing the texts themselves.
+    // It already deletes old texts for the page from the DB and adds new ones.
+    // It also updates local state correctly by replacing all of the page's texts.
+    return assignTextsToRegions(text, regions, documentId, page);
+  };
+
   const undoAllAssignments = async (documentId: string, page?: number) => {
     console.log(`Undoing assignments for document: ${documentId}`, page ? `on page ${page}` : '');
     
@@ -639,6 +671,7 @@ export const TextAssignmentProvider: React.FC<{ children: React.ReactNode }> = (
     getCurrentDocumentTexts,
     setTitledTexts,
     assignTextsToRegions,
+    replaceAllContentForPage,
     undoAllAssignments,
     undoRegionAssignment,
     assignTextToRegion,
