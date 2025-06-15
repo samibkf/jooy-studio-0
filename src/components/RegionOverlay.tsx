@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Region } from '@/types/regions';
 import { useTextAssignment } from '@/contexts/TextAssignmentContext';
@@ -26,31 +25,15 @@ const RegionOverlay: React.FC<RegionOverlayProps> = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const { isRegionAssigned, isReady, isLoading } = useTextAssignment();
 
-  // Track assignment state - only check when context is ready and we have a documentId
   const [hasText, setHasText] = useState(false);
-  const [isCheckingAssignment, setIsCheckingAssignment] = useState(true);
   
   useEffect(() => {
-    if (isReady && !isLoading && documentId) {
-      console.log(`Checking assignment for region ${region.id} (${region.name}) in document ${documentId}`);
-      setIsCheckingAssignment(true);
-      
-      // Small delay to ensure all assignments are loaded
-      const timer = setTimeout(() => {
-        const assigned = isRegionAssigned(region.id, documentId);
-        console.log(`Region ${region.id} assignment result: ${assigned}`);
-        setHasText(assigned);
-        setIsCheckingAssignment(false);
-      }, 100);
-      
-      return () => clearTimeout(timer);
-    } else {
-      console.log(`Context not ready for region ${region.id}: isReady=${isReady}, isLoading=${isLoading}, documentId=${documentId}`);
-      setIsCheckingAssignment(true);
+    if (isReady && documentId) {
+      const assigned = isRegionAssigned(region.id, documentId);
+      setHasText(assigned);
     }
-  }, [isReady, isLoading, region.id, documentId, isRegionAssigned]);
+  }, [isReady, region.id, documentId, isRegionAssigned, isRegionAssigned]);
 
-  // Update position when region changes
   useEffect(() => {
     setPosition({
       x: region.x,
@@ -105,7 +88,6 @@ const RegionOverlay: React.FC<RegionOverlayProps> = ({
     }
   };
 
-  // Set correct border and background colors based on selection and assignment
   const getBorderColor = () => {
     if (isSelected) {
       return hasText ? 'rgba(21, 128, 61, 0.95)' : 'rgba(37, 99, 235, 0.9)'; // Dark green for selected with text
@@ -120,8 +102,7 @@ const RegionOverlay: React.FC<RegionOverlayProps> = ({
     return hasText ? 'rgba(34, 197, 94, 0.1)' : 'rgba(37, 99, 235, 0.1)';
   };
 
-  // Show loading state while context is initializing or checking assignments
-  if (!isReady || isLoading || isCheckingAssignment) {
+  if (isLoading) {
     return (
       <div
         ref={containerRef}
@@ -152,7 +133,7 @@ const RegionOverlay: React.FC<RegionOverlayProps> = ({
             padding: `${Math.max(1, 2 * scale)}px ${Math.max(2, 4 * scale)}px`
           }}
         >
-          Loading...
+          {region.name}
         </div>
       </div>
     );

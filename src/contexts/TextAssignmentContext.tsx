@@ -5,7 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthProvider';
 
 export type TitledText = {
-  id: number;
+  id: string;
   title: string;
   content: string;
   assignedRegionId?: string;
@@ -22,37 +22,41 @@ interface TextAssignmentContextType {
   isRegionAssigned: (regionId: string, documentId: string) => boolean;
   getUnassignedRegionsByPage: (regions: Region[], page: number, documentId: string) => Region[];
   undoAllAssignments: (documentId: string, page: number) => void;
-  deleteDocumentText: (documentId: string, textId: number) => Promise<void>;
+  deleteDocumentText: (documentId: string, textId: string) => Promise<void>;
+  isLoading: boolean;
+  isReady: boolean;
 }
 
 export const TextAssignmentContext = createContext<TextAssignmentContextType | undefined>(undefined);
 
 export const TextAssignmentProvider = ({ children }: { children: React.ReactNode }) => {
   const [documentTexts, setDocumentTexts] = useState<Map<string, TitledText[]>>(new Map());
-  const { user } = useAuth();
+  const { authState } = useAuth();
+  const [isLoading, setIsLoading] = useState(true);
+  const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
     const fetchInitialData = async () => {
-      if (user) {
+      setIsLoading(true);
+      if (authState.user) {
         const { data: initialDocuments, error: initialError } = await supabase
           .from('documents')
           .select('id');
 
         if (initialError) {
           console.error("Error fetching initial documents:", initialError);
-          return;
-        }
-
-        if (initialDocuments && initialDocuments.length > 0) {
+        } else if (initialDocuments) {
           for (const doc of initialDocuments) {
             await fetchDocumentTexts(doc.id);
           }
         }
       }
+      setIsLoading(false);
+      setIsReady(true);
     };
 
     fetchInitialData();
-  }, [user]);
+  }, [authState.user]);
 
   const getCurrentDocumentTexts = (documentId: string, page?: number): TitledText[] => {
     const texts = documentTexts.get(documentId) || [];
@@ -60,14 +64,14 @@ export const TextAssignmentProvider = ({ children }: { children: React.ReactNode
   };
 
   const fetchDocumentTexts = async (documentId: string) => {
-    if (!user) {
+    if (!authState.user) {
       console.error("User not authenticated");
       return;
     }
 
     const { data, error } = await supabase
       .from('document_texts')
-      .select('*')
+      .select('*, document_regions(id, name, description)')
       .eq('document_id', documentId)
       .order('id', { ascending: true });
 
@@ -80,7 +84,7 @@ export const TextAssignmentProvider = ({ children }: { children: React.ReactNode
       id: item.id,
       title: item.title,
       content: item.content,
-      assignedRegionId: item.assigned_region_id || undefined,
+      assignedRegionId: (item as any).assigned_region_id || undefined,
       page: item.page,
     }));
 
@@ -92,14 +96,13 @@ export const TextAssignmentProvider = ({ children }: { children: React.ReactNode
   };
 
   const assignTextsToRegions = async (text: string, regions: Region[], documentId: string, page: number): Promise<TitledText[] | undefined> => {
-    if (!user) {
+    if (!authState.user) {
       console.error("User not authenticated");
       return;
     }
 
     const titledTexts = parseTitledText(text, page);
 
-    // Save to database
     const { data, error } = await supabase
       .from('document_texts')
       .insert(titledTexts.map(t => ({
@@ -107,6 +110,7 @@ export const TextAssignmentProvider = ({ children }: { children: React.ReactNode
         title: t.title,
         content: t.content,
         page: t.page,
+        user_id: authState.user.id
       })))
       .select('*');
 
@@ -119,11 +123,10 @@ export const TextAssignmentProvider = ({ children }: { children: React.ReactNode
       id: item.id,
       title: item.title,
       content: item.content,
-      assignedRegionId: item.assigned_region_id || undefined,
+      assignedRegionId: (item as any).assigned_region_id || undefined,
       page: item.page,
     }));
 
-    // Update local state
     setDocumentTexts(prev => {
       const newMap = new Map(prev);
       const existingTexts = newMap.get(documentId) || [];
@@ -135,15 +138,13 @@ export const TextAssignmentProvider = ({ children }: { children: React.ReactNode
   };
 
   const replaceAllContentForPage = async (text: string, regions: Region[], documentId: string, page: number): Promise<TitledText[] | undefined> => {
-    if (!user) {
+    if (!authState.user) {
       console.error("User not authenticated");
       return;
     }
   
-    // Parse the new text into titled sections
     const titledTexts = parseTitledText(text, page);
   
-    // First, delete all existing texts for the given document and page
     const { error: deleteError } = await supabase
       .from('document_texts')
       .delete()
@@ -155,7 +156,6 @@ export const TextAssignmentProvider = ({ children }: { children: React.ReactNode
       return;
     }
   
-    // Then, insert the new texts
     const { data, error: insertError } = await supabase
       .from('document_texts')
       .insert(titledTexts.map(t => ({
@@ -163,6 +163,7 @@ export const TextAssignmentProvider = ({ children }: { children: React.ReactNode
         title: t.title,
         content: t.content,
         page: t.page,
+        user_id: authState.user.id,
       })))
       .select('*');
   
@@ -175,14 +176,14 @@ export const TextAssignmentProvider = ({ children }: { children: React.ReactNode
       id: item.id,
       title: item.title,
       content: item.content,
-      assignedRegionId: item.assigned_region_id || undefined,
+      assignedRegionId: (item as any).assigned_region_id || undefined,
       page: item.page,
     }));
   
-    // Update local state
     setDocumentTexts(prev => {
       const newMap = new Map(prev);
-      newMap.set(documentId, savedTitledTexts);
+      const otherPageTexts = (prev.get(documentId) || []).filter(t => t.page !== page);
+      newMap.set(documentId, [...otherPageTexts, ...savedTitledTexts]);
       return newMap;
     });
   
@@ -190,7 +191,6 @@ export const TextAssignmentProvider = ({ children }: { children: React.ReactNode
   };
   
   const assignTextToRegion = (text: TitledText, regionId: string, documentId: string) => {
-    // Optimistically update local state
     setDocumentTexts(prev => {
       const newMap = new Map(prev);
       const texts = newMap.get(documentId) || [];
@@ -206,7 +206,6 @@ export const TextAssignmentProvider = ({ children }: { children: React.ReactNode
       return newMap;
     });
 
-    // Update database
     supabase
       .from('document_texts')
       .update({ assigned_region_id: regionId })
@@ -214,25 +213,13 @@ export const TextAssignmentProvider = ({ children }: { children: React.ReactNode
       .then(({ error }) => {
         if (error) {
           console.error("Error updating document text:", error);
-          // Revert local state if database update fails
-          setDocumentTexts(prev => {
-            const newMap = new Map(prev);
-            const texts = newMap.get(documentId) || [];
-            const updatedTexts = texts.map(t => {
-              if (t.id === text.id) {
-                return { ...t, assignedRegionId: undefined };
-              }
-              return t;
-            });
-            newMap.set(documentId, updatedTexts);
-            return newMap;
-          });
+          // Revert if fails
+          fetchDocumentTexts(documentId);
         }
       });
   };
   
   const undoRegionAssignment = (regionId: string, documentId: string) => {
-    // Optimistically update local state
     setDocumentTexts(prev => {
       const newMap = new Map(prev);
       const texts = newMap.get(documentId) || [];
@@ -246,7 +233,6 @@ export const TextAssignmentProvider = ({ children }: { children: React.ReactNode
       return newMap;
     });
 
-    // Update database
     supabase
       .from('document_texts')
       .update({ assigned_region_id: null })
@@ -255,18 +241,7 @@ export const TextAssignmentProvider = ({ children }: { children: React.ReactNode
       .then(({ error }) => {
         if (error) {
           console.error("Error updating document text:", error);
-          // Revert local state if database update fails
-          setDocumentTexts(prev => {
-            const newMap = new Map(prev);
-            const texts = newMap.get(documentId) || [];
-            const updatedTexts = texts.map(t => {
-              if (t.assignedRegionId === regionId) {
-                return { ...t, assignedRegionId: regionId };
-              }
-              return t;
-            });
-            newMap.set(documentId, updatedTexts);
-          });
+          fetchDocumentTexts(documentId);
         }
       });
   };
@@ -285,7 +260,6 @@ export const TextAssignmentProvider = ({ children }: { children: React.ReactNode
   };
   
   const undoAllAssignments = (documentId: string, page: number) => {
-    // Optimistically update local state
     setDocumentTexts(prev => {
       const newMap = new Map(prev);
       const texts = newMap.get(documentId) || [];
@@ -294,7 +268,6 @@ export const TextAssignmentProvider = ({ children }: { children: React.ReactNode
       return newMap;
     });
   
-    // Update database
     supabase
       .from('document_texts')
       .update({ assigned_region_id: null })
@@ -303,22 +276,13 @@ export const TextAssignmentProvider = ({ children }: { children: React.ReactNode
       .then(({ error }) => {
         if (error) {
           console.error("Error updating document text:", error);
-          // Revert local state if database update fails
-          setDocumentTexts(prev => {
-            const newMap = new Map(prev);
-            const texts = newMap.get(documentId) || [];
-            const updatedTexts = texts.map(t => {
-              return t;
-            });
-            newMap.set(documentId, updatedTexts);
-            return newMap;
-          });
+          fetchDocumentTexts(documentId);
         }
       });
   };
 
-  const deleteDocumentText = async (documentId: string, textId: number) => {
-    if (!user) {
+  const deleteDocumentText = async (documentId: string, textId: string) => {
+    if (!authState.user) {
       throw new Error("User not authenticated");
     }
 
@@ -352,6 +316,8 @@ export const TextAssignmentProvider = ({ children }: { children: React.ReactNode
     getUnassignedRegionsByPage,
     undoAllAssignments,
     deleteDocumentText,
+    isLoading,
+    isReady,
   };
 
   return (

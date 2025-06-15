@@ -1,6 +1,5 @@
-
 import React, { useState, useEffect } from 'react';
-import { useTextAssignment } from '@/contexts/TextAssignmentContext';
+import { useTextAssignment, TitledText } from '@/contexts/TextAssignmentContext';
 import { Region } from '@/types/regions';
 import { Undo2 } from 'lucide-react';
 import { Button } from './ui/button';
@@ -20,38 +19,21 @@ const DraggableText = ({ region, onRegionUpdate, documentId }: DraggableTextProp
     isLoading
   } = useTextAssignment();
 
-  const [assignedText, setAssignedText] = useState<any>(null);
+  const [assignedText, setAssignedText] = useState<TitledText | undefined>(undefined);
   const [regionAssigned, setRegionAssigned] = useState(false);
-  const [isCheckingAssignment, setIsCheckingAssignment] = useState(true);
 
-  // Check assignment status when context is ready
   useEffect(() => {
-    if (isReady && !isLoading && documentId) {
-      console.log(`DraggableText checking assignment for region ${region.id}`);
-      setIsCheckingAssignment(true);
+    if (isReady && documentId) {
+      const titledTexts = getCurrentDocumentTexts(documentId);
+      const foundText = titledTexts.find(text => text.assignedRegionId === region.id);
+      const isAssigned = isRegionAssigned(region.id, documentId);
       
-      // Small delay to ensure all assignments are loaded
-      const timer = setTimeout(() => {
-        const titledTexts = getCurrentDocumentTexts(documentId);
-        const foundText = titledTexts.find(text => text.assignedRegionId === region.id);
-        const isAssigned = isRegionAssigned(region.id, documentId);
-        
-        console.log(`DraggableText for region ${region.id}: assigned=${isAssigned}, hasText=${!!foundText}`);
-        
-        setAssignedText(foundText);
-        setRegionAssigned(isAssigned);
-        setIsCheckingAssignment(false);
-      }, 100);
-      
-      return () => clearTimeout(timer);
-    } else {
-      console.log(`DraggableText context not ready for region ${region.id}`);
-      setIsCheckingAssignment(true);
+      setAssignedText(foundText);
+      setRegionAssigned(isAssigned);
     }
-  }, [isReady, isLoading, region.id, documentId, getCurrentDocumentTexts, isRegionAssigned]);
+  }, [isReady, region.id, documentId, getCurrentDocumentTexts, isRegionAssigned]);
 
-  // Wait for context to be ready and not loading
-  if (!isReady || isLoading || isCheckingAssignment) {
+  if (isLoading) {
     return (
       <div className="mt-2 p-2 border border-dashed rounded-md bg-gray-50 transition-colors">
         <div className="flex justify-between items-center mb-1">
