@@ -57,34 +57,7 @@ const TTSHistory = () => {
     const handleRequestTTS = (doc: DocForTTS) => {
         setSelectedDocument(doc);
     };
-
-    const handleDownload = async (request: any) => {
-        if (!request.final_audio_path) {
-            toast.error("Final audio is not ready for download yet.");
-            return;
-        }
-        try {
-            const { data, error } = await supabase.storage.from('tts').createSignedUrl(request.final_audio_path, 3600);
-            if(error) throw error;
-            window.open(data.signedUrl, '_blank');
-            toast.success("Download starting...");
-        } catch (error) {
-            console.error("Download error:", error);
-            toast.error("Failed to start download.");
-        }
-    }
-
-    const getStatusBadgeVariant = (status: string) => {
-        switch (status) {
-            case 'completed': return 'default';
-            case 'pending': return 'secondary';
-            case 'processing': return 'secondary';
-            case 'generated': return 'outline';
-            case 'failed': return 'destructive';
-            default: return 'secondary';
-        }
-    };
-
+    
     return (
         <div className="container mx-auto py-8">
             <div className="flex items-center justify-between mb-6">
@@ -139,16 +112,10 @@ const TTSHistory = () => {
                                     {ttsRequests.map(req => (
                                         <TableRow key={req.id}>
                                             <TableCell className="truncate max-w-xs">{req.documents.name}</TableCell>
-                                            <TableCell>
-                                                <Badge variant={getStatusBadgeVariant(req.status)}>
-                                                    {req.status}
-                                                </Badge>
-                                            </TableCell>
+                                            <TableCell><Badge variant={req.status === 'completed' ? 'default' : 'secondary'}>{req.status}</Badge></TableCell>
                                             <TableCell>{req.requested_pages.length}</TableCell>
                                             <TableCell>
-                                                <Button size="sm" disabled={!req.final_audio_path} onClick={() => handleDownload(req)}>
-                                                    <Download className="h-4 w-4" />
-                                                </Button>
+                                                <Button size="sm" disabled={req.status !== 'completed'}><Download className="h-4 w-4" /></Button>
                                             </TableCell>
                                         </TableRow>
                                     ))}
