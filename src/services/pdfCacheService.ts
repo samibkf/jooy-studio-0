@@ -1,7 +1,6 @@
-
 interface CachedPDF {
   id: string;
-  file: File;
+  data: ArrayBuffer;
   timestamp: number;
   version: string;
 }
@@ -45,7 +44,7 @@ class PDFCacheService {
     });
   }
 
-  async getCachedPDF(documentId: string): Promise<File | null> {
+  async getCachedPDF(documentId: string): Promise<ArrayBuffer | null> {
     try {
       const db = await this.initDB();
       const transaction = db.transaction([this.storeName], 'readonly');
@@ -79,7 +78,7 @@ class PDFCacheService {
           }
           
           console.log(`Using cached PDF for document: ${documentId}`);
-          resolve(result.file);
+          resolve(result.data);
         };
       });
     } catch (error) {
@@ -88,7 +87,7 @@ class PDFCacheService {
     }
   }
 
-  async cachePDF(documentId: string, file: File): Promise<boolean> {
+  async cachePDF(documentId: string, data: ArrayBuffer): Promise<boolean> {
     try {
       const db = await this.initDB();
       const transaction = db.transaction([this.storeName], 'readwrite');
@@ -96,7 +95,7 @@ class PDFCacheService {
       
       const cachedPDF: CachedPDF = {
         id: documentId,
-        file,
+        data,
         timestamp: Date.now(),
         version: '1.0'
       };
@@ -181,8 +180,8 @@ class PDFCacheService {
   }
 
   async isCached(documentId: string): Promise<boolean> {
-    const cachedFile = await this.getCachedPDF(documentId);
-    return cachedFile !== null;
+    const cachedData = await this.getCachedPDF(documentId);
+    return cachedData !== null;
   }
 }
 

@@ -673,8 +673,8 @@ const Index = () => {
   };
 
   const handlePDFQRExport = async (corner: 'top-left' | 'top-right') => {
-    if (!selectedDocument) {
-      toast.error('No valid document selected');
+    if (!selectedDocument || !authState.user || !authState.session) {
+      toast.error('No valid document selected or user not authenticated');
       return;
     }
     if (pageCount === 0) {
@@ -684,6 +684,25 @@ const Index = () => {
     setIsPDFQRExporting(true);
 
     try {
+      toast.loading('Fetching PDF data...', { id: 'pdf-qr-export' });
+
+      // *** Refactor: Fetch PDF as arrayBuffer using stream-pdf and auth ***
+      const supabaseUrl = 'https://bohxienpthilrfwktokd.supabase.co';
+      const anonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJvaHhpZW5wdGhpbHJmd2t0b2tkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDU2OTc3OTcsImV4cCI6MjA2MTI3Mzc5N30.4UO_pFmDauRz6Km5wTr3VHM95_GwyWKc1-pxGO1mImg';
+      const functionUrl = `${supabaseUrl}/functions/v1/stream-pdf?document_id=${selectedDocument.id}&user_id=${authState.user.id}`;
+      
+      const headers = {
+        'Cache-Control': 'no-store',
+        'Authorization': `Bearer ${authState.session.access_token}`,
+        'apikey': anonKey,
+      };
+
+      const response = await fetch(functionUrl, { headers });
+      if (!response.ok) {
+        throw new Error(`Failed to fetch PDF for QR code embedding. Status: ${response.status}`);
+      }
+      const arrayBuffer = await response.arrayBuffer();
+
       toast.loading('Generating transparent QR codes...', { id: 'pdf-qr-export' });
 
       // Generate transparent QR codes for all pages
@@ -699,9 +718,6 @@ const Index = () => {
       );
 
       toast.loading('Embedding QR codes into PDF...', { id: 'pdf-qr-export' });
-
-      // *** Refactor: Fetch PDF as arrayBuffer using stream-pdf ***
-      const arrayBuffer = await fetchPdfArrayBuffer(selectedDocument.id);
 
       // Pass arrayBuffer to embedQRCodeIntoPDF
       const modifiedPdfBytes = await embedQRCodeIntoPDF(
