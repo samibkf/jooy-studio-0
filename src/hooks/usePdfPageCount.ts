@@ -1,18 +1,20 @@
 
 import { useState, useEffect } from 'react';
 import * as pdfjsLib from 'pdfjs-dist';
+import { useAuth } from '@/contexts/AuthProvider';
 
 interface UsePdfPageCountProps {
   documentId: string | null;
 }
 
 export const usePdfPageCount = ({ documentId }: UsePdfPageCountProps) => {
+  const { user } = useAuth();
   const [pageCount, setPageCount] = useState<number>(0);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!documentId) {
+    if (!documentId || !user) {
       setPageCount(0);
       setError(null);
       return;
@@ -23,8 +25,9 @@ export const usePdfPageCount = ({ documentId }: UsePdfPageCountProps) => {
       setError(null);
 
       try {
-        // Fetch PDF via edge function as ArrayBuffer
-        const resp = await fetch(`/functions/v1/stream-pdf?document_id=${documentId}`, {
+        // Include user ID in the request
+        const url = `/functions/v1/stream-pdf?document_id=${documentId}&user_id=${user.id}`;
+        const resp = await fetch(url, {
           headers: { 'Cache-Control': 'no-store' },
         });
         if (!resp.ok) throw new Error('Failed to fetch PDF');
@@ -41,7 +44,7 @@ export const usePdfPageCount = ({ documentId }: UsePdfPageCountProps) => {
     };
 
     getPageCount();
-  }, [documentId]);
+  }, [documentId, user]);
 
   return { pageCount, isLoading, error };
 };

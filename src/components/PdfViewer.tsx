@@ -9,6 +9,7 @@ import { ArrowLeft, ArrowRight, MousePointer, Copy } from 'lucide-react';
 import { Toggle } from '@/components/ui/toggle';
 import { TooltipProvider, TooltipTrigger, TooltipContent, Tooltip } from '@/components/ui/tooltip';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { useAuth } from '@/contexts/AuthProvider';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
 
@@ -39,6 +40,8 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
   onCurrentSelectionTypeChange,
   onPageChange
 }) => {
+  const { user } = useAuth();
+  
   const [pdf, setPdf] = useState<PDFDocumentProxy | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(0);
@@ -84,9 +87,9 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
     return Math.max(...regionNumbers, 0) + 1;
   };
 
-  // Enhanced PDF loading with detailed debugging
+  // Enhanced PDF loading with user ID support
   useEffect(() => {
-    if (!documentId) return;
+    if (!documentId || !user) return;
     
     setLoading(true);
     setLoadError(null);
@@ -94,11 +97,15 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
     
     const fetchAndLoadPdf = async () => {
       try {
-        console.log(`🔍 Starting PDF fetch for document: ${documentId}`);
-        setDebugInfo(`Starting PDF fetch for document: ${documentId}`);
+        console.log(`🔍 Starting PDF fetch for document: ${documentId}, user: ${user.id}`);
+        setDebugInfo(`Starting PDF fetch for document: ${documentId}, user: ${user.id}`);
+        
+        // Include user ID in the request to help Edge Function find the PDF
+        const url = `/functions/v1/stream-pdf?document_id=${documentId}&user_id=${user.id}`;
+        console.log(`🌐 Fetching from: ${url}`);
         
         const startTime = Date.now();
-        const res = await fetch(`/functions/v1/stream-pdf?document_id=${documentId}`, {
+        const res = await fetch(url, {
           headers: {
             'Cache-Control': 'no-store',
             'Accept': 'application/pdf,application/octet-stream,*/*'
@@ -195,7 +202,7 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
     };
 
     fetchAndLoadPdf();
-  }, [documentId]);
+  }, [documentId, user]);
 
   useEffect(() => {
     if (!pdf || !canvasRef.current) return;
@@ -489,6 +496,12 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
           <p className="text-muted-foreground text-lg">Interactive Books Start Here</p>
         </div>
       </div>;
+  }
+  
+  if (!user) {
+    return <div className="flex flex-col items-center justify-center h-[calc(100vh-72px)]">
+      <span className="text-muted-foreground">Please log in to view PDFs</span>
+    </div>;
   }
   
   if (loading) {
