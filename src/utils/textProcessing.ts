@@ -1,4 +1,3 @@
-
 type TitledText = {
   title: string;
   content: string;
@@ -47,16 +46,12 @@ export const parseTitledText = (text: string): TitledText[] => {
         groupedTitles.push(titles[nextIndex]);
         const finalContent = parts[nextIndex + 1]?.trim() || "";
         
-        // Create a single section with the first title as main title and others as part of content
-        const mainTitle = groupedTitles[0];
-        const additionalTitles = groupedTitles.slice(1);
-        const formattedContent = additionalTitles.length > 0 
-          ? `**${additionalTitles.join('** **')}**\n${finalContent}`
-          : finalContent;
+        // Create a single section with combined titles as the main title
+        const combinedTitle = groupedTitles.join(' - ');
         
         sections.push({
-          title: mainTitle,
-          content: formattedContent
+          title: combinedTitle,
+          content: finalContent
         });
         
         // Skip the processed titles
