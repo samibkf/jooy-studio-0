@@ -1,3 +1,4 @@
+
 type TitledText = {
   title: string;
   content: string;
@@ -9,41 +10,46 @@ type TitledText = {
  * @returns Array of titled text sections
  */
 export const parseTitledText = (text: string): TitledText[] => {
-  // Regular expression to match markdown headings with ** pattern
-  const titleRegex = /\*\*(.*?)\*\*/g;
+  // Regular expression to match markdown headings with ** pattern and capture text on same line
+  const titleRegex = /\*\*(.*?)\*\*([^\n]*)/g;
   const sections: TitledText[] = [];
   
-  // Split the text by markdown headings
-  const parts = text.split(/\*\*.*?\*\*/);
+  // Split the text by markdown headings (including any text on the same line)
+  const parts = text.split(/\*\*.*?\*\*[^\n]*/);
   
-  // Extract all titles
-  const titles: string[] = [];
+  // Extract all titles with their same-line text
+  const titlesWithSameLineText: string[] = [];
   let match;
   while ((match = titleRegex.exec(text)) !== null) {
-    titles.push(match[1]);
+    const titlePart = match[1]; // The text inside **
+    const sameLineText = match[2]?.trim() || ""; // Text after ** on same line
+    
+    // Combine title with same-line text if it exists
+    const fullTitle = sameLineText ? `${titlePart} ${sameLineText}` : titlePart;
+    titlesWithSameLineText.push(fullTitle);
   }
   
   // First part is content before any title, we ignore it as per requirements
   // Start from the second part (index 1)
-  for (let i = 0; i < titles.length; i++) {
-    const currentTitle = titles[i];
+  for (let i = 0; i < titlesWithSameLineText.length; i++) {
+    const currentTitle = titlesWithSameLineText[i];
     const currentContent = parts[i + 1]?.trim() || "";
     
     // Check if current section has no content and there's a next title
-    if (currentContent === "" && i + 1 < titles.length) {
+    if (currentContent === "" && i + 1 < titlesWithSameLineText.length) {
       // Group consecutive empty titles together
       let groupedTitles = [currentTitle];
       let nextIndex = i + 1;
       
       // Collect all consecutive titles with empty content
-      while (nextIndex < titles.length && (parts[nextIndex + 1]?.trim() || "") === "") {
-        groupedTitles.push(titles[nextIndex]);
+      while (nextIndex < titlesWithSameLineText.length && (parts[nextIndex + 1]?.trim() || "") === "") {
+        groupedTitles.push(titlesWithSameLineText[nextIndex]);
         nextIndex++;
       }
       
       // If we found consecutive empty titles, group them with the next title that has content
-      if (nextIndex < titles.length) {
-        groupedTitles.push(titles[nextIndex]);
+      if (nextIndex < titlesWithSameLineText.length) {
+        groupedTitles.push(titlesWithSameLineText[nextIndex]);
         const finalContent = parts[nextIndex + 1]?.trim() || "";
         
         // Create a single section with combined titles as the main title
