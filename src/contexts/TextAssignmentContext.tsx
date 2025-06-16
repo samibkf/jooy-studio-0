@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Region } from '@/types/regions';
 import { parseTitledText } from '@/utils/textProcessing';
@@ -10,6 +11,7 @@ export type TitledText = {
   content: string;
   assignedRegionId?: string;
   page: number;
+  orderIndex: number;
 };
 
 interface TextAssignmentContextType {
@@ -60,7 +62,9 @@ export const TextAssignmentProvider = ({ children }: { children: React.ReactNode
 
   const getCurrentDocumentTexts = (documentId: string, page?: number): TitledText[] => {
     const texts = documentTexts.get(documentId) || [];
-    return page !== undefined ? texts.filter(text => text.page === page) : texts;
+    const filteredTexts = page !== undefined ? texts.filter(text => text.page === page) : texts;
+    // Sort by orderIndex to maintain original generation order
+    return filteredTexts.sort((a, b) => a.orderIndex - b.orderIndex);
   };
 
   const fetchDocumentTexts = async (documentId: string) => {
@@ -73,7 +77,7 @@ export const TextAssignmentProvider = ({ children }: { children: React.ReactNode
       .from('document_texts')
       .select('*, document_regions(id, name, description)')
       .eq('document_id', documentId)
-      .order('id', { ascending: true });
+      .order('order_index', { ascending: true });
 
     if (error) {
       console.error("Error fetching document texts:", error);
@@ -86,6 +90,7 @@ export const TextAssignmentProvider = ({ children }: { children: React.ReactNode
       content: item.content,
       assignedRegionId: (item as any).assigned_region_id || undefined,
       page: item.page,
+      orderIndex: item.order_index,
     }));
 
     setDocumentTexts(prev => {
@@ -102,7 +107,23 @@ export const TextAssignmentProvider = ({ children }: { children: React.ReactNode
     }
 
     const parsedTexts = parseTitledText(text);
-    const titledTextsWithPage = parsedTexts.map(t => ({ ...t, page }));
+    
+    // Get the highest order_index for this document and page to ensure sequential ordering
+    const { data: maxOrderData } = await supabase
+      .from('document_texts')
+      .select('order_index')
+      .eq('document_id', documentId)
+      .eq('page', page)
+      .order('order_index', { ascending: false })
+      .limit(1);
+
+    const startOrderIndex = maxOrderData && maxOrderData.length > 0 ? maxOrderData[0].order_index + 1 : 1;
+
+    const titledTextsWithPage = parsedTexts.map((t, index) => ({ 
+      ...t, 
+      page,
+      orderIndex: startOrderIndex + index
+    }));
 
     const { data, error } = await supabase
       .from('document_texts')
@@ -111,6 +132,7 @@ export const TextAssignmentProvider = ({ children }: { children: React.ReactNode
         title: t.title,
         content: t.content,
         page: t.page,
+        order_index: t.orderIndex,
         user_id: authState.user!.id
       })))
       .select('*');
@@ -126,6 +148,7 @@ export const TextAssignmentProvider = ({ children }: { children: React.ReactNode
       content: item.content,
       assignedRegionId: (item as any).assigned_region_id || undefined,
       page: item.page,
+      orderIndex: item.order_index,
     }));
 
     setDocumentTexts(prev => {
@@ -145,7 +168,11 @@ export const TextAssignmentProvider = ({ children }: { children: React.ReactNode
     }
   
     const parsedTexts = parseTitledText(text);
-    const titledTextsWithPage = parsedTexts.map(t => ({ ...t, page }));
+    const titledTextsWithPage = parsedTexts.map((t, index) => ({ 
+      ...t, 
+      page,
+      orderIndex: index + 1  // Start from 1 for replaced content
+    }));
   
     const { error: deleteError } = await supabase
       .from('document_texts')
@@ -165,6 +192,7 @@ export const TextAssignmentProvider = ({ children }: { children: React.ReactNode
         title: t.title,
         content: t.content,
         page: t.page,
+        order_index: t.orderIndex,
         user_id: authState.user!.id,
       })))
       .select('*');
@@ -180,6 +208,7 @@ export const TextAssignmentProvider = ({ children }: { children: React.ReactNode
       content: item.content,
       assignedRegionId: (item as any).assigned_region_id || undefined,
       page: item.page,
+      orderIndex: item.order_index,
     }));
   
     setDocumentTexts(prev => {

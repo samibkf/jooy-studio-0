@@ -1,3 +1,4 @@
+
 import React, { useState, useRef } from 'react';
 import { Textarea } from '@/components/ui/textarea';
 import { Button, buttonVariants } from '@/components/ui/button';
@@ -42,9 +43,9 @@ Behaviors and Rules:
 
 For Each Question in the provided worksheet:
 Respond with 3 short reasoning paragraphs that:
-* Help the student reflect on what they already know that’s relevant to the problem.
+* Help the student reflect on what they already know that's relevant to the problem.
 * Lead the student to analyze or break down the given options, data, or elements of the question.
-* Encourage the student to mentally test or evaluate possible solutions within the problem’s context.
+* Encourage the student to mentally test or evaluate possible solutions within the problem's context.
 After each reasoning paragraph, include a separate reflective prompt (mini-review call-to-action). These should:
 * Encourage the student to pause, apply their thinking, and take the next mental step.
 * Be short, varied in wording, and written in a friendly, student-facing tone.
@@ -86,8 +87,7 @@ const TextInsert = ({
   } = useTextAssignment();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // Get texts for current document and filter by current page
-  const allDocumentTexts = documentId ? getCurrentDocumentTexts(documentId) : [];
+  // Get texts for current document and filter by current page, sorted by orderIndex
   const currentPageTexts = documentId ? getCurrentDocumentTexts(documentId, currentPage) : [];
 
   const sortRegionsByName = (regionsToSort: Region[]): Region[] => {
@@ -174,7 +174,9 @@ const TextInsert = ({
               const sortedRegions = sortRegionsByName(currentPageRegions);
 
               let assignedCount = 0;
-              newTexts.forEach((text, index) => {
+              // Sort texts by orderIndex to maintain AI generation order
+              const sortedTexts = [...newTexts].sort((a, b) => a.orderIndex - b.orderIndex);
+              sortedTexts.forEach((text, index) => {
                   if (index < sortedRegions.length) {
                       const region = sortedRegions[index];
                       assignTextToRegion(text, region.id, documentId);
@@ -223,9 +225,11 @@ const TextInsert = ({
     // Sort regions by their name to ensure proper assignment order
     const sortedRegions = sortRegionsByName(currentPageRegions);
 
-    // Assign texts to regions in order
+    // Assign texts to regions in order, maintaining orderIndex
     if (processedTexts && processedTexts.length > 0) {
-      processedTexts.forEach((text, index) => {
+      // Sort texts by orderIndex to maintain generation order
+      const sortedTexts = [...processedTexts].sort((a, b) => a.orderIndex - b.orderIndex);
+      sortedTexts.forEach((text, index) => {
         if (index < sortedRegions.length) {
           const region = sortedRegions[index];
           assignTextToRegion(text, region.id, documentId);
@@ -342,6 +346,7 @@ const TextInsert = ({
     }
   };
 
+  // Separate texts by assignment status and sort by orderIndex
   const unassignedTexts = currentPageTexts.filter(text => !text.assignedRegionId);
   const assignedTexts = currentPageTexts.filter(text => text.assignedRegionId);
   const unassignedRegionsByPage = documentId ? sortRegionsByName(getUnassignedRegionsByPage(regions, currentPage, documentId)) : [];
@@ -439,7 +444,7 @@ const TextInsert = ({
                   {unassignedTexts.map((text, index) => {
                     const textIndex = currentPageTexts.indexOf(text);
                     return (
-                      <div key={`unassigned-${index}`} className="relative group">
+                      <div key={`unassigned-${text.id}`} className="relative group">
                         <Popover open={activeTextIndex === textIndex} onOpenChange={open => setActiveTextIndex(open ? textIndex : null)}>
                           <PopoverTrigger asChild>
                             <div className="p-2 border rounded-md cursor-pointer border-gray-300 bg-white hover:border-blue-300 hover:bg-blue-50 transition-colors pr-20">
@@ -508,7 +513,7 @@ const TextInsert = ({
                   {assignedTexts.map((text, index) => {
                     const assignedRegion = regions.find(r => r.id === text.assignedRegionId);
                     return (
-                      <div key={`assigned-${index}`} className="p-2 border rounded-md border-green-500 bg-green-50 cursor-pointer hover:bg-green-100 transition-colors" onClick={() => text.assignedRegionId && handleRegionSelect(text.assignedRegionId)}>
+                      <div key={`assigned-${text.id}`} className="p-2 border rounded-md border-green-500 bg-green-50 cursor-pointer hover:bg-green-100 transition-colors" onClick={() => text.assignedRegionId && handleRegionSelect(text.assignedRegionId)}>
                         <div className="flex justify-between items-center">
                           <p className="font-medium text-sm">{text.title}</p>
                           <Button onClick={e => {

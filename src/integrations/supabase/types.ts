@@ -141,6 +141,7 @@ export type Database = {
           created_at: string
           document_id: string
           id: string
+          order_index: number
           page: number
           title: string
           user_id: string
@@ -151,6 +152,7 @@ export type Database = {
           created_at?: string
           document_id: string
           id?: string
+          order_index: number
           page?: number
           title: string
           user_id: string
@@ -161,6 +163,7 @@ export type Database = {
           created_at?: string
           document_id?: string
           id?: string
+          order_index?: number
           page?: number
           title?: string
           user_id?: string
