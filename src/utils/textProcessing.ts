@@ -13,8 +13,8 @@ export const parseTitledText = (text: string): TitledText[] => {
   const titleRegex = /\*\*(.*?)\*\*([^\n]*)/g;
   const sections: TitledText[] = [];
   
-  // Split the text by markdown headings, keeping the full line including text after **
-  const parts = text.split(/\*\*.*?\*\*[^\n]*/);
+  // Split the text by markdown headings, but only by the ** part, keeping same-line text
+  const parts = text.split(/\*\*.*?\*\*/);
   
   // Extract all titles with their accompanying text on the same line
   const titles: string[] = [];
