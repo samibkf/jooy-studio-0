@@ -9,23 +9,18 @@ type TitledText = {
  * @returns Array of titled text sections
  */
 export const parseTitledText = (text: string): TitledText[] => {
-  // Regular expression to match markdown headings with ** pattern and capture text on the same line
-  const titleRegex = /\*\*(.*?)\*\*([^\n]*)/g;
+  // Regular expression to match markdown headings with ** pattern
+  const titleRegex = /\*\*(.*?)\*\*/g;
   const sections: TitledText[] = [];
   
-  // Split the text by markdown headings, but only by the ** part, keeping same-line text
+  // Split the text by markdown headings
   const parts = text.split(/\*\*.*?\*\*/);
   
-  // Extract all titles with their accompanying text on the same line
+  // Extract all titles
   const titles: string[] = [];
   let match;
   while ((match = titleRegex.exec(text)) !== null) {
-    const boldedText = match[1]; // Text inside **
-    const sameLineText = match[2].trim(); // Text after ** on the same line
-    
-    // Combine bolded text with same-line text
-    const fullTitle = sameLineText ? `${boldedText} ${sameLineText}` : boldedText;
-    titles.push(fullTitle);
+    titles.push(match[1]);
   }
   
   // First part is content before any title, we ignore it as per requirements
