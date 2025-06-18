@@ -1,3 +1,4 @@
+
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.4';
@@ -10,7 +11,7 @@ const corsHeaders = {
 };
 
 const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
 serve(async (req) => {
   console.log(`\n--- New PDF Request: ${new Date().toISOString()} ---`);
@@ -35,35 +36,46 @@ serve(async (req) => {
     });
   }
 
-  // Log environment variables (without exposing full values)
-  console.log(`[STREAM-PDF] 🔧 Supabase URL configured: ${supabaseUrl ? "✅" : "❌"}`);
-  console.log(`[STREAM-PDF] 🔑 Supabase Key configured: ${supabaseAnonKey ? "✅" : "❌"}`);
+  // Create admin client for private bucket access
+  const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey);
+
+  console.log(`[STREAM-PDF] 🔧 Using admin client for private bucket access`);
 
   const bucket = "pdfs";
   
-  // Try both storage patterns: flat and user-specific
+  // Try both storage patterns: user-specific and flat (for backward compatibility)
   const filePaths = [
-    `${documentId}.pdf`, // Flat storage pattern
-    userId ? `${userId}/${documentId}.pdf` : null // User-specific pattern
+    userId ? `${userId}/${documentId}.pdf` : null, // User-specific pattern
+    `${documentId}.pdf` // Flat storage pattern for backward compatibility
   ].filter(Boolean);
   
   console.log(`[STREAM-PDF] 📁 Will try these paths:`, filePaths);
 
   for (const filePath of filePaths) {
     try {
-      console.log(`[STREAM-PDF] 🔍 Attempting to fetch: ${bucket}/${filePath}`);
+      console.log(`[STREAM-PDF] 🔍 Attempting to access: ${bucket}/${filePath}`);
       
-      const storageUrl = `${supabaseUrl}/storage/v1/object/public/${bucket}/${filePath}`;
-      console.log(`[STREAM-PDF] 🌐 Storage URL: ${storageUrl}`);
+      // Generate signed URL for the private file
+      const { data: signedUrlData, error: signedUrlError } = await supabaseAdmin.storage
+        .from(bucket)
+        .createSignedUrl(filePath, 300); // 5 minutes expiration
 
-      const fileResp = await fetch(storageUrl, {
-        headers: {
-          authorization: `Bearer ${supabaseAnonKey}`,
-          apikey: supabaseAnonKey,
-        },
-      });
+      if (signedUrlError) {
+        console.log(`[STREAM-PDF] ❌ Failed to create signed URL for ${filePath}: ${signedUrlError.message}`);
+        continue;
+      }
 
-      console.log(`[STREAM-PDF] 📊 Storage response status for ${filePath}: ${fileResp.status}`);
+      if (!signedUrlData?.signedUrl) {
+        console.log(`[STREAM-PDF] ❌ No signed URL generated for ${filePath}`);
+        continue;
+      }
+
+      console.log(`[STREAM-PDF] 🌐 Generated signed URL for: ${filePath}`);
+
+      // Fetch the file using the signed URL
+      const fileResp = await fetch(signedUrlData.signedUrl);
+
+      console.log(`[STREAM-PDF] 📊 File response status for ${filePath}: ${fileResp.status}`);
 
       if (fileResp.ok) {
         const arrayBuffer = await fileResp.arrayBuffer();
@@ -111,7 +123,7 @@ serve(async (req) => {
         });
 
       } else {
-        console.log(`[STREAM-PDF] ❌ Failed to fetch from ${filePath}: ${fileResp.status}`);
+        console.log(`[STREAM-PDF] ❌ Failed to fetch from signed URL for ${filePath}: ${fileResp.status}`);
         
         if (fileResp.status !== 404) {
           const errorText = await fileResp.text();
@@ -120,7 +132,7 @@ serve(async (req) => {
       }
 
     } catch (error) {
-      console.error(`[STREAM-PDF] 💥 Error fetching from ${filePath}:`, error);
+      console.error(`[STREAM-PDF] 💥 Error accessing ${filePath}:`, error);
     }
   }
 
@@ -133,7 +145,7 @@ serve(async (req) => {
       documentId,
       userId,
       attemptedPaths: filePaths,
-      message: "The PDF was not found in storage. Check if the file exists at one of the attempted paths and that the Edge Function has permission to read it."
+      message: "The PDF was not found in storage. Check if the file exists at one of the attempted paths and that the Edge Function has admin permission to read it."
     }
   }), {
     status: 404,

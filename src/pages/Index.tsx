@@ -243,6 +243,7 @@ const Index = () => {
 
       toast.loading('Uploading PDF file...', { id: 'pdf-upload' });
       
+      // Use flat path for backward compatibility (RLS policies allow this for document owners)
       const filePath = `${documentId}.pdf`;
       console.log(`Uploading PDF to storage path: ${filePath}`);
       
@@ -366,15 +367,30 @@ const Index = () => {
     try {
       console.log('Attempting to delete document:', documentId);
 
-      // Delete PDF from bucket root
-      const { error: storageError } = await supabase.storage
-        .from('pdfs')
-        .remove([`${documentId}.pdf`]);
+      // Try to delete from both possible storage paths for backward compatibility
+      const pathsToTry = [
+        `${documentId}.pdf`, // Flat path
+        `${authState.user.id}/${documentId}.pdf` // User-specific path
+      ];
 
-      if (storageError) {
-        console.error('Error deleting file from storage:', storageError);
-        toast.error('Failed to delete document from storage');
-        return;
+      let storageDeleteSuccess = false;
+      for (const path of pathsToTry) {
+        console.log(`Trying to delete storage path: ${path}`);
+        const { error: storageError } = await supabase.storage
+          .from('pdfs')
+          .remove([path]);
+
+        if (!storageError) {
+          console.log(`Successfully deleted storage path: ${path}`);
+          storageDeleteSuccess = true;
+          break;
+        } else {
+          console.log(`Failed to delete path ${path}:`, storageError);
+        }
+      }
+
+      if (!storageDeleteSuccess) {
+        console.warn('No storage files found to delete, but continuing with database cleanup');
       }
 
       // Delete metadata file

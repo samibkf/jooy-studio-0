@@ -1,4 +1,3 @@
-
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.4'
 
 const corsHeaders = {
@@ -184,26 +183,34 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Generate signed URL for the PDF file
+    // Generate signed URL for the PDF file from private bucket
     console.log(`[${new Date().toISOString()}] Generating signed URL for PDF: ${worksheetId}.pdf`);
-    const pdfPath = `${worksheetId}.pdf`;
-    const { data: signedUrlData, error: urlError } = await supabaseAdmin.storage
-      .from('pdfs')
-      .createSignedUrl(pdfPath, 300); // 5 minutes expiration
+    
+    // Try both path patterns for backward compatibility
+    const pdfPaths = [
+      document.user_id ? `${document.user_id}/${worksheetId}.pdf` : null, // User-specific path
+      `${worksheetId}.pdf` // Flat path for backward compatibility
+    ].filter(Boolean);
 
-    if (urlError) {
-      console.error(`[${new Date().toISOString()}] Error generating signed URL:`, urlError);
-      return new Response(
-        JSON.stringify({ error: 'Error accessing PDF file' }),
-        { 
-          status: 500, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        }
-      );
+    let signedUrl = null;
+    
+    for (const pdfPath of pdfPaths) {
+      console.log(`[${new Date().toISOString()}] Trying path: ${pdfPath}`);
+      const { data: signedUrlData, error: urlError } = await supabaseAdmin.storage
+        .from('pdfs')
+        .createSignedUrl(pdfPath, 300); // 5 minutes expiration
+
+      if (!urlError && signedUrlData?.signedUrl) {
+        signedUrl = signedUrlData.signedUrl;
+        console.log(`[${new Date().toISOString()}] Successfully generated signed URL for path: ${pdfPath}`);
+        break;
+      } else {
+        console.log(`[${new Date().toISOString()}] Failed to generate signed URL for path: ${pdfPath}`, urlError);
+      }
     }
 
-    if (!signedUrlData?.signedUrl) {
-      console.error(`[${new Date().toISOString()}] No signed URL generated for PDF: ${pdfPath}`);
+    if (!signedUrl) {
+      console.error(`[${new Date().toISOString()}] No signed URL generated for any PDF path`);
       return new Response(
         JSON.stringify({ error: 'PDF file not accessible' }),
         { 
@@ -227,7 +234,7 @@ Deno.serve(async (req) => {
         regions: regions || [],
         texts: texts || []
       },
-      pdfUrl: signedUrlData.signedUrl
+      pdfUrl: signedUrl
     };
 
     console.log(`[${new Date().toISOString()}] Successfully processed worksheet: ${worksheetId}, regions: ${regions?.length || 0}, texts: ${texts?.length || 0}`);
