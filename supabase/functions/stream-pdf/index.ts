@@ -30,6 +30,7 @@ serve(async (req) => {
     console.log(`[STREAM-PDF] Parameters: documentId=${finalDocumentId}, userId=${userId}`);
 
     if (!finalDocumentId) {
+      console.error('[STREAM-PDF] Missing required parameter: document_id or id');
       throw new Error('document_id or id parameter is required')
     }
 
@@ -38,45 +39,27 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     )
 
-    // Try multiple file path strategies
+    // Simple file path strategy: try user-specific first, then flat
     const filePaths = userId 
       ? [`${userId}/${finalDocumentId}.pdf`, `${finalDocumentId}.pdf`]
       : [`${finalDocumentId}.pdf`]
 
-    console.log(`[STREAM-PDF] Will try file paths:`, filePaths);
+    console.log(`[STREAM-PDF] Trying file paths:`, filePaths);
 
     let fileBlob = null
-    let fileSize = 0
     let successfulPath = null
 
-    // Attempt to find the file using different path strategies
+    // Try each file path until we find the file
     for (const filePath of filePaths) {
       try {
-        console.log(`[STREAM-PDF] Trying to download: ${filePath}`);
+        console.log(`[STREAM-PDF] Attempting to download: ${filePath}`);
         
-        // Try to get file metadata first
-        const { data: fileList, error: listError } = await supabaseAdmin.storage
-          .from('pdfs')
-          .list(filePath.includes('/') ? filePath.split('/')[0] : '', {
-            search: filePath.includes('/') ? filePath.split('/')[1] : filePath,
-            limit: 1
-          })
-
-        if (listError || !fileList || fileList.length === 0) {
-          console.log(`[STREAM-PDF] File not found in list: ${filePath}`);
-          continue
-        }
-
-        fileSize = fileList[0].metadata?.size || 0
-        console.log(`[STREAM-PDF] Found file: ${filePath}, size: ${fileSize}`);
-
-        // Download the file
         const { data: downloadedFile, error: downloadError } = await supabaseAdmin.storage
           .from('pdfs')
           .download(filePath)
 
         if (downloadError) {
-          console.log(`[STREAM-PDF] Download error for ${filePath}:`, downloadError);
+          console.log(`[STREAM-PDF] Download failed for ${filePath}:`, downloadError.message);
           continue
         }
 
@@ -87,43 +70,56 @@ serve(async (req) => {
           break
         }
       } catch (error) {
-        console.log(`[STREAM-PDF] Error accessing ${filePath}:`, error);
+        console.log(`[STREAM-PDF] Error downloading ${filePath}:`, error.message);
       }
     }
 
     if (!fileBlob || !successfulPath) {
-      console.error(`[STREAM-PDF] File not found after trying all paths:`, filePaths);
-      throw new Error(`PDF file not found for document: ${finalDocumentId}`)
+      console.error(`[STREAM-PDF] File not found after trying paths:`, filePaths);
+      return new Response(JSON.stringify({ 
+        error: `PDF file not found for document: ${finalDocumentId}`,
+        attemptedPaths: filePaths,
+        timestamp: new Date().toISOString()
+      }), {
+        status: 404,
+        headers: { 
+          ...corsHeaders, 
+          'Content-Type': 'application/json' 
+        },
+      })
     }
+
+    // Convert blob to array buffer for processing
+    const arrayBuffer = await fileBlob.arrayBuffer()
+    const fileSize = arrayBuffer.byteLength
+
+    console.log(`[STREAM-PDF] File loaded successfully: ${fileSize} bytes`);
 
     // Handle range requests
     const range = req.headers.get('range')
     let start = 0
     let end = fileSize - 1
     let status = 200
+    let responseData = arrayBuffer
 
     if (range && fileSize > 0) {
       const parts = range.replace(/bytes=/, '').split('-')
       start = parseInt(parts[0], 10) || 0
       end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1
+      
+      // Ensure end doesn't exceed file size
+      end = Math.min(end, fileSize - 1)
+      
       status = 206
-      console.log(`[STREAM-PDF] Range request: ${start}-${end}/${fileSize}`);
+      responseData = arrayBuffer.slice(start, end + 1)
+      console.log(`[STREAM-PDF] Range request: ${start}-${end}/${fileSize}, serving ${responseData.byteLength} bytes`);
     }
-
-    // Convert blob to array buffer
-    const arrayBuffer = await fileBlob.arrayBuffer()
-    
-    // Extract the requested range
-    const chunk = arrayBuffer.slice(start, end + 1)
-    const chunkSize = chunk.byteLength
-
-    console.log(`[STREAM-PDF] Serving chunk: ${chunkSize} bytes`);
 
     // Prepare response headers
     const responseHeaders = new Headers({
       ...corsHeaders,
       'Content-Type': 'application/pdf',
-      'Content-Length': chunkSize.toString(),
+      'Content-Length': responseData.byteLength.toString(),
       'Cache-Control': 'public, max-age=3600',
     })
 
@@ -131,17 +127,19 @@ serve(async (req) => {
       responseHeaders.set('Content-Range', `bytes ${start}-${end}/${fileSize}`)
     }
 
-    // For encrypted content support (if needed by client)
+    // Add encryption headers if client requests encrypted content
     if (req.headers.get('accept')?.includes('encrypted')) {
-      // Generate simple encryption keys for demo
       const encryptionKey = btoa(Math.random().toString(36).substring(7))
       const encryptionIV = btoa(Math.random().toString(36).substring(7))
       
       responseHeaders.set('X-Encryption-Key', encryptionKey)
       responseHeaders.set('X-Encryption-IV', encryptionIV)
+      console.log('[STREAM-PDF] Added encryption headers for encrypted request');
     }
 
-    return new Response(chunk, {
+    console.log(`[STREAM-PDF] Responding with status ${status}, ${responseData.byteLength} bytes`);
+
+    return new Response(responseData, {
       status,
       headers: responseHeaders,
     })
@@ -152,7 +150,7 @@ serve(async (req) => {
       error: error.message,
       timestamp: new Date().toISOString()
     }), {
-      status: 404,
+      status: 500,
       headers: { 
         ...corsHeaders, 
         'Content-Type': 'application/json' 
