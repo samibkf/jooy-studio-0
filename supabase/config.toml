@@ -3,9 +3,3 @@ project_id = "bohxienpthilrfwktokd"
 
 [functions.get-worksheet-data]
 verify_jwt = false
-
-[functions.stream-pdf]
-verify_jwt = false
-
-[functions.get-encrypted-worksheet]
-verify_jwt = false
