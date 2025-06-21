@@ -50,6 +50,19 @@ After each reasoning paragraph, include a separate reflective prompt (mini-revie
 * Be short, varied in wording, and written in a friendly, student-facing tone.
 Never give away the final answer. The goal is to guide students toward figuring it out themselves through progressive, scaffolded reasoning.
 
+IMPORTANT FORMATTING REQUIREMENTS:
+* Format each section with a title wrapped in double asterisks: **Your Title Here**
+* Follow each title immediately with the content
+* Example format:
+**Question Analysis**
+Think about what you already know about this topic...
+
+**Breaking Down the Problem**
+Let's look at each part of this question...
+
+**Testing Your Ideas**
+Now consider which approach might work best...
+
 Ensure the tone is:
 * Encouraging and non-judgmental.
 * Clear and age-appropriate, adaptable for both young and older learners.
@@ -168,13 +181,14 @@ const TextInsert = ({
       }
       
       console.log(`[TextInsert] AI generated ${generatedText.length} characters of content`);
+      console.log(`[TextInsert] Raw AI response preview:`, generatedText.substring(0, 300) + '...');
       console.log(`[TextInsert] Calling replaceAllContentForPage for page ${currentPage}`);
       
       const newTexts = await replaceAllContentForPage(generatedText, regions, documentId, currentPage);
 
       if (!newTexts || newTexts.length === 0) {
         console.error('[TextInsert] replaceAllContentForPage returned empty or undefined result');
-        throw new Error('AI guidance was generated but could not be saved.');
+        throw new Error('AI guidance was generated but could not be saved. The AI response format may not be compatible.');
       }
 
       console.log(`[TextInsert] Successfully generated and saved ${newTexts.length} text sections`);
@@ -202,7 +216,13 @@ const TextInsert = ({
       console.error("[TextInsert] Error generating guidance:", error);
       const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
       console.error(`[TextInsert] Error details: ${errorMessage}`);
-      toast.error(errorMessage, { id: 'gemini-generate' });
+      
+      // Provide more specific error messages
+      if (errorMessage.includes('could not be parsed')) {
+        toast.error('AI response format is not compatible. Try adjusting the system instructions.', { id: 'gemini-generate' });
+      } else {
+        toast.error(errorMessage, { id: 'gemini-generate' });
+      }
     } finally {
       setIsGenerating(false);
     }
