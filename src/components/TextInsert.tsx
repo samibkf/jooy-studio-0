@@ -1,4 +1,3 @@
-
 import React, { useState, useRef } from 'react';
 import { Textarea } from '@/components/ui/textarea';
 import { Button, buttonVariants } from '@/components/ui/button';
@@ -95,7 +94,6 @@ const TextInsert = ({
       const aNameParts = a.name.split('_').map(Number);
       const bNameParts = b.name.split('_').map(Number);
 
-      // Fallback for names not in "number_number" format
       if (
         aNameParts.length !== 2 ||
         bNameParts.length !== 2 ||
@@ -130,6 +128,7 @@ const TextInsert = ({
     }
 
     setIsGenerating(true);
+    console.log(`[TextInsert] Starting AI generation for page ${currentPage}`);
     toast.loading('Generating guidance from page...', { id: 'gemini-generate' });
 
     const currentPageRegionsCheck = regions.filter(r => r.page === currentPage);
@@ -140,11 +139,13 @@ const TextInsert = ({
     }
 
     try {
+      console.log(`[TextInsert] Getting cached PDF for document ${documentId}`);
       const cachedPdf = await pdfCacheService.getCachedPDF(documentId);
       if (!cachedPdf) {
         throw new Error('PDF is not loaded. Please wait a moment and try again.');
       }
 
+      console.log(`[TextInsert] Rendering page ${currentPage} to canvas`);
       const pdf = await pdfjsLib.getDocument({ data: cachedPdf }).promise;
       const page = await pdf.getPage(currentPage);
       const viewport = page.getViewport({ scale: 2.0 });
@@ -157,44 +158,51 @@ const TextInsert = ({
       canvas.width = viewport.width;
 
       await page.render({ canvasContext: context, viewport: viewport }).promise;
-
       const imageBase64 = canvas.toDataURL('image/jpeg');
 
+      console.log(`[TextInsert] Calling Gemini API with ${apiKeys.length} keys available`);
       const generatedText = await generateGuidanceFromImage(systemInstructions, imageBase64, apiKeys);
 
       if (!generatedText || !generatedText.trim()) {
         throw new Error('AI returned empty content.');
       }
       
+      console.log(`[TextInsert] AI generated ${generatedText.length} characters of content`);
+      console.log(`[TextInsert] Calling replaceAllContentForPage for page ${currentPage}`);
+      
       const newTexts = await replaceAllContentForPage(generatedText, regions, documentId, currentPage);
 
-      if (newTexts && newTexts.length > 0) {
-          if (autoAssign) {
-              const currentPageRegions = regions.filter(region => region.page === currentPage);
-              const sortedRegions = sortRegionsByName(currentPageRegions);
+      if (!newTexts || newTexts.length === 0) {
+        console.error('[TextInsert] replaceAllContentForPage returned empty or undefined result');
+        throw new Error('AI guidance was generated but could not be saved.');
+      }
 
-              let assignedCount = 0;
-              // Sort texts by orderIndex to maintain AI generation order
-              const sortedTexts = [...newTexts].sort((a, b) => a.orderIndex - b.orderIndex);
-              sortedTexts.forEach((text, index) => {
-                  if (index < sortedRegions.length) {
-                      const region = sortedRegions[index];
-                      assignTextToRegion(text, region.id, documentId);
-                      onRegionUpdate({ ...region, description: text.content });
-                      assignedCount++;
-                  }
-              });
-              toast.success(`AI guidance generated and automatically assigned to ${assignedCount} regions.`, { id: 'gemini-generate' });
-          } else {
-              toast.success(`AI guidance generated with ${newTexts.length} texts. Please assign them manually.`, { id: 'gemini-generate' });
+      console.log(`[TextInsert] Successfully generated and saved ${newTexts.length} text sections`);
+
+      if (autoAssign) {
+        const currentPageRegions = regions.filter(region => region.page === currentPage);
+        const sortedRegions = sortRegionsByName(currentPageRegions);
+
+        let assignedCount = 0;
+        const sortedTexts = [...newTexts].sort((a, b) => a.orderIndex - b.orderIndex);
+        sortedTexts.forEach((text, index) => {
+          if (index < sortedRegions.length) {
+            const region = sortedRegions[index];
+            assignTextToRegion(text, region.id, documentId);
+            onRegionUpdate({ ...region, description: text.content });
+            assignedCount++;
           }
+        });
+        toast.success(`AI guidance generated and automatically assigned to ${assignedCount} regions.`, { id: 'gemini-generate' });
       } else {
-          throw new Error('AI guidance was generated but could not be saved.');
+        toast.success(`AI guidance generated with ${newTexts.length} texts. Please assign them manually.`, { id: 'gemini-generate' });
       }
 
     } catch (error) {
-      console.error("Error generating guidance:", error);
-      toast.error(error instanceof Error ? error.message : 'An unknown error occurred.', { id: 'gemini-generate' });
+      console.error("[TextInsert] Error generating guidance:", error);
+      const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
+      console.error(`[TextInsert] Error details: ${errorMessage}`);
+      toast.error(errorMessage, { id: 'gemini-generate' });
     } finally {
       setIsGenerating(false);
     }
@@ -211,7 +219,6 @@ const TextInsert = ({
       return;
     }
 
-    // Filter regions to only current page
     const currentPageRegions = regions.filter(region => region.page === currentPage);
 
     if (currentPageRegions.length === 0) {
@@ -219,22 +226,17 @@ const TextInsert = ({
       return;
     }
 
-    // Process the input text and get titled sections for current page
     const processedTexts = await assignTextsToRegions(inputText, currentPageRegions, documentId, currentPage);
 
-    // Sort regions by their name to ensure proper assignment order
     const sortedRegions = sortRegionsByName(currentPageRegions);
 
-    // Assign texts to regions in order, maintaining orderIndex
     if (processedTexts && processedTexts.length > 0) {
-      // Sort texts by orderIndex to maintain generation order
       const sortedTexts = [...processedTexts].sort((a, b) => a.orderIndex - b.orderIndex);
       sortedTexts.forEach((text, index) => {
         if (index < sortedRegions.length) {
           const region = sortedRegions[index];
           assignTextToRegion(text, region.id, documentId);
 
-          // Update region description through parent component
           onRegionUpdate({
             ...region,
             description: text.content
@@ -242,17 +244,15 @@ const TextInsert = ({
         }
       });
       toast.success(`Text assigned to ${processedTexts.length} regions on page ${currentPage}`);
-      setInputText(''); // Clear input after successful assignment
+      setInputText('');
     }
   };
 
   const handleUndo = () => {
     if (!documentId) return;
 
-    // Only undo assignments for current page
     undoAllAssignments(documentId, currentPage);
     
-    // Update all regions on current page to clear descriptions
     const currentPageRegions = regions.filter(region => region.page === currentPage);
     currentPageRegions.forEach(region => {
       if (isRegionAssigned(region.id, documentId)) {
@@ -269,20 +269,16 @@ const TextInsert = ({
   const handleUndoSpecificText = (regionId: string) => {
     if (!documentId) return;
 
-    // Find the region
     const region = regions.find(r => r.id === regionId);
     if (!region) return;
 
-    // Only allow undo if region is on current page
     if (region.page !== currentPage) {
       toast.error('Cannot undo assignment from a different page');
       return;
     }
 
-    // Undo the assignment
     undoRegionAssignment(regionId, documentId);
 
-    // Update region description to null
     onRegionUpdate({
       ...region,
       description: null
@@ -296,32 +292,27 @@ const TextInsert = ({
     const region = regions.find(r => r.id === regionId);
     if (!text || !region) return;
 
-    // Ensure region is on current page
     if (region.page !== currentPage) {
       toast.error('Cannot assign text to a region on a different page');
       return;
     }
 
-    // Assign text to region
     assignTextToRegion(text, regionId, documentId);
 
-    // Update region description
     onRegionUpdate({
       ...region,
       description: text.content
     });
-    setActiveTextIndex(null); // Close the popover
+    setActiveTextIndex(null);
     toast.success(`Assigned "${text.title}" to region ${region.name}`);
   };
 
   const handleRegionSelect = (regionId: string) => {
     onRegionSelect(regionId);
     
-    // Add a small delay to ensure the region is selected before scrolling
     setTimeout(() => {
       const regionElement = document.getElementById(`region-${regionId}`);
       if (regionElement) {
-        // Scroll the region into view with smooth scrolling
         regionElement.scrollIntoView({
           behavior: 'smooth',
           block: 'center'

@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Region } from '@/types/regions';
 import { parseTitledText } from '@/utils/textProcessing';
@@ -63,7 +62,6 @@ export const TextAssignmentProvider = ({ children }: { children: React.ReactNode
   const getCurrentDocumentTexts = (documentId: string, page?: number): TitledText[] => {
     const texts = documentTexts.get(documentId) || [];
     const filteredTexts = page !== undefined ? texts.filter(text => text.page === page) : texts;
-    // Sort by orderIndex to maintain original generation order
     return filteredTexts.sort((a, b) => a.orderIndex - b.orderIndex);
   };
 
@@ -108,7 +106,6 @@ export const TextAssignmentProvider = ({ children }: { children: React.ReactNode
 
     const parsedTexts = parseTitledText(text);
     
-    // Get the highest order_index for this document and page to ensure sequential ordering
     const { data: maxOrderData } = await supabase
       .from('document_texts')
       .select('order_index')
@@ -166,61 +163,99 @@ export const TextAssignmentProvider = ({ children }: { children: React.ReactNode
       console.error("User not authenticated");
       return;
     }
-  
-    const parsedTexts = parseTitledText(text);
-    const titledTextsWithPage = parsedTexts.map((t, index) => ({ 
-      ...t, 
-      page,
-      orderIndex: index + 1  // Start from 1 for replaced content
-    }));
-  
-    const { error: deleteError } = await supabase
-      .from('document_texts')
-      .delete()
-      .eq('document_id', documentId)
-      .eq('page', page);
-  
-    if (deleteError) {
-      console.error("Error deleting existing document texts:", deleteError);
-      return;
+
+    console.log(`[TextAssignment] Starting replaceAllContentForPage for document ${documentId}, page ${page}`);
+    
+    try {
+      // Validate input text
+      if (!text || text.trim().length === 0) {
+        console.error("[TextAssignment] Empty or invalid text provided");
+        throw new Error("No text content provided for generation");
+      }
+
+      // Parse the text first to validate it
+      const parsedTexts = parseTitledText(text);
+      console.log(`[TextAssignment] Parsed ${parsedTexts.length} text sections from AI response`);
+
+      if (parsedTexts.length === 0) {
+        console.error("[TextAssignment] No valid text sections could be parsed from AI response");
+        throw new Error("AI response could not be parsed into valid text sections");
+      }
+
+      // Delete existing texts for this page
+      console.log(`[TextAssignment] Deleting existing texts for page ${page}`);
+      const { error: deleteError } = await supabase
+        .from('document_texts')
+        .delete()
+        .eq('document_id', documentId)
+        .eq('page', page);
+
+      if (deleteError) {
+        console.error("[TextAssignment] Error deleting existing document texts:", deleteError);
+        throw new Error(`Failed to delete existing texts: ${deleteError.message}`);
+      }
+
+      // Prepare new texts with proper indexing
+      const titledTextsWithPage = parsedTexts.map((t, index) => ({ 
+        ...t, 
+        page,
+        orderIndex: index + 1
+      }));
+
+      console.log(`[TextAssignment] Inserting ${titledTextsWithPage.length} new texts`);
+
+      // Insert new texts
+      const { data, error: insertError } = await supabase
+        .from('document_texts')
+        .insert(titledTextsWithPage.map(t => ({
+          document_id: documentId,
+          title: t.title,
+          content: t.content,
+          page: t.page,
+          order_index: t.orderIndex,
+          user_id: authState.user!.id,
+        })))
+        .select('*');
+
+      if (insertError) {
+        console.error("[TextAssignment] Error saving new document texts:", insertError);
+        throw new Error(`Failed to save new texts: ${insertError.message}`);
+      }
+
+      if (!data || data.length === 0) {
+        console.error("[TextAssignment] No data returned from insert operation");
+        throw new Error("Failed to save new texts - no data returned");
+      }
+
+      console.log(`[TextAssignment] Successfully saved ${data.length} new texts`);
+
+      // Transform to TitledText format
+      const savedTitledTexts: TitledText[] = data.map(item => ({
+        id: item.id,
+        title: item.title,
+        content: item.content,
+        assignedRegionId: (item as any).assigned_region_id || undefined,
+        page: item.page,
+        orderIndex: item.order_index,
+      }));
+
+      // Update local state
+      setDocumentTexts(prev => {
+        const newMap = new Map(prev);
+        const otherPageTexts = (prev.get(documentId) || []).filter(t => t.page !== page);
+        newMap.set(documentId, [...otherPageTexts, ...savedTitledTexts]);
+        return newMap;
+      });
+
+      console.log(`[TextAssignment] Successfully replaced content for page ${page}`);
+      return savedTitledTexts;
+
+    } catch (error) {
+      console.error("[TextAssignment] Error in replaceAllContentForPage:", error);
+      throw error;
     }
-  
-    const { data, error: insertError } = await supabase
-      .from('document_texts')
-      .insert(titledTextsWithPage.map(t => ({
-        document_id: documentId,
-        title: t.title,
-        content: t.content,
-        page: t.page,
-        order_index: t.orderIndex,
-        user_id: authState.user!.id,
-      })))
-      .select('*');
-  
-    if (insertError) {
-      console.error("Error saving new document texts:", insertError);
-      return;
-    }
-  
-    const savedTitledTexts: TitledText[] = data.map(item => ({
-      id: item.id,
-      title: item.title,
-      content: item.content,
-      assignedRegionId: (item as any).assigned_region_id || undefined,
-      page: item.page,
-      orderIndex: item.order_index,
-    }));
-  
-    setDocumentTexts(prev => {
-      const newMap = new Map(prev);
-      const otherPageTexts = (prev.get(documentId) || []).filter(t => t.page !== page);
-      newMap.set(documentId, [...otherPageTexts, ...savedTitledTexts]);
-      return newMap;
-    });
-  
-    return savedTitledTexts;
   };
-  
+
   const assignTextToRegion = (text: TitledText, regionId: string, documentId: string) => {
     setDocumentTexts(prev => {
       const newMap = new Map(prev);
@@ -244,7 +279,6 @@ export const TextAssignmentProvider = ({ children }: { children: React.ReactNode
       .then(({ error }) => {
         if (error) {
           console.error("Error updating document text:", error);
-          // Revert if fails
           fetchDocumentTexts(documentId);
         }
       });
