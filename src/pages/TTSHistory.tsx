@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Mic, RefreshCw } from 'lucide-react';
+import { ArrowLeft, UserRound, RefreshCw } from 'lucide-react';
 import TTSRequestModal from '@/components/TTSRequestModal';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -82,7 +82,7 @@ const TTSHistory = () => {
                                     <li key={doc.id} className="flex justify-between items-center p-2 border rounded-md">
                                         <span className="truncate pr-2">{doc.name}</span>
                                         <Button onClick={() => handleRequestVirtualTutor(doc)} size="sm">
-                                            <Mic className="mr-2 h-4 w-4" /> Request Virtual Tutor
+                                            <UserRound className="mr-2 h-4 w-4" /> Request Virtual Tutor
                                         </Button>
                                     </li>
                                 ))}
