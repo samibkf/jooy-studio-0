@@ -83,7 +83,7 @@ const Header = ({
 
                 <Button asChild variant="outline" size="sm" className="px-3">
                   <Link to="/tts-history" title="View TTS History and request new conversions">
-                    <key className="h-4 w-4 mr-2" />
+                    <Mic className="h-4 w-4 mr-2" />
                     TTS Requests
                   </Link>
                 </Button>
