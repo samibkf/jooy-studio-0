@@ -77,7 +77,7 @@ const Header = ({
                   className="flex items-center gap-2 px-3"
                   title="Set Gemini API Key for AI generation"
                 >
-                  <Key-round className={`h-4 w-4 transition-colors ${isGeminiKeySet ? 'text-yellow-400 fill-yellow-400' : 'text-muted-foreground'}`} />
+                  <Key className={`h-4 w-4 transition-colors ${isGeminiKeySet ? 'text-yellow-400 fill-yellow-400' : 'text-muted-foreground'}`} />
                   Gemini API
                 </Button>
 
