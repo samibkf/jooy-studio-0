@@ -11,6 +11,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Switch } from '@/components/ui/switch';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { DocumentData } from '@/types/documents';
 import { Profile } from '@/types/auth';
@@ -99,14 +100,14 @@ export const DocumentSettingsDialog: React.FC<DocumentSettingsDialogProps> = ({
         <div className="space-y-6 py-4">
           <div className="space-y-2">
             <h4 className="font-medium">DRM Protection</h4>
-            <div className="flex items-center space-x-2">
-              <Checkbox
+            <div className="flex items-center justify-between">
+              <Label htmlFor="drm-toggle-all">Protect entire document</Label>
+              <Switch
                 id="drm-toggle-all"
                 checked={drmPages === true}
                 onCheckedChange={handleAllPagesDrmChange}
                 disabled={!isSubscriber}
               />
-              <Label htmlFor="drm-toggle-all">Protect entire document</Label>
             </div>
             {drmPages !== true && (
               <div className="space-y-2 mt-2 pl-2">
