@@ -399,20 +399,18 @@ const TextInsert = ({
             </PopoverContent>
           </Popover>
         </div>
-        <div className="flex items-center space-x-2 pt-1">
-          <Checkbox id="auto-assign" checked={autoAssign} onCheckedChange={(checked) => setAutoAssign(Boolean(checked))} />
-          <label
-            htmlFor="auto-assign"
-            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-          >
-            Auto-assign to regions
-          </label>
-          <div className="flex-grow" />
+        <div className="flex flex-col items-center gap-2 pt-1">
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button onClick={handleGenerateFromPage} disabled={isGenerating} size="icon" variant="default">
-                  <Sparkles className={`h-4 w-4 ${isGenerating ? 'animate-spin' : ''}`} />
+                <Button 
+                  onClick={handleGenerateFromPage} 
+                  disabled={isGenerating} 
+                  size="icon" 
+                  variant="default"
+                  className="h-12 w-12 rounded-full"
+                >
+                  <Sparkles className={`h-6 w-6 ${isGenerating ? 'animate-spin' : ''}`} />
                   <span className="sr-only">Generate AI Guidance for this page</span>
                 </Button>
               </TooltipTrigger>
@@ -421,6 +419,16 @@ const TextInsert = ({
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
+
+          <div className="flex items-center space-x-2">
+            <Checkbox id="auto-assign" checked={autoAssign} onCheckedChange={(checked) => setAutoAssign(Boolean(checked))} />
+            <label
+              htmlFor="auto-assign"
+              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+            >
+              Auto-assign to regions
+            </label>
+          </div>
         </div>
       </div>
 
