@@ -49,7 +49,6 @@ const Header = ({
     <>
       <header className="bg-white border-b border-gray-200 shadow-sm py-4">
         <div className="container mx-auto px-4 flex justify-between items-center">
-          {/* Left Group */}
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
                 <File className="h-6 w-6 text-primary" />
@@ -68,18 +67,13 @@ const Header = ({
             </Button>
           </div>
           
-          {/* Center Group */}
-          <div className="flex-1 flex justify-center items-center">
+          <div className="flex items-center gap-4">
             <Button asChild variant="outline" size="sm" className="px-3">
                 <Link to="/tts-history" title="View Virtual Tutor history and request new sessions">
                 <Mic className="h-4 w-4 mr-2" />
                 Virtual Tutor
                 </Link>
             </Button>
-          </div>
-          
-          {/* Right Group */}
-          <div className="flex items-center gap-4">
             <Button 
                 onClick={onUploadClick} 
                 variant="outline" 
@@ -89,7 +83,7 @@ const Header = ({
                 <Upload className="h-4 w-4" />
                 Upload
             </Button>
-             <Button 
+            <Button 
                 onClick={onQRExport} 
                 disabled={!hasDocument || isQRExporting}
                 className="flex items-center gap-2 px-3"
@@ -98,8 +92,9 @@ const Header = ({
                 title={!hasDocument ? "Select a document with a valid PDF to export QR codes" : "Export QR codes for all pages"}
             >
                 <QrCode className="h-4 w-4" />
-                {isQRExporting ? "Exporting..." : "Export QRs"}
+                {isQRExporting ? "Exporting..." : ""}
             </Button>
+
             <div className="flex items-center">
                 <Button 
                 onClick={() => onPDFQRExport(qrCorner)} 
@@ -110,7 +105,7 @@ const Header = ({
                 title={!hasDocument ? "Select a document with a valid PDF to embed QR codes" : "Download PDF with embedded QR codes"}
                 >
                 <Download className="h-4 w-4" />
-                {isPDFQRExporting ? "Processing..." : "Download PDF"}
+                {isPDFQRExporting ? "Processing..." : "Download"}
                 </Button>
                 
                 <div className="border-l">
@@ -121,6 +116,7 @@ const Header = ({
                 />
                 </div>
             </div>
+
             {user?.role === 'admin' && (
                 <Button 
                 onClick={onExport} 
@@ -134,6 +130,8 @@ const Header = ({
                 Export Data
                 </Button>
             )}
+          </div>
+          <div className="flex items-center gap-4">
             <span className="text-sm text-muted-foreground">
                 {user?.full_name || user?.email}
             </span>
