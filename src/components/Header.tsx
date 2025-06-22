@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Upload, Download, File, LogOut, QrCode, KeyRound, UserRound } from 'lucide-react';
+import { Upload, Download, File, LogOut, QrCode, KeyRound, Mic } from 'lucide-react';
 import type { Profile } from '@/types/auth';
 import QRCornerSelector from './QRCornerSelector';
 import { GeminiApiKeyDialog, getGeminiApiKeys } from './GeminiApiKeyDialog';
@@ -53,7 +53,7 @@ const Header = ({
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
                 <File className="h-6 w-6 text-primary" />
-                <h1 className="text-2xl font-bold text-gray-800">Book+ Studio</h1>
+                <h1 className="text-2xl font-bold text-gray-800">Jooy Studio</h1>
             </div>
             {user && <CreditDisplay credits={user.credits_remaining || 0} />}
             <Button
@@ -64,6 +64,7 @@ const Header = ({
               title="Set Gemini API Key for AI generation"
             >
               <KeyRound  className={`h-4 w-4 transition-colors ${isGeminiKeySet ? 'text-yellow-400 fill-yellow-400' : 'text-muted-foreground'}`} />
+              API keys
             </Button>
           </div>
           
@@ -71,7 +72,7 @@ const Header = ({
           <div className="flex-1 flex justify-center items-center">
             <Button asChild variant="outline" size="sm" className="px-3">
                 <Link to="/tts-history" title="View Virtual Tutor history and request new sessions">
-                <UserRound className="h-4 w-4 mr-2" />
+                <Mic className="h-4 w-4 mr-2" />
                 Virtual Tutor
                 </Link>
             </Button>
@@ -97,7 +98,7 @@ const Header = ({
                 title={!hasDocument ? "Select a document with a valid PDF to export QR codes" : "Export QR codes for all pages"}
             >
                 <QrCode className="h-4 w-4" />
-                {isQRExporting ? "Exporting..." : ""}
+                {isQRExporting ? "Exporting..." : "Export QRs"}
             </Button>
             <div className="flex items-center">
                 <Button 
@@ -109,7 +110,7 @@ const Header = ({
                 title={!hasDocument ? "Select a document with a valid PDF to embed QR codes" : "Download PDF with embedded QR codes"}
                 >
                 <Download className="h-4 w-4" />
-                {isPDFQRExporting ? "Processing..." : "Download"}
+                {isPDFQRExporting ? "Processing..." : "Download PDF"}
                 </Button>
                 
                 <div className="border-l">
