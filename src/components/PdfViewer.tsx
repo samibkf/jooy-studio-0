@@ -5,7 +5,7 @@ import { Region } from '@/types/regions';
 import RegionOverlay from './RegionOverlay';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
-import { ArrowLeft, ArrowRight, MousePointer, Copy } from 'lucide-react';
+import { ArrowLeft, ArrowRight, MousePointer, Copy, Eye, EyeOff, Lock } from 'lucide-react';
 import { Toggle } from '@/components/ui/toggle';
 import { TooltipProvider, TooltipTrigger, TooltipContent, Tooltip } from '@/components/ui/tooltip';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -27,6 +27,9 @@ interface PdfViewerProps {
   currentSelectionType: 'area' | null;
   onCurrentSelectionTypeChange: (type: 'area' | null) => void;
   onPageChange?: (page: number) => void;
+  isPrivate: boolean;
+  onVisibilityChange: () => void;
+  onDrmSettingsClick: () => void;
 }
 
 const PdfViewer: React.FC<PdfViewerProps> = ({
@@ -40,7 +43,10 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
   isSelectionMode,
   currentSelectionType,
   onCurrentSelectionTypeChange,
-  onPageChange
+  onPageChange,
+  isPrivate,
+  onVisibilityChange,
+  onDrmSettingsClick,
 }) => {
   const { authState } = useAuth();
   
@@ -632,13 +638,53 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
                 +
               </Button>
             </div>
+
+            <div className="flex items-center space-x-2">
+                <div className="w-px h-6 bg-border mx-2" />
+                <TooltipProvider>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <Button
+                                variant="outline"
+                                size="icon"
+                                onClick={onVisibilityChange}
+                                className="h-9 w-9"
+                            >
+                                {isPrivate ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                <span className="sr-only">Toggle Visibility</span>
+                            </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                            <p>{isPrivate ? 'Make Public' : 'Make Private'}</p>
+                        </TooltipContent>
+                    </Tooltip>
+                </TooltipProvider>
+                <TooltipProvider>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <Button
+                                variant="outline"
+                                size="icon"
+                                onClick={onDrmSettingsClick}
+                                className="h-9 w-9"
+                            >
+                                <Lock className="h-4 w-4" />
+                                <span className="sr-only">DRM Settings</span>
+                            </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                            <p>DRM Settings</p>
+                        </TooltipContent>
+                    </Tooltip>
+                </TooltipProvider>
+            </div>
           </div>
         </div>
       </div>
       
       <ScrollArea className="flex-1 w-full h-[calc(100%-72px)]">
         <div className="flex justify-center p-4">
-          <div ref={containerRef} className={`pdf-page relative ${currentSelectionType === 'area' || isDoubleClickMode ? 'cursor-crosshair' : ''}`} onMouseDown={handleMouseDown} onMouseMove={handleMouseMove} onMouseUp={handleMouseUp} onMouseLeave={handleMouseUp} onDoubleClick={handleDoubleClick}>
+          <div ref={containerRef} className={`pdf-page relative ${currentSelectionType === 'area' || isDoubleClickMode ? 'cursor-crosshair' : ''}`} onMouseDown={handleMouseDown} onMouseMove={handleMouseMove} onMouseUp={handleMouseUp} onDoubleClick={handleDoubleClick}>
             <canvas ref={canvasRef} style={{
             display: 'block'
           }} />

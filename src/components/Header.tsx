@@ -1,7 +1,6 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Upload, Download, File, LogOut, QrCode, FileText, KeyRound, History, Settings, UserRound } from 'lucide-react';
+import { Upload, Download, File, LogOut, QrCode, FileText, KeyRound, History, Mic } from 'lucide-react';
 import type { Profile } from '@/types/auth';
 import QRCornerSelector from './QRCornerSelector';
 import { GeminiApiKeyDialog, getGeminiApiKeys } from './GeminiApiKeyDialog';
@@ -13,7 +12,6 @@ interface HeaderProps {
   onExport: () => void;
   onQRExport: () => void;
   onPDFQRExport: (corner: 'top-left' | 'top-right') => void;
-  onSettingsClick: () => void;
   hasDocument: boolean;
   isQRExporting: boolean;
   isPDFQRExporting: boolean;
@@ -28,7 +26,6 @@ const Header = ({
   onExport, 
   onQRExport,
   onPDFQRExport,
-  onSettingsClick,
   hasDocument, 
   isQRExporting,
   isPDFQRExporting,
@@ -83,7 +80,7 @@ const Header = ({
 
                 <Button asChild variant="outline" size="sm" className="px-3">
                   <Link to="/tts-history" title="View Virtual Tutor history and request new sessions">
-                    <UserRound className="h-4 w-4 mr-2" />
+                    <Mic className="h-4 w-4 mr-2" />
                     Virtual Tutor
                   </Link>
                 </Button>
@@ -148,17 +145,6 @@ const Header = ({
                     Export Data
                   </Button>
                 )}
-
-                <Button
-                  onClick={onSettingsClick}
-                  disabled={!hasDocument}
-                  variant="outline"
-                  size="sm"
-                  className="px-2"
-                  title={!hasDocument ? "Select a document to view settings" : "Document Settings"}
-                >
-                  <Settings className="h-4 w-4" />
-                </Button>
 
                 <Button
                   onClick={onSignOut}
