@@ -23,6 +23,12 @@ import { generateGuidanceFromImage } from '@/services/geminiService';
 import { pdfCacheService } from '@/services/pdfCacheService';
 import * as pdfjsLib from 'pdfjs-dist';
 import { TitledText } from '@/contexts/TextAssignmentContext';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface TextInsertProps {
   regions: Region[];
@@ -394,18 +400,28 @@ const TextInsert = ({
           </Popover>
         </div>
         <div className="flex items-center space-x-2 pt-1">
-            <Checkbox id="auto-assign" checked={autoAssign} onCheckedChange={(checked) => setAutoAssign(Boolean(checked))} />
-            <label
-                htmlFor="auto-assign"
-                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-            >
-                Auto-assign to regions on this page
-            </label>
+          <Checkbox id="auto-assign" checked={autoAssign} onCheckedChange={(checked) => setAutoAssign(Boolean(checked))} />
+          <label
+            htmlFor="auto-assign"
+            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+          >
+            Auto-assign to regions
+          </label>
+          <div className="flex-grow" />
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button onClick={handleGenerateFromPage} disabled={isGenerating} size="icon" variant="default">
+                  <Sparkles className={`h-4 w-4 ${isGenerating ? 'animate-spin' : ''}`} />
+                  <span className="sr-only">Generate AI Guidance for this page</span>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Generate AI Guidance for this page</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         </div>
-        <Button onClick={handleGenerateFromPage} disabled={isGenerating} className="w-full">
-          <Sparkles className="h-4 w-4 mr-2" />
-          {isGenerating ? 'Generating...' : `Generate from Page ${currentPage}`}
-        </Button>
       </div>
 
       {showManualInsert && (
