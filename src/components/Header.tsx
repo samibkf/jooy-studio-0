@@ -97,7 +97,7 @@ const Header = ({
                 title={!hasDocument ? "Select a document with a valid PDF to export QR codes" : "Export QR codes for all pages"}
             >
                 <QrCode className="h-4 w-4" />
-                {isQRExporting ? "Exporting..." : "QRs"}
+                {isQRExporting ? "Exporting..." : ""}
             </Button>
             <div className="flex items-center">
                 <Button 
