@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Upload, Download, File, LogOut, QrCode, FileText, Key-round, History, Settings, Mic } from 'lucide-react';
+import { Upload, Download, File, LogOut, QrCode, FileText, KeyRound, History, Settings, Mic } from 'lucide-react';
 import type { Profile } from '@/types/auth';
 import QRCornerSelector from './QRCornerSelector';
 import { GeminiApiKeyDialog, getGeminiApiKeys } from './GeminiApiKeyDialog';
@@ -77,7 +77,7 @@ const Header = ({
                   className="flex items-center gap-2 px-3"
                   title="Set Gemini API Key for AI generation"
                 >
-                  <Key-round className={`h-4 w-4 transition-colors ${isGeminiKeySet ? 'text-yellow-400 fill-yellow-400' : 'text-muted-foreground'}`} />
+                  <KeyRound  className={`h-4 w-4 transition-colors ${isGeminiKeySet ? 'text-yellow-400 fill-yellow-400' : 'text-muted-foreground'}`} />
                   Gemini API
                 </Button>
 
