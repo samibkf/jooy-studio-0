@@ -69,7 +69,7 @@ const Header = ({
           </div>
           
           {/* Center Group */}
-          <div className="flex items-center gap-4">
+          <div className="flex-1 flex justify-center items-center gap-4">
             <Button asChild variant="outline" size="sm" className="px-3">
                 <Link to="/tts-history" title="View Virtual Tutor history and request new sessions">
                 <Mic className="h-4 w-4 mr-2" />
@@ -94,9 +94,12 @@ const Header = ({
                 title={!hasDocument ? "Select a document with a valid PDF to export QR codes" : "Export QR codes for all pages"}
             >
                 <QrCode className="h-4 w-4" />
-                {isQRExporting ? "Exporting..." : ""}
+                {isQRExporting ? "Exporting..." : "Export QRs"}
             </Button>
-
+          </div>
+          
+          {/* Right Group */}
+          <div className="flex items-center gap-4">
             <div className="flex items-center">
                 <Button 
                 onClick={() => onPDFQRExport(qrCorner)} 
@@ -107,7 +110,7 @@ const Header = ({
                 title={!hasDocument ? "Select a document with a valid PDF to embed QR codes" : "Download PDF with embedded QR codes"}
                 >
                 <Download className="h-4 w-4" />
-                {isPDFQRExporting ? "Processing..." : "Download"}
+                {isPDFQRExporting ? "Processing..." : "Download PDF"}
                 </Button>
                 
                 <div className="border-l">
@@ -118,7 +121,6 @@ const Header = ({
                 />
                 </div>
             </div>
-
             {user?.role === 'admin' && (
                 <Button 
                 onClick={onExport} 
@@ -132,10 +134,6 @@ const Header = ({
                 Export Data
                 </Button>
             )}
-          </div>
-          
-          {/* Right Group */}
-          <div className="flex items-center gap-4">
             <span className="text-sm text-muted-foreground">
                 {user?.full_name || user?.email}
             </span>
