@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
@@ -31,6 +32,8 @@ import { decryptData } from '@/utils/crypto';
 import { DocumentSettingsDialog } from '@/components/DocumentSettingsDialog';
 
 const Index = () => {
+  // ... keep existing code (state declarations and useDocumentState hook) the same
+
   const [documents, setDocuments] = useState<DocumentData[]>([]);
   const [selectedDocumentId, setSelectedDocumentId] = useState<string | null>(null);
   const [isDocumentListCollapsed, setIsDocumentListCollapsed] = useState(true);
@@ -45,7 +48,7 @@ const Index = () => {
   const [isQRExporting, setIsQRExporting] = useState(false);
   const [isPDFQRExporting, setIsPDFQRExporting] = useState(false);
   const [qrCorner, setQrCorner] = useState<'top-left' | 'top-right'>('top-left');
-  const [isSettingsDialogOpen, setIsSettingsDialogOpen] = useState(false);
+  const [isDrmDialogOpen, setIsDrmDialogOpen] = useState(false);
   const [documentVersion, setDocumentVersion] = useState(0);
 
   const {
@@ -75,6 +78,8 @@ const Index = () => {
     autoSync: true,
     syncInterval: 2000
   });
+
+  // ... keep existing code (loadDocuments function) the same
 
   const loadDocuments = async () => {
     if (documentsLoaded && !isInitialLoad) {
@@ -194,6 +199,8 @@ const Index = () => {
     
     loadDocuments();
   }, [authState.user]);
+
+  // ... keep existing code (handleFileUpload, handleFileChange, handleDocumentSelect, handleDocumentRename, handleDocumentDelete) the same
 
   const handleFileUpload = () => {
     fileInputRef.current?.click();
@@ -457,7 +464,8 @@ const Index = () => {
 
       toast.success(`Document is now ${newIsPrivate ? 'private' : 'public'}.`);
       
-      setTimeout(syncMetadata, 500);
+      // Trigger immediate metadata sync
+      setTimeout(syncMetadata, 100);
 
     } catch(error) {
         console.error('Error toggling visibility:', error);
@@ -465,7 +473,7 @@ const Index = () => {
     }
   };
 
-  const handleDocumentSettingsUpdate = async (updates: Partial<Pick<DocumentData, 'is_private' | 'drm_protected_pages'>>) => {
+  const handleDocumentSettingsUpdate = async (updates: Partial<Pick<DocumentData, 'drm_protected_pages'>>) => {
     if (!selectedDocumentId || !authState.user) return;
 
     try {
@@ -483,15 +491,17 @@ const Index = () => {
         )
       );
 
-      toast.success('Document settings updated.');
+      toast.success('DRM settings updated.');
 
-      // Trigger metadata sync after a short delay to allow state to update
-      setTimeout(syncMetadata, 500);
+      // Trigger immediate metadata sync
+      setTimeout(syncMetadata, 100);
     } catch (error) {
-      console.error('Error updating document settings:', error);
-      toast.error('Failed to update document settings.');
+      console.error('Error updating DRM settings:', error);
+      toast.error('Failed to update DRM settings.');
     }
   };
+
+  // ... keep existing code (handleRegionCreate, handleRegionUpdate, handleRegionDelete, handleExport) the same
 
   const handleRegionCreate = async (regionData: Omit<Region, 'id'>) => {
     if (!selectedDocumentId || !authState.user) return;
@@ -718,6 +728,8 @@ const Index = () => {
     toast.success('Data exported successfully');
   };
 
+  // ... keep existing code (QR export functions, retry functions, other handlers) the same
+
   const fetchPdfArrayBuffer = async (documentId: string): Promise<ArrayBuffer> => {
     const response = await fetch(`/functions/v1/stream-pdf?document_id=${documentId}`, {
       headers: { 'Cache-Control': 'no-store' },
@@ -936,7 +948,7 @@ const Index = () => {
                 onPageChange={handlePageChange}
                 isPrivate={selectedDocument?.is_private ?? false}
                 onVisibilityChange={handleVisibilityToggle}
-                onDrmSettingsClick={() => setIsSettingsDialogOpen(true)}
+                onDrmSettingsClick={() => setIsDrmDialogOpen(true)}
               />
             )}
           </div>
@@ -968,8 +980,8 @@ const Index = () => {
           </div>
         </div>
         <DocumentSettingsDialog
-          open={isSettingsDialogOpen}
-          onOpenChange={setIsSettingsDialogOpen}
+          open={isDrmDialogOpen}
+          onOpenChange={setIsDrmDialogOpen}
           document={selectedDocument || null}
           user={authState.profile}
           pageCount={pageCount}
