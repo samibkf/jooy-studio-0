@@ -8,7 +8,6 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -22,7 +21,7 @@ interface DocumentSettingsDialogProps {
   document: DocumentData | null;
   user: Profile | null;
   pageCount: number;
-  onUpdate: (updates: Partial<Pick<DocumentData, 'is_private' | 'drm_protected_pages'>>) => void;
+  onUpdate: (updates: Partial<Pick<DocumentData, 'drm_protected_pages'>>) => void;
 }
 
 export const DocumentSettingsDialog: React.FC<DocumentSettingsDialogProps> = ({
@@ -34,36 +33,24 @@ export const DocumentSettingsDialog: React.FC<DocumentSettingsDialogProps> = ({
   onUpdate,
 }) => {
   const isSubscriber = !!user?.plan_id;
-  const [isPrivate, setIsPrivate] = useState(isSubscriber || document?.is_private || false);
-  const [drmPages, setDrmPages] = useState<boolean | number[]>(document?.drm_protected_pages || []);
+  const [drmPages, setDrmPages] = useState<boolean | number[]>([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (document) {
-      // For subscribers, always default the toggle to ON.
-      // For non-subscribers, reflect the document's saved state.
-      setIsPrivate(isSubscriber || document.is_private);
       setDrmPages(document.drm_protected_pages || []);
     }
-  }, [document, open, isSubscriber]);
+  }, [document, open]);
   
   const handleSave = () => {
     if (!document) return;
     setLoading(true);
+    // Only update DRM settings
     onUpdate({
-      is_private: isPrivate,
       drm_protected_pages: drmPages,
     });
     setLoading(false);
     onOpenChange(false);
-  };
-  
-  const handlePrivacyChange = (checked: boolean) => {
-    if (!isSubscriber) {
-      toast.error('You must be a subscriber to make documents private.');
-      return;
-    }
-    setIsPrivate(checked);
   };
   
   const handleAllPagesDrmChange = (checked: boolean) => {
@@ -103,36 +90,22 @@ export const DocumentSettingsDialog: React.FC<DocumentSettingsDialogProps> = ({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Document Settings</DialogTitle>
+          <DialogTitle>DRM Protection</DialogTitle>
           <DialogDescription>
-            Manage visibility and DRM for <span className="font-semibold">{document.name}</span>.
+            Manage DRM settings for <span className="font-semibold">{document.name}</span>.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-6 py-4">
           <div className="space-y-2">
-            <h4 className="font-medium">Visibility</h4>
-            <div className="flex items-center space-x-2">
-              <Switch
-                id="privacy-toggle"
-                checked={isPrivate}
-                onCheckedChange={handlePrivacyChange}
-                disabled={!isSubscriber}
-              />
-              <Label htmlFor="privacy-toggle">Private Document</Label>
-            </div>
-            {!isSubscriber && <p className="text-xs text-muted-foreground">Upgrade to a subscription to make documents private.</p>}
-          </div>
-
-          <div className="space-y-2">
             <h4 className="font-medium">DRM Protection</h4>
             <div className="flex items-center space-x-2">
-              <Switch
-                id="drm-toggle"
+              <Checkbox
+                id="drm-toggle-all"
                 checked={drmPages === true}
                 onCheckedChange={handleAllPagesDrmChange}
                 disabled={!isSubscriber}
               />
-              <Label htmlFor="drm-toggle">Protect entire document</Label>
+              <Label htmlFor="drm-toggle-all">Protect entire document</Label>
             </div>
             {drmPages !== true && (
               <div className="space-y-2 mt-2 pl-2">
