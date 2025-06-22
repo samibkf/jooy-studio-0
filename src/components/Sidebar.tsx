@@ -2,7 +2,7 @@
 import React, { useRef, useState, useEffect, useContext } from 'react';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
-import { Trash2, Undo2, SquarePen } from 'lucide-react';
+import { Trash2, Undo2, Settings } from 'lucide-react';
 import { Region } from '@/types/regions';
 import { toast } from 'sonner';
 import TextInsert from './TextInsert';
@@ -109,7 +109,7 @@ const Sidebar = ({
       <div className="flex items-center justify-between p-4 border-b">
         <h2 className="text-lg font-semibold">Content Tools</h2>
         <Button variant="ghost" size="icon" onClick={() => setShowManualInsert(prev => !prev)}>
-          <SquarePen className="h-5 w-5" />
+          <Settings className="h-5 w-5" />
           <span className="sr-only">Toggle Manual Text Input</span>
         </Button>
       </div>
