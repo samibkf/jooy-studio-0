@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Header from '@/components/Header';
 import Sidebar from '@/components/Sidebar';
@@ -428,42 +428,6 @@ const Index = () => {
       toast.error('Failed to delete document');
     }
   };
-  
-  const handleVisibilityToggle = async () => {
-    if (!selectedDocument || !authState.user) return;
-
-    const newIsPrivate = !selectedDocument.is_private;
-    
-    // Subscriber check
-    if (newIsPrivate && !authState.profile?.plan_id) {
-        toast.error('You must be a subscriber to make documents private.');
-        return;
-    }
-
-    try {
-      const { error } = await supabase
-        .from('documents')
-        .update({ is_private: newIsPrivate })
-        .eq('id', selectedDocument.id)
-        .eq('user_id', authState.user.id);
-        
-      if (error) throw error;
-      
-      setDocuments(prev =>
-        prev.map(doc =>
-          doc.id === selectedDocument.id ? { ...doc, is_private: newIsPrivate } : doc
-        )
-      );
-
-      toast.success(`Document is now ${newIsPrivate ? 'private' : 'public'}.`);
-      
-      setTimeout(syncMetadata, 500);
-
-    } catch(error) {
-        console.error('Error toggling visibility:', error);
-        toast.error('Failed to update visibility.');
-    }
-  };
 
   const handleDocumentSettingsUpdate = async (updates: Partial<Pick<DocumentData, 'is_private' | 'drm_protected_pages'>>) => {
     if (!selectedDocumentId || !authState.user) return;
@@ -877,7 +841,11 @@ const Index = () => {
   const handlePageChange = (page: number) => {
     setCurrentPage(page); // page is now consistently 1-based from PdfViewer
   };
-  
+
+  const handleSettingsClick = () => {
+    setIsSettingsDialogOpen(true);
+  };
+
   return (
     <ProtectedRoute>
       <div className="flex flex-col h-screen">
@@ -894,6 +862,7 @@ const Index = () => {
           onExport={handleExport}
           onQRExport={handleQRExport}
           onPDFQRExport={handlePDFQRExport}
+          onSettingsClick={handleSettingsClick}
           hasDocument={!!selectedDocument}
           isQRExporting={isQRExporting}
           isPDFQRExporting={isPDFQRExporting}
@@ -934,9 +903,6 @@ const Index = () => {
                 currentSelectionType={currentSelectionType}
                 onCurrentSelectionTypeChange={setCurrentSelectionType}
                 onPageChange={handlePageChange}
-                isPrivate={selectedDocument?.is_private ?? false}
-                onVisibilityChange={handleVisibilityToggle}
-                onDrmSettingsClick={() => setIsSettingsDialogOpen(true)}
               />
             )}
           </div>

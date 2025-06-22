@@ -2,7 +2,7 @@ import React, { useState, useRef } from 'react';
 import { Textarea } from '@/components/ui/textarea';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { toast } from 'sonner';
-import { Undo2, ArrowRight, Sparkles, Settings2, Trash2, Text } from 'lucide-react';
+import { Undo2, ArrowRight, Sparkles, Settings, Trash2, Text } from 'lucide-react';
 import { Region } from '@/types/regions';
 import { useTextAssignment } from '@/contexts/TextAssignmentContext';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -23,12 +23,6 @@ import { generateGuidanceFromImage } from '@/services/geminiService';
 import { pdfCacheService } from '@/services/pdfCacheService';
 import * as pdfjsLib from 'pdfjs-dist';
 import { TitledText } from '@/contexts/TextAssignmentContext';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 
 interface TextInsertProps {
   regions: Region[];
@@ -374,64 +368,44 @@ const TextInsert = ({
       <div className="space-y-2">
         <div className="flex items-center justify-between">
           <label className="text-sm font-medium">AI Generation</label>
-        </div>
-        <div className="flex flex-col items-center gap-2 pt-1">
-          <div className="flex items-center gap-2">
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button 
-                    onClick={handleGenerateFromPage} 
-                    disabled={isGenerating} 
-                    size="icon" 
-                    variant="default"
-                    className="h-12 w-12 rounded-full"
-                  >
-                    <Sparkles className={`h-6 w-6 ${isGenerating ? 'animate-spin' : ''}`} />
-                    <span className="sr-only">Generate AI Guidance for this page</span>
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Generate AI Guidance for this page</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button variant="ghost" size="icon">
-                  <Settings2 className="h-5 w-5" />
-                  <span className="sr-only">AI System Instructions</span>
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-80">
-                <div className="grid gap-4">
-                  <div className="space-y-2">
-                    <h4 className="font-medium leading-none">System Instructions</h4>
-                    <p className="text-sm text-muted-foreground">
-                      Define the AI's behavior for content generation.
-                    </p>
-                  </div>
-                  <Textarea
-                    value={systemInstructions}
-                    onChange={(e) => setSystemInstructions(e.target.value)}
-                    placeholder="Enter system instructions for the AI..."
-                    className="min-h-0 h-48 text-xs"
-                  />
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="ghost" size="icon">
+                <Settings className="h-4 w-4" />
+                <span className="sr-only">AI System Instructions</span>
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-80">
+              <div className="grid gap-4">
+                <div className="space-y-2">
+                  <h4 className="font-medium leading-none">System Instructions</h4>
+                  <p className="text-sm text-muted-foreground">
+                    Define the AI's behavior for content generation.
+                  </p>
                 </div>
-              </PopoverContent>
-            </Popover>
-          </div>
-
-          <div className="flex items-center space-x-2">
+                <Textarea
+                  value={systemInstructions}
+                  onChange={(e) => setSystemInstructions(e.target.value)}
+                  placeholder="Enter system instructions for the AI..."
+                  className="min-h-0 h-48 text-xs"
+                />
+              </div>
+            </PopoverContent>
+          </Popover>
+        </div>
+        <div className="flex items-center space-x-2 pt-1">
             <Checkbox id="auto-assign" checked={autoAssign} onCheckedChange={(checked) => setAutoAssign(Boolean(checked))} />
             <label
-              htmlFor="auto-assign"
-              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                htmlFor="auto-assign"
+                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
             >
-              Auto-assign to regions
+                Auto-assign to regions on this page
             </label>
-          </div>
         </div>
+        <Button onClick={handleGenerateFromPage} disabled={isGenerating} className="w-full">
+          <Sparkles className="h-4 w-4 mr-2" />
+          {isGenerating ? 'Generating...' : `Generate from Page ${currentPage}`}
+        </Button>
       </div>
 
       {showManualInsert && (

@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useEffect } from 'react';
 import {
   Dialog,
@@ -97,9 +98,9 @@ const TTSRequestModal = ({ isOpen, onOpenChange, documentId, documentName, onSuc
     }
 
     setIsSubmitting(true);
-    console.log("Submitting Virtual Tutor request with profile ID:", authState.profile.id);
+    console.log("Submitting TTS request with profile ID:", authState.profile.id);
 
-    // Step 1: Insert the TTS request (table name remains the same)
+    // Step 1: Insert the TTS request
     const { data: requestData, error: requestError } = await supabase
       .from('tts_requests')
       .insert({
@@ -114,13 +115,13 @@ const TTSRequestModal = ({ isOpen, onOpenChange, documentId, documentName, onSuc
       .single();
 
     if (requestError) {
-      console.error('Error inserting Virtual Tutor request:', requestError);
-      toast.error(`Failed to submit Virtual Tutor request: ${requestError.message}`);
+      console.error('Error inserting TTS request:', requestError);
+      toast.error(`Failed to submit TTS request: ${requestError.message}`);
       setIsSubmitting(false);
       return;
     }
 
-    toast.success('Virtual Tutor request submitted successfully!');
+    toast.success('TTS request submitted successfully!');
     let hadSubsequentErrors = false;
 
     // Step 2: Update user credits
@@ -171,14 +172,14 @@ const TTSRequestModal = ({ isOpen, onOpenChange, documentId, documentName, onSuc
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Request Virtual Tutor for "{documentName}"</DialogTitle>
+          <DialogTitle>Request TTS for "{documentName}"</DialogTitle>
           <DialogDescription>
             {isLoadingPageCount ? (
               'Loading document details...'
             ) : pageCountError ? (
               <span className="text-destructive">Could not load PDF details. Please try again.</span>
             ) : (
-              `Select the pages for which you want to generate a virtual tutor session. The document has ${pageCount} pages.`
+              `Select the pages you want to convert to audio. The document has ${pageCount} pages.`
             )}
           </DialogDescription>
         </DialogHeader>
