@@ -41,6 +41,8 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { ManageTtsRequestDialog } from '@/components/admin/ManageTtsRequestDialog';
 import { CreditManagementDialog } from '@/components/admin/CreditManagementDialog';
+import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
+import TableSkeleton from '@/components/TableSkeleton';
 
 const Admin = () => {
   const { authState, signOut } = useAuth();
@@ -502,15 +504,22 @@ const Admin = () => {
       <Card className="mb-6">
         <CardHeader className="flex flex-row items-center justify-between pb-2">
           <CardTitle className="text-2xl font-bold">Admin Dashboard</CardTitle>
-          <Button 
-            variant="destructive"
-            size="sm" 
-            className="flex items-center gap-2"
-            onClick={handleSignOut}
-          >
-            <LogOut className="h-4 w-4" />
-            Sign Out
-          </Button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button 
+                variant="destructive"
+                size="sm" 
+                className="flex items-center gap-2"
+                onClick={handleSignOut}
+              >
+                <LogOut className="h-4 w-4" />
+                Sign Out
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Sign out of admin dashboard</p>
+            </TooltipContent>
+          </Tooltip>
         </CardHeader>
         <CardContent>
           <p className="text-sm text-muted-foreground">
@@ -528,26 +537,40 @@ const Admin = () => {
                     <span className="block">Checking storage status...</span>
                   ) : (
                     <>
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        className="bg-amber-100 hover:bg-amber-200 text-amber-800 border-amber-300"
-                        onClick={handleRetryStorage}
-                        disabled={initializingStorage}
-                      >
-                        <RefreshCw className={`h-3 w-3 mr-1 ${initializingStorage ? 'animate-spin' : ''}`} />
-                        Check Again
-                      </Button>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="bg-amber-100 hover:bg-amber-200 text-amber-800 border-amber-300"
+                            onClick={handleRetryStorage}
+                            disabled={initializingStorage}
+                          >
+                            <RefreshCw className={`h-3 w-3 mr-1 ${initializingStorage ? 'animate-spin' : ''}`} />
+                            Check Again
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Retry storage configuration check</p>
+                        </TooltipContent>
+                      </Tooltip>
                       
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="bg-amber-100 hover:bg-amber-200 text-amber-800 border-amber-300"
-                        onClick={() => setShowStorageHelp(true)}
-                      >
-                        <ExternalLink className="h-3 w-3 mr-1" />
-                        Configuration Help
-                      </Button>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="bg-amber-100 hover:bg-amber-200 text-amber-800 border-amber-300"
+                            onClick={() => setShowStorageHelp(true)}
+                          >
+                            <ExternalLink className="h-3 w-3 mr-1" />
+                            Configuration Help
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>View storage configuration instructions</p>
+                        </TooltipContent>
+                      </Tooltip>
                     </>
                   )}
                 </div>
@@ -619,7 +642,7 @@ const Admin = () => {
         <div>
           <h2 className="text-xl font-semibold mb-4">Users</h2>
           {loading ? (
-            <p>Loading users...</p>
+            <TableSkeleton columns={2} rows={5} />
           ) : (
             <Table>
               <TableHeader>
@@ -645,28 +668,49 @@ const Admin = () => {
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2 flex-wrap">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleUserSelect(user)}
-                        >
-                          View Documents
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setManagingCreditsUser(user)}
-                        >
-                          Manage Credits
-                        </Button>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleUserSelect(user)}
+                            >
+                              View Documents
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>View this user's documents</p>
+                          </TooltipContent>
+                        </Tooltip>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setManagingCreditsUser(user)}
+                            >
+                              Manage Credits
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Manage user's credit balance</p>
+                          </TooltipContent>
+                        </Tooltip>
                         {creatorPlan && user.plan_id !== creatorPlan.id && (
-                          <Button
-                            variant="default"
-                            size="sm"
-                            onClick={() => handleUpgradeUser(user)}
-                          >
-                            Upgrade to Creator
-                          </Button>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="default"
+                                size="sm"
+                                onClick={() => handleUpgradeUser(user)}
+                              >
+                                Upgrade to Creator
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Upgrade user to Creator plan</p>
+                            </TooltipContent>
+                          </Tooltip>
                         )}
                         {creatorPlan && user.plan_id === creatorPlan.id && (
                           <span className="text-xs px-2 py-1 bg-green-100 text-green-800 rounded-full">
@@ -688,20 +732,27 @@ const Admin = () => {
               {selectedUser ? `${selectedUser.full_name || selectedUser.email}'s Documents` : 'Select a User'}
             </h2>
             {selectedUser && (
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={handleRefreshDocuments}
-                disabled={refreshingDocuments || loadingDocuments}
-                className="flex items-center gap-1"
-              >
-                <RefreshCw className={`h-4 w-4 ${refreshingDocuments ? 'animate-spin' : ''}`} />
-                {refreshingDocuments ? 'Refreshing...' : 'Refresh'}
-              </Button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={handleRefreshDocuments}
+                    disabled={refreshingDocuments || loadingDocuments}
+                    className="flex items-center gap-1"
+                  >
+                    <RefreshCw className={`h-4 w-4 ${refreshingDocuments ? 'animate-spin' : ''}`} />
+                    {refreshingDocuments ? 'Refreshing...' : 'Refresh'}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Refresh document list</p>
+                </TooltipContent>
+              </Tooltip>
             )}
           </div>
           {loadingDocuments || refreshingDocuments ? (
-            <p>Loading documents...</p>
+            <TableSkeleton columns={4} rows={3} />
           ) : selectedUser ? (
             userDocuments.length > 0 ? (
               <Table>
@@ -728,22 +779,36 @@ const Admin = () => {
                       <TableCell>{document.regions.length}</TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleDownload(document)}
-                            title="Download document"
-                          >
-                            <Download className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleExport(document)}
-                            title="Export text content"
-                          >
-                            Export
-                          </Button>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleDownload(document)}
+                                title="Download document"
+                              >
+                                <Download className="h-4 w-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Download PDF document</p>
+                            </TooltipContent>
+                          </Tooltip>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleExport(document)}
+                                title="Export text content"
+                              >
+                                Export
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Export text content from regions</p>
+                            </TooltipContent>
+                          </Tooltip>
                         </div>
                       </TableCell>
                     </TableRow>
@@ -765,7 +830,7 @@ const Admin = () => {
         </CardHeader>
         <CardContent>
           {loading ? (
-            <p>Loading TTS requests...</p>
+            <TableSkeleton columns={6} rows={5} />
           ) : ttsRequests.length > 0 ? (
             <Table>
               <TableHeader>
@@ -803,7 +868,16 @@ const Admin = () => {
                       {new Date(req.created_at).toLocaleString()}
                     </TableCell>
                     <TableCell>
-                      <Button variant="outline" size="sm" onClick={() => handleManageTtsRequest(req)}>Manage</Button>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button variant="outline" size="sm" onClick={() => handleManageTtsRequest(req)}>
+                            Manage
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Manage TTS request status</p>
+                        </TooltipContent>
+                      </Tooltip>
                     </TableCell>
                   </TableRow>
                 ))}
