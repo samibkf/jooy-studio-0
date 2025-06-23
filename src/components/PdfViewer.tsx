@@ -12,6 +12,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { useAuth } from '@/contexts/AuthProvider';
 import { decryptData } from '@/utils/crypto';
 import { pdfCacheService } from '@/services/pdfCacheService';
+import { Separator } from '@/components/ui/separator';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
 
@@ -557,7 +558,7 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
   return <div className="flex flex-col h-full w-full">
       <div className="bg-white border-b border-gray-200 p-2 w-full sticky top-0 z-10">
         <div className="flex items-center justify-between max-w-[1200px] mx-auto">
-          <div className="flex items-center space-x-6">
+          <div className="flex items-center space-x-4">
             <div className="flex items-center space-x-2">
               <TooltipProvider>
                 <Tooltip>
@@ -593,6 +594,8 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
                 </Tooltip>
               </TooltipProvider>
             </div>
+            
+            <Separator orientation="vertical" className="h-6" />
 
             <div className="flex items-center space-x-4">
               <Button variant="outline" size="icon" onClick={handlePrevPage} disabled={currentPage <= 1}>
@@ -627,6 +630,8 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
               </Button>
             </div>
 
+            <Separator orientation="vertical" className="h-6" />
+            
             <div className="flex items-center space-x-2">
               <Button variant="outline" size="sm" onClick={handleZoomOut} disabled={scale <= 0.5}>
                 -
@@ -639,8 +644,9 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
               </Button>
             </div>
 
+            <Separator orientation="vertical" className="h-6" />
+            
             <div className="flex items-center space-x-2">
-                <div className="w-px h-6 bg-border mx-2" />
                 <TooltipProvider>
                     <Tooltip>
                         <TooltipTrigger asChild>
@@ -651,11 +657,10 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
                                 className="h-9 w-9"
                             >
                                 {isPrivate ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                                <span className="sr-only">Toggle Visibility</span>
                             </Button>
                         </TooltipTrigger>
                         <TooltipContent>
-                            <p>{isPrivate ? 'Make Public' : 'Make Private'}</p>
+                            <p>{isPrivate ? 'Make document public' : 'Make document private'}</p>
                         </TooltipContent>
                     </Tooltip>
                 </TooltipProvider>
@@ -669,7 +674,6 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
                                 className="h-9 w-9"
                             >
                                 <Lock className="h-4 w-4" />
-                                <span className="sr-only">DRM Settings</span>
                             </Button>
                         </TooltipTrigger>
                         <TooltipContent>
