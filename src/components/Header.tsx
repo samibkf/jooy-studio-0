@@ -1,40 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import {
-  Upload,
-  Share,
-  File,
-  LogOut,
-  QrCode,
-  KeyRound,
-  UserRound,
-  CircleUserRound,
-  CornerDownLeft,
-  CornerDownRight,
-  FileJson,
-} from 'lucide-react';
+import { Upload, Download, File, LogOut, QrCode, KeyRound, UserRound } from 'lucide-react';
 import type { Profile } from '@/types/auth';
+import QRCornerSelector from './QRCornerSelector';
 import { GeminiApiKeyDialog, getGeminiApiKeys } from './GeminiApiKeyDialog';
 import { Link } from 'react-router-dom';
 import CreditDisplay from './CreditDisplay';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-  DropdownMenuSub,
-  DropdownMenuSubContent,
-  DropdownMenuSubTrigger,
-  DropdownMenuPortal,
-} from '@/components/ui/dropdown-menu';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
 
 interface HeaderProps {
   onUploadClick: () => void;
@@ -50,18 +21,18 @@ interface HeaderProps {
   onSignOut: () => Promise<void>;
 }
 
-const Header = ({
-  onUploadClick,
-  onExport,
+const Header = ({ 
+  onUploadClick, 
+  onExport, 
   onQRExport,
   onPDFQRExport,
-  hasDocument,
+  hasDocument, 
   isQRExporting,
   isPDFQRExporting,
   qrCorner,
   onQRCornerChange,
-  user,
-  onSignOut,
+  user, 
+  onSignOut 
 }: HeaderProps) => {
   const [isGeminiDialogOpen, setGeminiDialogOpen] = useState(false);
   const [isGeminiKeySet, setGeminiKeySet] = useState(false);
@@ -73,147 +44,110 @@ const Header = ({
   const handleKeySave = () => {
     setGeminiKeySet(getGeminiApiKeys().length > 0);
   };
-
-  const isExportDisabled = !hasDocument || isQRExporting || isPDFQRExporting;
-
+  
   return (
     <>
-      <TooltipProvider>
-        <header className="bg-white border-b border-gray-200 shadow-sm py-4">
-          <div className="container mx-auto px-4 flex justify-between items-center">
-            {/* Left Group */}
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2">
+      <header className="bg-white border-b border-gray-200 shadow-sm py-4">
+        <div className="container mx-auto px-4 flex justify-between items-center">
+          {/* Left Group */}
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
                 <File className="h-6 w-6 text-primary" />
                 <h1 className="text-2xl font-bold text-gray-800">Jooy Studio</h1>
-              </div>
-              {user && <CreditDisplay credits={user.credits_remaining || 0} />}
             </div>
-
-            {/* Center Group */}
-            <div className="flex-1 flex justify-center items-center">
-              <Button asChild variant="outline" size="sm" className="px-3">
-                <Link
-                  to="/tts-history"
-                  title="View Virtual Tutor history and request new sessions"
-                >
-                  <UserRound className="h-4 w-4 mr-2" />
-                  Virtual Tutor
+            {user && <CreditDisplay credits={user.credits_remaining || 0} />}
+            <Button
+              onClick={() => setGeminiDialogOpen(true)}
+              variant="outline"
+              size="sm"
+              className="flex items-center gap-2 px-3"
+              title="Set Gemini API Key for AI generation"
+            >
+              <KeyRound  className={`h-4 w-4 transition-colors ${isGeminiKeySet ? 'text-yellow-400 fill-yellow-400' : 'text-muted-foreground'}`} />
+            </Button>
+          </div>
+          
+          {/* Center Group */}
+          <div className="flex-1 flex justify-center items-center">
+            <Button asChild variant="outline" size="sm" className="px-3">
+                <Link to="/tts-history" title="View Virtual Tutor history and request new sessions">
+                <UserRound className="h-4 w-4 mr-2" />
+                Virtual Tutor
                 </Link>
-              </Button>
-            </div>
-
-            {/* Right Group */}
-            <div className="flex items-center gap-2">
-              <Button
-                onClick={onUploadClick}
-                variant="outline"
+            </Button>
+          </div>
+          
+          {/* Right Group */}
+          <div className="flex items-center gap-4">
+            <Button 
+                onClick={onUploadClick} 
+                variant="outline" 
                 size="sm"
                 className="flex items-center gap-2 px-3"
-              >
+            >
                 <Upload className="h-4 w-4" />
                 Upload
-              </Button>
-
-              <DropdownMenu>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <DropdownMenuTrigger asChild>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="flex items-center gap-2 px-3"
-                        disabled={isExportDisabled}
-                      >
-                        <Share className="h-4 w-4" />
-                        Export
-                      </Button>
-                    </DropdownMenuTrigger>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Export options for the selected document</p>
-                  </TooltipContent>
-                </Tooltip>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuLabel>Export Options</DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={onQRExport} disabled={isQRExporting}>
-                    <QrCode className="mr-2 h-4 w-4" />
-                    <span>{isQRExporting ? 'Exporting...' : 'Export QR Codes (.zip)'}</span>
-                  </DropdownMenuItem>
-
-                  <DropdownMenuSub>
-                    <DropdownMenuSubTrigger disabled={isPDFQRExporting}>
-                      <QrCode className="mr-2 h-4 w-4" />
-                       <span>{isPDFQRExporting ? 'Processing...' : 'Download PDF with QRs'}</span>
-                    </DropdownMenuSubTrigger>
-                    <DropdownMenuPortal>
-                      <DropdownMenuSubContent>
-                        <DropdownMenuLabel>QR Position</DropdownMenuLabel>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem onClick={() => onQRCornerChange('top-left')}>
-                          <CornerDownLeft className="mr-2 h-4 w-4" />
-                          <span>Top Left</span>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => onQRCornerChange('top-right')}>
-                          <CornerDownRight className="mr-2 h-4 w-4" />
-                          <span>Top Right</span>
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem
-                          onClick={() => onPDFQRExport(qrCorner)}
-                          className="bg-primary text-primary-foreground focus:bg-primary/90"
-                        >
-                          Download Now
-                        </DropdownMenuItem>
-                      </DropdownMenuSubContent>
-                    </DropdownMenuPortal>
-                  </DropdownMenuSub>
-
-                  {user?.role === 'admin' && (
-                    <>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem onClick={onExport}>
-                        <FileJson className="mr-2 h-4 w-4" />
-                        <span>Export Region Data</span>
-                      </DropdownMenuItem>
-                    </>
-                  )}
-                </DropdownMenuContent>
-              </DropdownMenu>
-
-              <DropdownMenu>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon" className="rounded-full">
-                        <CircleUserRound className="h-6 w-6" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Account</p>
-                  </TooltipContent>
-                </Tooltip>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuLabel>
-                    {user?.full_name || user?.email}
-                  </DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => setGeminiDialogOpen(true)}>
-                    <KeyRound className="mr-2 h-4 w-4" />
-                    <span>API Keys</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={onSignOut}>
-                    <LogOut className="mr-2 h-4 w-4" />
-                    <span>Sign Out</span>
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+            </Button>
+             <Button 
+                onClick={onQRExport} 
+                disabled={!hasDocument || isQRExporting}
+                className="flex items-center gap-2 px-3"
+                variant="outline"
+                size="sm"
+                title={!hasDocument ? "Select a document with a valid PDF to export QR codes" : "Export QR codes for all pages"}
+            >
+                <QrCode className="h-4 w-4" />
+                {isQRExporting ? "Exporting..." : "QRs"}
+            </Button>
+            <div className="flex items-center">
+                <Button 
+                onClick={() => onPDFQRExport(qrCorner)} 
+                disabled={!hasDocument || isPDFQRExporting}
+                className="flex items-center gap-2 rounded-r-none px-3"
+                variant="outline"
+                size="sm"
+                title={!hasDocument ? "Select a document with a valid PDF to embed QR codes" : "Download PDF with embedded QR codes"}
+                >
+                <Download className="h-4 w-4" />
+                {isPDFQRExporting ? "Processing..." : "Download"}
+                </Button>
+                
+                <div className="border-l">
+                <QRCornerSelector
+                    value={qrCorner}
+                    onChange={onQRCornerChange}
+                    disabled={!hasDocument || isPDFQRExporting}
+                />
+                </div>
             </div>
+            {user?.role === 'admin' && (
+                <Button 
+                onClick={onExport} 
+                disabled={!hasDocument}
+                variant="outline"
+                size="sm"
+                className="px-3"
+                title={!hasDocument ? "Select a document with a valid PDF to export" : "Export region mappings"}
+                >
+                <Download className="h-4 w-4" />
+                Export Data
+                </Button>
+            )}
+            <span className="text-sm text-muted-foreground">
+                {user?.full_name || user?.email}
+            </span>
+            <Button
+                onClick={onSignOut}
+                variant="ghost"
+                size="sm"
+                className="text-muted-foreground px-2"
+                title="Sign Out"
+            >
+                <LogOut className="h-4 w-4" />
+            </Button>
           </div>
-        </header>
-      </TooltipProvider>
+        </div>
+      </header>
       <GeminiApiKeyDialog
         isOpen={isGeminiDialogOpen}
         onOpenChange={setGeminiDialogOpen}
