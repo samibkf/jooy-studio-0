@@ -3,6 +3,7 @@ import * as pdfjsLib from 'pdfjs-dist';
 import { PDFDocumentProxy } from 'pdfjs-dist';
 import { Region } from '@/types/regions';
 import RegionOverlay from './RegionOverlay';
+import CompactPageNavigation from './CompactPageNavigation';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { ArrowLeft, ArrowRight, MousePointer, Copy, Eye, EyeOff, Lock } from 'lucide-react';
@@ -77,7 +78,6 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
   const [isCopyingPage, setIsCopyingPage] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const [pageInputValue, setPageInputValue] = useState('');
   
   // Enhanced loading and error states
   const [loading, setLoading] = useState(false);
@@ -478,28 +478,6 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
     setPreventCreateRegion(false);
   }, [currentPage]);
   
-  const handleGoToPage = () => {
-    const pageNum = parseInt(pageInputValue);
-    if (pageNum >= 1 && pageNum <= totalPages) {
-      setCurrentPage(pageNum);
-      onPageChange?.(pageNum);
-      setPageInputValue('');
-      setSelectionPoint(null);
-      setSelectionRect({ x: 0, y: 0, width: 0, height: 0 });
-      setIsSelecting(false);
-      setPreventCreateRegion(false);
-      setIsDoubleClickMode(false);
-    } else {
-      toast.error(`Please enter a page number between 1 and ${totalPages}`);
-    }
-  };
-
-  const handlePageInputKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      handleGoToPage();
-    }
-  };
-
   if (!documentId) {
     return <div className="flex flex-col items-center justify-center h-[calc(100vh-72px)] bg-muted">
         <div className="text-center p-10">
@@ -560,127 +538,140 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
         <div className="flex items-center justify-between max-w-[1200px] mx-auto">
           <div className="flex items-center space-x-4">
             <div className="flex items-center space-x-2">
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Toggle pressed={currentSelectionType === 'area'} onPressedChange={() => onCurrentSelectionTypeChange(currentSelectionType === 'area' ? null : 'area')} aria-label="Toggle area selection tool" className={`${currentSelectionType === 'area' ? 'bg-blue-100 ring-2 ring-primary' : ''}`}>
-                      <MousePointer className="h-4 w-4" />
-                      <span className="sr-only">Area Selection</span>
-                    </Toggle>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Draw custom area regions</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Toggle pressed={currentSelectionType === 'area'} onPressedChange={() => onCurrentSelectionTypeChange(currentSelectionType === 'area' ? null : 'area')} aria-label="Toggle area selection tool" className={`${currentSelectionType === 'area' ? 'bg-blue-100 ring-2 ring-primary' : ''}`}>
+                    <MousePointer className="h-4 w-4" />
+                    <span className="sr-only">Area Selection</span>
+                  </Toggle>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Draw custom area regions</p>
+                </TooltipContent>
+              </Tooltip>
               
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button 
-                      variant="outline" 
-                      size="icon" 
-                      onClick={copyPageToClipboard} 
-                      disabled={isCopyingPage || !canvasRef.current}
-                      className="h-9 w-9"
-                    >
-                      <Copy className="h-4 w-4" />
-                      <span className="sr-only">Copy Page</span>
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Copy page as image</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button 
+                    variant="outline" 
+                    size="icon" 
+                    onClick={copyPageToClipboard} 
+                    disabled={isCopyingPage || !canvasRef.current}
+                    className="h-9 w-9"
+                  >
+                    <Copy className="h-4 w-4" />
+                    <span className="sr-only">Copy Page</span>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Copy page as image</p>
+                </TooltipContent>
+              </Tooltip>
             </div>
             
             <Separator orientation="vertical" className="h-6" />
 
             <div className="flex items-center space-x-4">
-              <Button variant="outline" size="icon" onClick={handlePrevPage} disabled={currentPage <= 1}>
-                <ArrowLeft className="h-4 w-4" />
-                <span className="sr-only">Previous page</span>
-              </Button>
-              
-              <div className="flex items-center space-x-2">
-                <span className="text-sm min-w-[100px] text-center">
-                  Page {currentPage} of {totalPages}
-                </span>
-                <div className="flex items-center space-x-1">
-                  <input
-                    type="number"
-                    min="1"
-                    max={totalPages}
-                    value={pageInputValue}
-                    onChange={(e) => setPageInputValue(e.target.value)}
-                    onKeyPress={handlePageInputKeyPress}
-                    placeholder="Go to..."
-                    className="w-20 px-2 py-1 text-xs border rounded text-center"
-                  />
-                  <Button variant="outline" size="sm" onClick={handleGoToPage} disabled={!pageInputValue.trim()}>
-                    Go
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="outline" size="icon" onClick={handlePrevPage} disabled={currentPage <= 1}>
+                    <ArrowLeft className="h-4 w-4" />
+                    <span className="sr-only">Previous page</span>
                   </Button>
-                </div>
-              </div>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Previous page</p>
+                </TooltipContent>
+              </Tooltip>
               
-              <Button variant="outline" size="icon" onClick={handleNextPage} disabled={currentPage >= totalPages}>
-                <ArrowRight className="h-4 w-4" />
-                <span className="sr-only">Next page</span>
-              </Button>
+              <CompactPageNavigation 
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={(page) => {
+                  setCurrentPage(page);
+                  onPageChange?.(page);
+                  setSelectionPoint(null);
+                  setSelectionRect({ x: 0, y: 0, width: 0, height: 0 });
+                  setIsSelecting(false);
+                  setPreventCreateRegion(false);
+                  setIsDoubleClickMode(false);
+                }}
+              />
+              
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="outline" size="icon" onClick={handleNextPage} disabled={currentPage >= totalPages}>
+                    <ArrowRight className="h-4 w-4" />
+                    <span className="sr-only">Next page</span>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Next page</p>
+                </TooltipContent>
+              </Tooltip>
             </div>
 
             <Separator orientation="vertical" className="h-6" />
             
             <div className="flex items-center space-x-2">
-              <Button variant="outline" size="sm" onClick={handleZoomOut} disabled={scale <= 0.5}>
-                -
-              </Button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="outline" size="sm" onClick={handleZoomOut} disabled={scale <= 0.5}>
+                    -
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Zoom out</p>
+                </TooltipContent>
+              </Tooltip>
               <span className="text-sm w-16 text-center">
                 {Math.round(scale * 100)}%
               </span>
-              <Button variant="outline" size="sm" onClick={handleZoomIn} disabled={scale >= 3}>
-                +
-              </Button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="outline" size="sm" onClick={handleZoomIn} disabled={scale >= 3}>
+                    +
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Zoom in</p>
+                </TooltipContent>
+              </Tooltip>
             </div>
 
             <Separator orientation="vertical" className="h-6" />
             
             <div className="flex items-center space-x-2">
-                <TooltipProvider>
-                    <Tooltip>
-                        <TooltipTrigger asChild>
-                            <Button
-                                variant="outline"
-                                size="icon"
-                                onClick={onVisibilityChange}
-                                className="h-9 w-9"
-                            >
-                                {isPrivate ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                            </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                            <p>{isPrivate ? 'Make document public' : 'Make document private'}</p>
-                        </TooltipContent>
-                    </Tooltip>
-                </TooltipProvider>
-                <TooltipProvider>
-                    <Tooltip>
-                        <TooltipTrigger asChild>
-                            <Button
-                                variant="outline"
-                                size="icon"
-                                onClick={onDrmSettingsClick}
-                                className="h-9 w-9"
-                            >
-                                <Lock className="h-4 w-4" />
-                            </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                            <p>DRM Settings</p>
-                        </TooltipContent>
-                    </Tooltip>
-                </TooltipProvider>
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <Button
+                            variant="outline"
+                            size="icon"
+                            onClick={onVisibilityChange}
+                            className="h-9 w-9"
+                        >
+                            {isPrivate ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                        <p>{isPrivate ? 'Make document public' : 'Make document private'}</p>
+                    </TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <Button
+                            variant="outline"
+                            size="icon"
+                            onClick={onDrmSettingsClick}
+                            className="h-9 w-9"
+                        >
+                            <Lock className="h-4 w-4" />
+                        </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                        <p>DRM Settings</p>
+                    </TooltipContent>
+                </Tooltip>
             </div>
           </div>
         </div>
