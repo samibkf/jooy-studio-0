@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import {
@@ -37,7 +36,7 @@ const QRCornerSelector = ({ value, onChange, disabled = false }: QRCornerSelecto
             onClick={() => onChange('top-left')}
           >
             <CornerDownLeft className="h-4 w-4 mr-2" />
-            Top Left
+            QR on Left
           </Button>
           <Button
             variant={value === 'top-right' ? 'default' : 'ghost'}
@@ -46,7 +45,7 @@ const QRCornerSelector = ({ value, onChange, disabled = false }: QRCornerSelecto
             onClick={() => onChange('top-right')}
           >
             <CornerDownRight className="h-4 w-4 mr-2" />
-            Top Right
+            QR on Right
           </Button>
         </div>
       </PopoverContent>

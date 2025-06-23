@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
@@ -924,6 +923,7 @@ const Index = () => {
             onDocumentDelete={handleDocumentDelete}
             isCollapsed={isDocumentListCollapsed}
             onCollapsedChange={setIsDocumentListCollapsed}
+            isLoading={isLoading}
           />
 
           <div className="flex-1 overflow-hidden relative">
