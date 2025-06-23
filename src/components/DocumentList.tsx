@@ -4,6 +4,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Skeleton } from '@/components/ui/skeleton';
 import { ChevronLeft, ChevronRight, FileText, Pencil, Trash2 } from 'lucide-react';
 import { Document } from '@/types/documents';
 import { toast } from 'sonner';
@@ -17,6 +18,7 @@ interface DocumentListProps {
   onDocumentDelete: (documentId: string) => void;
   isCollapsed: boolean;
   onCollapsedChange: (collapsed: boolean) => void;
+  isLoading?: boolean;
 }
 
 const DocumentList: React.FC<DocumentListProps> = ({
@@ -27,11 +29,11 @@ const DocumentList: React.FC<DocumentListProps> = ({
   onDocumentDelete,
   isCollapsed,
   onCollapsedChange,
+  isLoading = false,
 }) => {
   const [isRenaming, setIsRenaming] = useState<string | null>(null);
   const [newName, setNewName] = useState("");
   const [documentToDelete, setDocumentToDelete] = useState<string | null>(null);
-  const [documentOptionsVisible, setDocumentOptionsVisible] = useState<string | null>(null);
 
   const handleRenameSubmit = (documentId: string) => {
     if (newName.trim()) {
@@ -50,10 +52,12 @@ const DocumentList: React.FC<DocumentListProps> = ({
     }
   };
 
-  const handleFileIconClick = (e: React.MouseEvent, docId: string) => {
-    e.stopPropagation();
-    setDocumentOptionsVisible(prev => prev === docId ? null : docId);
-  };
+  const DocumentSkeleton = () => (
+    <div className="p-3 rounded-md flex items-center gap-2">
+      <Skeleton className="h-4 w-4 rounded" />
+      <Skeleton className="h-4 flex-1 rounded" />
+    </div>
+  );
 
   return (
     <div className="relative">
@@ -61,7 +65,7 @@ const DocumentList: React.FC<DocumentListProps> = ({
       <Button
         variant="ghost"
         size="icon"
-        className="fixed z-20 top-20 bg-background shadow-md border rounded-full"
+        className="fixed z-20 top-20 bg-background shadow-md border rounded-full transition-all duration-300"
         style={{ left: isCollapsed ? '16px' : '250px' }}
         onClick={() => onCollapsedChange(!isCollapsed)}
       >
@@ -76,54 +80,54 @@ const DocumentList: React.FC<DocumentListProps> = ({
 
         <ScrollArea className="h-[calc(100vh-10rem)]">
           <div className="p-2 space-y-2">
-            {documents.map((doc) => (
-              <div
-                key={doc.id}
-                className={`p-3 rounded-md flex items-center justify-between group hover:bg-accent/50 ${
-                  selectedDocumentId === doc.id ? 'bg-accent' : ''
-                }`}
-                onClick={() => onDocumentSelect(doc.id)}
-              >
-                <div className="flex items-center gap-2 flex-1 text-left relative">
-                  <FileText 
-                    className="h-4 w-4 cursor-pointer hover:text-primary" 
-                    onClick={(e) => handleFileIconClick(e, doc.id)}
-                  />
-                  <span className="truncate">{doc.name}</span>
+            {isLoading ? (
+              // Show skeleton loaders while loading
+              Array.from({ length: 5 }).map((_, index) => (
+                <DocumentSkeleton key={index} />
+              ))
+            ) : (
+              documents.map((doc) => (
+                <div
+                  key={doc.id}
+                  className={`p-3 rounded-md flex items-center justify-between group hover:bg-accent/50 cursor-pointer transition-colors ${
+                    selectedDocumentId === doc.id ? 'bg-accent' : ''
+                  }`}
+                  onClick={() => onDocumentSelect(doc.id)}
+                >
+                  <div className="flex items-center gap-2 flex-1 text-left min-w-0">
+                    <FileText className="h-4 w-4 flex-shrink-0" />
+                    <span className="truncate">{doc.name}</span>
+                  </div>
 
-                  {/* Options popup in absolute position */}
-                  {documentOptionsVisible === doc.id && (
-                    <div className="absolute top-0 left-6 bg-background shadow-md rounded-md border z-20 flex space-x-1 p-1">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setIsRenaming(doc.id);
-                          setNewName(doc.name);
-                          setDocumentOptionsVisible(null);
-                        }}
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-destructive"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setDocumentToDelete(doc.id);
-                          setDocumentOptionsVisible(null);
-                        }}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  )}
+                  {/* Action buttons that appear on hover */}
+                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200 ml-2">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7 hover:bg-accent"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setIsRenaming(doc.id);
+                        setNewName(doc.name);
+                      }}
+                    >
+                      <Pencil className="h-3 w-3" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7 text-destructive hover:bg-destructive/10"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setDocumentToDelete(doc.id);
+                      }}
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </ScrollArea>
 
@@ -141,6 +145,11 @@ const DocumentList: React.FC<DocumentListProps> = ({
                 onChange={(e) => setNewName(e.target.value)}
                 placeholder="Enter new name"
                 autoFocus
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && isRenaming) {
+                    handleRenameSubmit(isRenaming);
+                  }
+                }}
               />
             </div>
             <DialogFooter>
