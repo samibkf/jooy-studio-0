@@ -12,6 +12,7 @@ import {
   CornerDownLeft,
   CornerDownRight,
   FileJson,
+  Settings,
 } from 'lucide-react';
 import type { Profile } from '@/types/auth';
 import { GeminiApiKeyDialog, getGeminiApiKeys } from './GeminiApiKeyDialog';
@@ -142,33 +143,39 @@ const Header = ({
                     <span>{isQRExporting ? 'Exporting...' : 'Export QR Codes (.zip)'}</span>
                   </DropdownMenuItem>
 
-                  <DropdownMenuSub>
-                    <DropdownMenuSubTrigger disabled={isPDFQRExporting}>
+                  {/* Improved PDF with QR Codes Export */}
+                  <div className="flex items-center">
+                    <DropdownMenuItem
+                      onClick={() => onPDFQRExport(qrCorner)}
+                      disabled={isPDFQRExporting}
+                      className="flex-grow"
+                    >
                       <QrCode className="mr-2 h-4 w-4" />
-                       <span>{isPDFQRExporting ? 'Processing...' : 'Download PDF with QRs'}</span>
-                    </DropdownMenuSubTrigger>
-                    <DropdownMenuPortal>
-                      <DropdownMenuSubContent>
-                        <DropdownMenuLabel>QR Position</DropdownMenuLabel>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem onClick={() => onQRCornerChange('top-left')}>
-                          <CornerDownLeft className="mr-2 h-4 w-4" />
-                          <span>Top Left</span>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => onQRCornerChange('top-right')}>
-                          <CornerDownRight className="mr-2 h-4 w-4" />
-                          <span>Top Right</span>
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem
-                          onClick={() => onPDFQRExport(qrCorner)}
-                          className="bg-primary text-primary-foreground focus:bg-primary/90"
-                        >
-                          Download Now
-                        </DropdownMenuItem>
-                      </DropdownMenuSubContent>
-                    </DropdownMenuPortal>
-                  </DropdownMenuSub>
+                      <span>{isPDFQRExporting ? 'Processing...' : 'Download PDF with QRs'}</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuSub>
+                      <DropdownMenuSubTrigger className="w-8 h-8 p-0 flex items-center justify-center">
+                         <Settings className="h-4 w-4" />
+                      </DropdownMenuSubTrigger>
+                       <DropdownMenuPortal>
+                          <DropdownMenuSubContent>
+                            <DropdownMenuLabel>QR Position</DropdownMenuLabel>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onSelect={() => onQRCornerChange('top-left')}>
+                              <CornerDownLeft className="mr-2 h-4 w-4" />
+                              <span>Top Left</span>
+                              {qrCorner === 'top-left' && <span className="ml-auto text-xs">✓</span>}
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onSelect={() => onQRCornerChange('top-right')}>
+                              <CornerDownRight className="mr-2 h-4 w-4" />
+                              <span>Top Right</span>
+                              {qrCorner === 'top-right' && <span className="ml-auto text-xs">✓</span>}
+                            </DropdownMenuItem>
+                          </DropdownMenuSubContent>
+                       </DropdownMenuPortal>
+                    </DropdownMenuSub>
+                  </div>
+
 
                   {user?.role === 'admin' && (
                     <>
