@@ -41,6 +41,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { ManageTtsRequestDialog } from '@/components/admin/ManageTtsRequestDialog';
 import { CreditManagementDialog } from '@/components/admin/CreditManagementDialog';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const Admin = () => {
   const { authState, signOut } = useAuth();
@@ -619,7 +620,35 @@ const Admin = () => {
         <div>
           <h2 className="text-xl font-semibold mb-4">Users</h2>
           {loading ? (
-            <p>Loading users...</p>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>User</TableHead>
+                  <TableHead>Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {Array.from({ length: 3 }).map((_, i) => (
+                  <TableRow key={i}>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <Skeleton className="h-9 w-9 rounded-full" />
+                        <div className="space-y-1">
+                          <Skeleton className="h-4 w-24" />
+                          <Skeleton className="h-3 w-32" />
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <Skeleton className="h-9 w-24" />
+                        <Skeleton className="h-9 w-24" />
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           ) : (
             <Table>
               <TableHeader>
@@ -701,7 +730,9 @@ const Admin = () => {
             )}
           </div>
           {loadingDocuments || refreshingDocuments ? (
-            <p>Loading documents...</p>
+            <div className="space-y-2">
+              {Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-12 w-full" />)}
+            </div>
           ) : selectedUser ? (
             userDocuments.length > 0 ? (
               <Table>
@@ -765,7 +796,9 @@ const Admin = () => {
         </CardHeader>
         <CardContent>
           {loading ? (
-            <p>Loading TTS requests...</p>
+             <div className="space-y-2">
+              {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-12 w-full" />)}
+            </div>
           ) : ttsRequests.length > 0 ? (
             <Table>
               <TableHeader>

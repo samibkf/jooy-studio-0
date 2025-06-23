@@ -9,6 +9,7 @@ import TTSRequestModal from '@/components/TTSRequestModal';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface DocForTutor {
     id: string;
@@ -76,7 +77,16 @@ const TTSHistory = () => {
                         <CardTitle>Your Documents</CardTitle>
                     </CardHeader>
                     <CardContent>
-                        {loading ? <p>Loading...</p> : documents.length > 0 ? (
+                        {loading ? (
+                          <div className="space-y-2">
+                            {Array.from({ length: 3 }).map((_, i) => (
+                              <div key={i} className="flex justify-between items-center p-2">
+                                <Skeleton className="h-5 w-3/5" />
+                                <Skeleton className="h-8 w-1/4" />
+                              </div>
+                            ))}
+                          </div>
+                        ) : documents.length > 0 ? (
                             <ul className="space-y-2">
                                 {documents.map(doc => (
                                     <li key={doc.id} className="flex justify-between items-center p-2 border rounded-md">
@@ -98,7 +108,11 @@ const TTSHistory = () => {
                         </Button>
                     </CardHeader>
                     <CardContent>
-                        {loading ? <p>Loading...</p> : virtualTutorRequests.length > 0 ? (
+                        {loading ? (
+                          <div className="space-y-2">
+                            {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-12 w-full" />)}
+                          </div>
+                        ) : virtualTutorRequests.length > 0 ? (
                             <Table>
                                 <TableHeader>
                                     <TableRow>
