@@ -42,7 +42,7 @@ const DocumentList: React.FC<DocumentListProps> = ({
       onDocumentRename(documentId, newName.trim());
       setIsRenaming(null);
       setNewName("");
-      toast.success('Document renamed');
+      toast.success(t('docs.document_renamed'));
     }
   };
 
@@ -50,7 +50,7 @@ const DocumentList: React.FC<DocumentListProps> = ({
     if (documentToDelete) {
       onDocumentDelete(documentToDelete);
       setDocumentToDelete(null);
-      toast.success('Document deleted');
+      toast.success(t('docs.document_deleted'));
     }
   };
 

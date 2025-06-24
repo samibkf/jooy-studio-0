@@ -2,11 +2,13 @@
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthProvider';
 import { useEffect, useState } from 'react';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 export const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { authState } = useAuth();
   const location = useLocation();
   const [isLoading, setIsLoading] = useState(true);
+  const { t } = useLanguage();
   
   useEffect(() => {
     // Enhanced debug logging with timestamps
@@ -31,7 +33,7 @@ export const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   // Show loading while waiting for auth state
   if (isLoading && authState.session) {
     console.log(`ProtectedRoute [${new Date().toISOString()}] - Still loading...`);
-    return <div className="flex items-center justify-center h-screen">Loading authentication...</div>;
+    return <div className="flex items-center justify-center h-screen">{t('protected.loading_auth')}</div>;
   }
 
   // Return null initially instead of Navigate to prevent rendering outside Router context

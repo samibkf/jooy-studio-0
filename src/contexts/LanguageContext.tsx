@@ -47,6 +47,8 @@ const translations = {
     'docs.delete_document': 'Delete document?',
     'docs.delete_warning': 'This action cannot be undone. The document and all its regions will be permanently deleted.',
     'docs.delete': 'Delete',
+    'docs.document_renamed': 'Document renamed',
+    'docs.document_deleted': 'Document deleted',
     
     // Credit Display
     'credits.credits': 'Credits',
@@ -73,6 +75,10 @@ const translations = {
     'auth.no_account': "Don't have an account? Sign up",
     'auth.account_created': 'Account created! Please check your email for verification.',
     'auth.welcome_back_toast': 'Welcome back!',
+    'auth.loading_authentication': 'Loading authentication...',
+    
+    // Protected Route
+    'protected.loading_auth': 'Loading authentication...',
     
     // TTS History
     'tts.virtual_tutor_requests': 'Virtual Tutor Requests',
@@ -220,6 +226,8 @@ const translations = {
     'docs.delete_document': 'هل تريد حذف المستند؟',
     'docs.delete_warning': 'لا يمكن التراجع عن هذا الإجراء. سيتم حذف المستند وجميع مناطقه بشكل دائم.',
     'docs.delete': 'حذف',
+    'docs.document_renamed': 'تم إعادة تسمية المستند',
+    'docs.document_deleted': 'تم حذف المستند',
     
     // Credit Display
     'credits.credits': 'أرصدة',
@@ -246,6 +254,10 @@ const translations = {
     'auth.no_account': 'ليس لديك حساب؟ قم بالتسجيل',
     'auth.account_created': 'تم إنشاء الحساب! يرجى التحقق من بريدك الإلكتروني للتأكيد.',
     'auth.welcome_back_toast': 'مرحبا بعودتك!',
+    'auth.loading_authentication': 'جارٍ تحميل المصادقة...',
+    
+    // Protected Route
+    'protected.loading_auth': 'جارٍ تحميل المصادقة...',
     
     // TTS History
     'tts.virtual_tutor_requests': 'طلبات المعلم الافتراضي',
