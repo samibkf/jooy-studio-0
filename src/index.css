@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -83,110 +84,28 @@
   }
 }
 
-/* Enhanced RTL support */
-[dir="rtl"] {
+/* Text-only RTL support for Arabic content */
+.rtl-text {
   direction: rtl;
   text-align: start;
-}
-
-[dir="rtl"] .prose {
-  direction: rtl;
-  text-align: start;
-}
-
-/* Fix for common UI elements in RTL */
-[dir="rtl"] .lucide {
-  display: inline-block;
-}
-
-[dir="rtl"] .lucide[data-flip="true"] {
-  transform: scaleX(-1);
-}
-
-/* Ensure proper text direction inheritance */
-[dir="rtl"] * {
-  direction: inherit;
-}
-
-/* Override specific Tailwind utilities for better RTL support */
-[dir="rtl"] .text-left {
-  text-align: right;
-}
-
-[dir="rtl"] .text-right {
-  text-align: left;
-}
-
-[dir="rtl"] .float-left {
-  float: right;
-}
-
-[dir="rtl"] .float-right {
-  float: left;
-}
-
-/* Improved focus styles for RTL */
-[dir="rtl"] input:focus,
-[dir="rtl"] textarea:focus,
-[dir="rtl"] select:focus {
-  outline-offset: -2px;
 }
 
 /* Better spacing for Arabic text */
-[dir="rtl"] {
+.rtl-text {
   font-feature-settings: "kern" 1, "liga" 1, "clig" 1, "calt" 1;
 }
 
-/* Ensure proper alignment for form elements */
-[dir="rtl"] label {
-  text-align: start;
-}
-
-[dir="rtl"] .form-control {
-  text-align: start;
-}
-
-/* Toast positioning for RTL */
-[dir="rtl"] .sonner-toaster {
-  left: auto;
-  right: 1rem;
-}
-
-/* Dialog adjustments for RTL */
-[dir="rtl"] .dialog-content {
-  text-align: start;
-}
-
-/* Menu and dropdown improvements */
-[dir="rtl"] .dropdown-content {
-  text-align: start;
-}
-
-[dir="rtl"] .menu-item {
-  text-align: start;
-}
-
-/* Table improvements for RTL */
-[dir="rtl"] table {
-  direction: rtl;
-}
-
-[dir="rtl"] th,
-[dir="rtl"] td {
-  text-align: start;
-}
-
-/* Code block adjustments */
-[dir="rtl"] code,
-[dir="rtl"] pre {
+/* Code blocks should always be LTR */
+code,
+pre {
   direction: ltr;
   text-align: left;
 }
 
-/* Number and date input adjustments */
-[dir="rtl"] input[type="number"],
-[dir="rtl"] input[type="date"],
-[dir="rtl"] input[type="time"],
-[dir="rtl"] input[type="datetime-local"] {
+/* Number and date inputs should always be LTR */
+input[type="number"],
+input[type="date"],
+input[type="time"],
+input[type="datetime-local"] {
   direction: ltr;
 }

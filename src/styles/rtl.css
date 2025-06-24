@@ -1,458 +1,72 @@
 
-/* RTL Layout Utilities */
+/* Simplified RTL CSS - Text Direction Only */
 
-/* RTL-aware icon spacing utilities */
-.icon-start {
-  margin-inline-end: 0.5rem; /* 8px */
-}
-
-.icon-end {
-  margin-inline-start: 0.5rem; /* 8px */
-}
-
-.icon-start-sm {
-  margin-inline-end: 0.25rem; /* 4px */
-}
-
-.icon-end-sm {
-  margin-inline-start: 0.25rem; /* 4px */
-}
-
-.icon-start-lg {
-  margin-inline-end: 0.75rem; /* 12px */
-}
-
-.icon-end-lg {
-  margin-inline-start: 0.75rem; /* 12px */
-}
-
-/* Icon flipping for directional icons in RTL */
-[dir="rtl"] .icon-flip,
-.rtl .icon-flip {
-  transform: scaleX(-1);
-}
-
-/* Specific icon flips for common directional icons */
-[dir="rtl"] .lucide-arrow-left,
-[dir="rtl"] .lucide-arrow-right,
-[dir="rtl"] .lucide-chevron-left,
-[dir="rtl"] .lucide-chevron-right,
-[dir="rtl"] .lucide-corner-down-left,
-[dir="rtl"] .lucide-corner-down-right,
-[dir="rtl"] .lucide-log-out,
-[dir="rtl"] .lucide-panel-left {
-  transform: scaleX(-1);
-}
-
-/* Text alignment utilities */
-.text-start-rtl {
+/* RTL text utility class */
+.rtl-text {
+  direction: rtl;
   text-align: start;
+  font-feature-settings: "kern" 1, "liga" 1, "clig" 1, "calt" 1;
 }
 
-.text-end-rtl {
-  text-align: end;
+/* Ensure proper text direction inheritance for RTL content */
+.rtl-text * {
+  direction: inherit;
 }
 
-/* Margin utilities for RTL */
-.me-auto-rtl {
-  margin-inline-end: auto;
-}
-
-.ms-auto-rtl {
-  margin-inline-start: auto;
-}
-
-.ms-2 {
-  margin-inline-start: 0.5rem;
-}
-
-.me-2 {
-  margin-inline-end: 0.5rem;
-}
-
-/* Padding utilities for RTL */
-.pe-rtl-2 {
-  padding-inline-end: 0.5rem;
-}
-
-.ps-rtl-2 {
-  padding-inline-start: 0.5rem;
-}
-
-.pe-rtl-4 {
-  padding-inline-end: 1rem;
-}
-
-.ps-rtl-4 {
-  padding-inline-start: 1rem;
-}
-
-/* Border utilities for RTL */
-.border-e-rtl {
-  border-inline-end: 1px solid;
-}
-
-.border-s-rtl {
-  border-inline-start: 1px solid;
-}
-
-/* Position utilities for RTL */
-.start-0-rtl {
-  inset-inline-start: 0;
-}
-
-.end-0-rtl {
-  inset-inline-end: 0;
-}
-
-.start-4 {
-  inset-inline-start: 1rem;
-}
-
-.end-4 {
-  inset-inline-end: 1rem;
-}
-
-.start-2 {
-  inset-inline-start: 0.5rem;
-}
-
-.end-2 {
-  inset-inline-end: 0.5rem;
-}
-
-/* Flexbox utilities for RTL */
-.flex-row-reverse-rtl {
-  flex-direction: row-reverse;
-}
-
-/* Transform utilities for RTL */
-.rtl .transform-rtl {
-  transform: scaleX(-1);
-}
-
-/* Custom RTL-aware components */
-.rtl .dropdown-menu {
-  left: auto;
-  right: 0;
-}
-
-.rtl .tooltip {
-  direction: rtl;
-}
-
-.rtl input[type="search"] {
-  direction: rtl;
-}
-
-/* Navigation adjustments */
-.rtl .breadcrumb-item + .breadcrumb-item::before {
-  transform: scaleX(-1);
-}
-
-/* Table adjustments */
-.rtl table {
-  direction: rtl;
-}
-
-.rtl th,
-.rtl td {
-  text-align: right;
-}
-
-.rtl th:first-child,
-.rtl td:first-child {
-  text-align: right;
-}
-
-.rtl th:last-child,
-.rtl td:last-child {
+/* Code blocks should always be LTR regardless of text direction */
+.rtl-text code,
+.rtl-text pre {
+  direction: ltr;
   text-align: left;
 }
 
-/* Form adjustments */
-.rtl .form-check-input {
-  margin-left: auto;
-  margin-right: 0;
+/* Number and date inputs should always be LTR */
+.rtl-text input[type="number"],
+.rtl-text input[type="date"],
+.rtl-text input[type="time"],
+.rtl-text input[type="datetime-local"] {
+  direction: ltr;
 }
 
-.rtl .form-check-label {
-  padding-left: 0;
-  padding-right: 1.25em;
-}
-
-/* Modal adjustments */
-.rtl .modal-header .btn-close {
-  margin: -0.5rem -0.5rem -0.5rem auto;
-}
-
-/* Toast adjustments */
-.rtl .toast {
-  direction: rtl;
-}
-
-.rtl .toast-header {
-  flex-direction: row-reverse;
-}
-
-/* Carousel adjustments */
-.rtl .carousel-control-prev {
-  left: auto;
-  right: 0;
-}
-
-.rtl .carousel-control-next {
-  right: auto;
-  left: 0;
-}
-
-/* Dropdown adjustments */
-.rtl .dropdown-menu {
-  text-align: right;
-}
-
-.rtl .dropdown-item {
-  text-align: right;
-}
-
-/* Progress bar adjustments */
-.rtl .progress-bar {
-  animation-direction: reverse;
-}
-
-/* Floating labels */
-.rtl .form-floating > label {
-  left: auto;
-  right: 0;
-  transform-origin: 100% 0;
-}
-
-/* Input group adjustments */
-.rtl .input-group > :not(:first-child):not(.dropdown-menu):not(.valid-tooltip):not(.valid-feedback):not(.invalid-tooltip):not(.invalid-feedback) {
-  margin-left: 0;
-  margin-right: -1px;
-  border-top-left-radius: 0;
-  border-bottom-left-radius: 0;
-  border-top-right-radius: inherit;
-  border-bottom-right-radius: inherit;
-}
-
-.rtl .input-group > :not(:last-child):not(.dropdown-toggle):not(.dropdown-menu):not(.valid-tooltip):not(.valid-feedback):not(.invalid-tooltip):not(.invalid-feedback) {
-  border-top-right-radius: 0;
-  border-bottom-right-radius: 0;
-  border-top-left-radius: inherit;
-  border-bottom-left-radius: inherit;
-}
-
-/* List group adjustments */
-.rtl .list-group-horizontal > .list-group-item:first-child {
-  border-bottom-left-radius: 0;
-  border-top-right-radius: 0;
-  border-top-left-radius: inherit;
-  border-bottom-right-radius: inherit;
-}
-
-.rtl .list-group-horizontal > .list-group-item:last-child {
-  border-top-right-radius: 0;
-  border-bottom-left-radius: 0;
-  border-top-left-radius: inherit;
-  border-bottom-right-radius: inherit;
-}
-
-/* Button icon spacing fixes */
-[dir="rtl"] .mr-2 {
-  margin-right: 0;
-  margin-left: 0.5rem;
-}
-
-[dir="rtl"] .ml-2 {
-  margin-left: 0;
-  margin-right: 0.5rem;
-}
-
-[dir="rtl"] .ml-auto {
-  margin-left: 0;
-  margin-right: auto;
-}
-
-[dir="rtl"] .mr-auto {
-  margin-right: 0;
-  margin-left: auto;
-}
-
-/* Sidebar and panel positioning for RTL */
-[dir="rtl"] .sidebar-left {
-  right: 0;
-  left: auto;
-}
-
-[dir="rtl"] .sidebar-right {
-  left: 0;
-  right: auto;
-}
-
-/* Chevron button spacing and positioning */
-.rtl .chevron-nav {
-  flex-direction: row-reverse;
-}
-
-/* RTL-aware gap utilities */
-.gap-rtl-2 {
-  gap: 0.5rem;
-}
-
-.gap-rtl-4 {
-  gap: 1rem;
-}
-
-/* Sidebar specific RTL utilities */
-.sidebar-toggle-rtl {
-  transition: inset-inline-end 300ms ease-in-out;
-}
-
-/* RTL-aware positioning for sidebar elements */
-.rtl .sidebar-menu-action {
-  right: auto;
-  left: 0.25rem;
-}
-
-.rtl .sidebar-menu-badge {
-  right: auto;
-  left: 0.25rem;
-}
-
-/* RTL-aware submenu borders */
-.rtl .sidebar-submenu {
-  border-left: none;
-  border-right: 1px solid;
-  margin-left: 0;
-  margin-right: 0.875rem;
-  padding-left: 0;
-  padding-right: 0.625rem;
-}
-
-/* Context-aware chevron flipping */
-.chevron-context-start {
-  transition: transform 200ms ease-in-out;
-}
-
-[dir="rtl"] .chevron-context-start {
-  transform: scaleX(-1);
-}
-
-.chevron-context-end {
-  transition: transform 200ms ease-in-out;
-}
-
-[dir="rtl"] .chevron-context-end {
-  transform: scaleX(-1);
-}
-
-/* Sidebar collapse/expand states */
-.sidebar-collapsed[dir="rtl"] .chevron-expand {
-  transform: scaleX(-1);
-}
-
-.sidebar-expanded[dir="rtl"] .chevron-collapse {
-  transform: scaleX(-1);
-}
-
-/* Enhanced RTL sidebar positioning utilities */
-.sidebar-rtl-start {
-  inset-inline-start: 0;
-}
-
-.sidebar-rtl-end {
-  inset-inline-end: 0;
-}
-
-/* RTL-aware chevron semantics for sidebars */
-.chevron-semantic-expand {
-  transition: transform 200ms ease-in-out;
-}
-
-.chevron-semantic-collapse {
-  transition: transform 200ms ease-in-out;
-}
-
-/* In RTL, when sidebar is on the start (right side), chevrons flip semantically */
-[dir="rtl"] .sidebar-rtl-start .chevron-semantic-expand,
-[dir="rtl"] .sidebar-rtl-start .chevron-semantic-collapse {
-  transform: scaleX(-1);
-}
-
-/* Document list specific RTL utilities */
-.doc-list-rtl-positioned {
-  position: fixed;
-  top: 4rem;
-  z-index: 10;
-}
-
-[dir="rtl"] .doc-list-rtl-positioned {
-  right: 0;
-}
-
-[dir="ltr"] .doc-list-rtl-positioned {
-  left: 0;
-}
-
-/* Sidebar specific toggle button positioning */
-.sidebar-toggle-semantic {
-  position: fixed;
-  z-index: 20;
-  top: 5rem;
-  transition: all 300ms ease-in-out;
-}
-
-/* Semantic chevron directions for toggle buttons */
-.toggle-chevron-expand::before {
-  content: "→"; /* Points toward content when collapsed */
-}
-
-.toggle-chevron-collapse::before {
-  content: "←"; /* Points away from content when expanded */
-}
-
-[dir="rtl"] .toggle-chevron-expand::before {
-  content: "←"; /* In RTL, expand points left toward content */
-}
-
-[dir="rtl"] .toggle-chevron-collapse::before {
-  content: "→"; /* In RTL, collapse points right away from content */
-}
-
-/* Enhanced border utilities for RTL */
-.border-inline-start {
-  border-inline-start-width: 1px;
-  border-inline-start-style: solid;
-}
-
-.border-inline-end {
-  border-inline-end-width: 1px;
-  border-inline-end-style: solid;
-}
-
-/* RTL-aware text and element alignment */
-.align-start {
+/* Form labels should follow text direction */
+.rtl-text label {
   text-align: start;
 }
 
-.align-end {
-  text-align: end;
+/* Form controls should follow text direction */
+.rtl-text .form-control {
+  text-align: start;
 }
 
-.justify-start-rtl {
-  justify-content: flex-start;
+/* Toast positioning - keep toasts in their normal position */
+.sonner-toaster {
+  /* No RTL-specific positioning changes */
 }
 
-.justify-end-rtl {
-  justify-content: flex-end;
+/* Dialog and modal content should follow text direction */
+.rtl-text .dialog-content {
+  text-align: start;
 }
 
-[dir="rtl"] .justify-start-rtl {
-  justify-content: flex-end;
+/* Menu and dropdown content should follow text direction */
+.rtl-text .dropdown-content,
+.rtl-text .menu-item {
+  text-align: start;
 }
 
-[dir="rtl"] .justify-end-rtl {
-  justify-content: flex-start;
+/* Table text should follow direction */
+.rtl-text table th,
+.rtl-text table td {
+  text-align: start;
+}
+
+/* Button text should follow direction */
+.rtl-text button {
+  text-align: center;
+}
+
+/* Input placeholder text direction */
+.rtl-text input::placeholder,
+.rtl-text textarea::placeholder {
+  text-align: start;
 }

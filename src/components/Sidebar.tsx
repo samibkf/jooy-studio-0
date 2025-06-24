@@ -40,10 +40,10 @@ const Sidebar = ({
   if (!textAssignmentContext) {
     console.error('TextAssignmentContext is not available');
     return (
-      <div className="h-full w-full flex flex-col bg-background border-s-rtl" style={{ width: '400px' }}>
+      <div className="h-full w-full flex flex-col bg-background border-l" style={{ width: '400px' }}>
         <div className="flex flex-col flex-1 p-4 h-full overflow-y-auto px-[24px] py-[8px] rounded-none">
           <div className="flex items-center justify-center h-full">
-            <p className="text-muted-foreground">{t('sidebar.loading')}</p>
+            <p className={`text-muted-foreground ${isRTL ? 'rtl-text' : ''}`}>{t('sidebar.loading')}</p>
           </div>
         </div>
       </div>
@@ -105,11 +105,11 @@ const Sidebar = ({
   }, []);
 
   return (
-    <div className="h-full w-full flex flex-col bg-background border-s-rtl" style={{
+    <div className="h-full w-full flex flex-col bg-background border-l" style={{
       width: '400px'
     }}>
       <div className="flex items-center justify-between p-4 border-b">
-        <h2 className="text-lg font-semibold">{t('sidebar.content_tools')}</h2>
+        <h2 className={`text-lg font-semibold ${isRTL ? 'rtl-text' : ''}`}>{t('sidebar.content_tools')}</h2>
         <Button variant="ghost" size="icon" onClick={() => setShowManualInsert(prev => !prev)}>
           <SquarePen className="h-5 w-5" />
           <span className="sr-only">{t('sidebar.toggle_manual_input')}</span>
@@ -132,7 +132,7 @@ const Sidebar = ({
             <Separator className="my-4" />
             
             <div className="flex justify-between items-center">
-              <h3 className="text-lg font-medium">{selectedRegion.name || t('sidebar.unnamed_region')}</h3>
+              <h3 className={`text-lg font-medium ${isRTL ? 'rtl-text' : ''}`}>{selectedRegion.name || t('sidebar.unnamed_region')}</h3>
               <div className="flex gap-2">
                 {documentId && isRegionAssigned(selectedRegion.id, documentId) && (
                   <Button variant="outline" size="sm" onClick={handleUndoRegionText} className="text-blue-600 hover:text-blue-800">
@@ -145,7 +145,7 @@ const Sidebar = ({
               </div>
             </div>
             
-            <label className="text-sm font-medium mb-1 mt-4">{t('sidebar.text_label')}</label>
+            <label className={`text-sm font-medium mb-1 mt-4 ${isRTL ? 'rtl-text' : ''}`}>{t('sidebar.text_label')}</label>
             <Textarea 
               ref={textareaRef} 
               value={localDescription} 
@@ -153,8 +153,7 @@ const Sidebar = ({
               placeholder={t('sidebar.add_description')}
               className={`w-full min-h-0 h-24 resize-none ${
                 documentId && isRegionAssigned(selectedRegion.id, documentId) ? 'border-green-500' : ''
-              } ${isRTL ? 'text-right' : ''}`}
-              dir={isRTL ? 'rtl' : 'ltr'}
+              } ${isRTL ? 'rtl-text' : ''}`}
             />
           </>
         )}
@@ -162,7 +161,7 @@ const Sidebar = ({
       
       {!selectedRegion && (
         <div className="p-4 border-t text-center">
-          <p className="text-sm text-muted-foreground">{t('sidebar.select_region')}</p>
+          <p className={`text-sm text-muted-foreground ${isRTL ? 'rtl-text' : ''}`}>{t('sidebar.select_region')}</p>
         </div>
       )}
     </div>

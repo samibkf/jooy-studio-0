@@ -406,13 +406,12 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   useEffect(() => {
     localStorage.setItem('language', language);
     
-    // Set both language and direction attributes
+    // Only set language attribute, not direction
     document.documentElement.lang = language;
-    document.documentElement.dir = language === 'ar' ? 'rtl' : 'ltr';
     
-    // Add RTL class to body for CSS targeting
+    // Remove automatic RTL body class - we'll handle text direction manually
     if (language === 'ar') {
-      document.body.classList.add('rtl');
+      document.body.classList.remove('rtl');
     } else {
       document.body.classList.remove('rtl');
     }
