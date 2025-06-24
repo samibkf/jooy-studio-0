@@ -54,6 +54,30 @@ const DocumentList: React.FC<DocumentListProps> = ({
     }
   };
 
+  // RTL-aware chevron logic: In RTL, we want the semantic meaning to be preserved
+  // When collapsed, show expand icon (pointing toward content)
+  // When expanded, show collapse icon (pointing away from content)
+  const getChevronIcon = () => {
+    if (isCollapsed) {
+      // Collapsed state - show expand icon (toward content)
+      return isRTL ? ChevronLeft : ChevronRight;
+    } else {
+      // Expanded state - show collapse icon (away from content)
+      return isRTL ? ChevronRight : ChevronLeft;
+    }
+  };
+
+  const ChevronIcon = getChevronIcon();
+
+  // RTL-aware positioning calculation
+  const getTogglePosition = () => {
+    if (isRTL) {
+      return { right: isCollapsed ? '16px' : '250px' };
+    } else {
+      return { left: isCollapsed ? '16px' : '250px' };
+    }
+  };
+
   const DocumentSkeleton = () => (
     <div className="p-3 rounded-md flex items-center gap-2">
       <Skeleton className="h-4 w-4 rounded" />
@@ -67,15 +91,19 @@ const DocumentList: React.FC<DocumentListProps> = ({
       <Button
         variant="ghost"
         size="icon"
-        className="fixed z-20 top-20 start-4 bg-background shadow-md border rounded-full transition-all duration-300"
-        style={{ [isRTL ? 'right' : 'left']: isCollapsed ? '16px' : '250px' }}
+        className="fixed z-20 top-20 bg-background shadow-md border rounded-full transition-all duration-300"
+        style={getTogglePosition()}
         onClick={() => onCollapsedChange(!isCollapsed)}
       >
-        {isCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+        <ChevronIcon className="h-4 w-4" />
       </Button>
 
       {/* Document list sidebar content */}
-      <div className={`w-[250px] h-full bg-background border-e-rtl transition-all duration-300 ease-in-out ${isCollapsed ? '-translate-x-full' : 'translate-x-0'} fixed top-16 start-0 z-10`}>
+      <div className={`w-[250px] h-full bg-background border-e transition-all duration-300 ease-in-out ${
+        isCollapsed 
+          ? (isRTL ? 'translate-x-full' : '-translate-x-full') 
+          : 'translate-x-0'
+      } fixed top-16 z-10 ${isRTL ? 'end-0' : 'start-0'}`}>
         <div className="p-4 border-b">
           <h2 className="font-semibold" dir={isRTL ? 'rtl' : 'ltr'}>{t('docs.documents')}</h2>
         </div>
@@ -96,13 +124,13 @@ const DocumentList: React.FC<DocumentListProps> = ({
                   }`}
                   onClick={() => onDocumentSelect(doc.id)}
                 >
-                  <div className="flex items-center gap-2 flex-1 text-start-rtl min-w-0">
+                  <div className="flex items-center gap-2 flex-1 text-start min-w-0">
                     <FileText className="h-4 w-4 flex-shrink-0" />
                     <span className="truncate" dir={isRTL ? 'rtl' : 'ltr'}>{doc.name}</span>
                   </div>
 
                   {/* Action buttons that appear on hover */}
-                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200 ms-2">
+                  <div className={`flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200 ${isRTL ? 'me-2' : 'ms-2'}`}>
                     <Button
                       variant="ghost"
                       size="icon"

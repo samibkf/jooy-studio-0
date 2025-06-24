@@ -891,17 +891,28 @@ const Index = () => {
     setCurrentPage(page); // page is now consistently 1-based from PdfViewer
   };
   
-  // Get the correct chevron icon based on sidebar state and RTL direction
+  // RTL-aware chevron logic for sidebar toggle
+  // In RTL: collapsed = show left chevron (expand), expanded = show right chevron (collapse)
+  // In LTR: collapsed = show right chevron (expand), expanded = show left chevron (collapse)
   const getSidebarChevronIcon = () => {
     if (isSidebarCollapsed) {
-      // Sidebar is collapsed, show expand icon
-      return isRTL ? ChevronRight : ChevronLeft;
-    } else {
-      // Sidebar is expanded, show collapse icon
+      // Sidebar is collapsed, show expand icon (toward content)
       return isRTL ? ChevronLeft : ChevronRight;
+    } else {
+      // Sidebar is expanded, show collapse icon (away from content)
+      return isRTL ? ChevronRight : ChevronLeft;
     }
   };
 
+  // RTL-aware positioning for sidebar toggle
+  const getSidebarTogglePosition = () => {
+    if (isRTL) {
+      return { left: isSidebarCollapsed ? '16px' : '390px' };
+    } else {
+      return { right: isSidebarCollapsed ? '16px' : '390px' };
+    }
+  };
+  
   const ChevronIcon = getSidebarChevronIcon();
   
   return (
@@ -971,8 +982,8 @@ const Index = () => {
             <Button
               variant="ghost"
               size="icon"
-              className="fixed z-20 top-20 bg-background shadow-md border rounded-full sidebar-toggle-rtl"
-              style={{ [isRTL ? 'left' : 'right']: isSidebarCollapsed ? '16px' : '390px' }}
+              className="fixed z-20 top-20 bg-background shadow-md border rounded-full transition-all duration-300"
+              style={getSidebarTogglePosition()}
               onClick={toggleSidebar}
             >
               <ChevronIcon className="h-4 w-4" />

@@ -356,3 +356,103 @@
 .sidebar-expanded[dir="rtl"] .chevron-collapse {
   transform: scaleX(-1);
 }
+
+/* Enhanced RTL sidebar positioning utilities */
+.sidebar-rtl-start {
+  inset-inline-start: 0;
+}
+
+.sidebar-rtl-end {
+  inset-inline-end: 0;
+}
+
+/* RTL-aware chevron semantics for sidebars */
+.chevron-semantic-expand {
+  transition: transform 200ms ease-in-out;
+}
+
+.chevron-semantic-collapse {
+  transition: transform 200ms ease-in-out;
+}
+
+/* In RTL, when sidebar is on the start (right side), chevrons flip semantically */
+[dir="rtl"] .sidebar-rtl-start .chevron-semantic-expand,
+[dir="rtl"] .sidebar-rtl-start .chevron-semantic-collapse {
+  transform: scaleX(-1);
+}
+
+/* Document list specific RTL utilities */
+.doc-list-rtl-positioned {
+  position: fixed;
+  top: 4rem;
+  z-index: 10;
+}
+
+[dir="rtl"] .doc-list-rtl-positioned {
+  right: 0;
+}
+
+[dir="ltr"] .doc-list-rtl-positioned {
+  left: 0;
+}
+
+/* Sidebar specific toggle button positioning */
+.sidebar-toggle-semantic {
+  position: fixed;
+  z-index: 20;
+  top: 5rem;
+  transition: all 300ms ease-in-out;
+}
+
+/* Semantic chevron directions for toggle buttons */
+.toggle-chevron-expand::before {
+  content: "→"; /* Points toward content when collapsed */
+}
+
+.toggle-chevron-collapse::before {
+  content: "←"; /* Points away from content when expanded */
+}
+
+[dir="rtl"] .toggle-chevron-expand::before {
+  content: "←"; /* In RTL, expand points left toward content */
+}
+
+[dir="rtl"] .toggle-chevron-collapse::before {
+  content: "→"; /* In RTL, collapse points right away from content */
+}
+
+/* Enhanced border utilities for RTL */
+.border-inline-start {
+  border-inline-start-width: 1px;
+  border-inline-start-style: solid;
+}
+
+.border-inline-end {
+  border-inline-end-width: 1px;
+  border-inline-end-style: solid;
+}
+
+/* RTL-aware text and element alignment */
+.align-start {
+  text-align: start;
+}
+
+.align-end {
+  text-align: end;
+}
+
+.justify-start-rtl {
+  justify-content: flex-start;
+}
+
+.justify-end-rtl {
+  justify-content: flex-end;
+}
+
+[dir="rtl"] .justify-start-rtl {
+  justify-content: flex-end;
+}
+
+[dir="rtl"] .justify-end-rtl {
+  justify-content: flex-start;
+}
