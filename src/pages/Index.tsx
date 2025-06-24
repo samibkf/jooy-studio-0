@@ -904,7 +904,7 @@ const Index = () => {
     }
   };
 
-  // RTL-aware positioning for sidebar toggle
+  // RTL-aware positioning for sidebar toggle - Updated to match Documents chevron button level
   const getSidebarTogglePosition = () => {
     if (isRTL) {
       return { left: isSidebarCollapsed ? '16px' : '390px' };
@@ -982,7 +982,7 @@ const Index = () => {
             <Button
               variant="ghost"
               size="icon"
-              className="fixed z-20 top-20 bg-background shadow-md border rounded-full transition-all duration-300"
+              className="fixed z-20 top-24 bg-background shadow-md border rounded-full transition-all duration-300"
               style={getSidebarTogglePosition()}
               onClick={toggleSidebar}
             >
@@ -993,7 +993,7 @@ const Index = () => {
               <div className="h-full">
                 <Sidebar
                   selectedRegion={selectedDocument?.regions.find(r => r.id === selectedRegionId) || null}
-                  regions={selectedDocument?.regions || []}
+                  regions={selectedDocument?.regions || []} 
                   onRegionUpdate={handleRegionUpdate}
                   onRegionDelete={handleRegionDelete}
                   onRegionSelect={setSelectedRegionId}
