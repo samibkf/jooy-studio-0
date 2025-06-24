@@ -16,9 +16,9 @@ function App() {
   return (
     <LanguageProvider>
       <TooltipProvider>
-        <Router>
-          <AuthProvider>
-            <TextAssignmentProvider>
+        <AuthProvider>
+          <TextAssignmentProvider>
+            <Router>
               <Routes>
                 <Route path="/" element={<Index />} />
                 <Route path="/auth" element={<Auth />} />
@@ -27,9 +27,9 @@ function App() {
                 <Route path="*" element={<NotFound />} />
               </Routes>
               <Toaster richColors position="top-center" />
-            </TextAssignmentProvider>
-          </AuthProvider>
-        </Router>
+            </Router>
+          </TextAssignmentProvider>
+        </AuthProvider>
       </TooltipProvider>
     </LanguageProvider>
   );
