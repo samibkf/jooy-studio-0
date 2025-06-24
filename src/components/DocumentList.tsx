@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
@@ -67,9 +66,10 @@ const DocumentList: React.FC<DocumentListProps> = ({
       <Button
         variant="ghost"
         size="icon"
-        className="fixed z-20 top-20 left-4 bg-background shadow-md border rounded-full transition-all duration-300"
+        className={`fixed z-20 top-20 left-4 bg-background shadow-md border rounded-full transition-all duration-300 rtl-button-icons`}
         style={{ left: isCollapsed ? '16px' : '250px' }}
         onClick={() => onCollapsedChange(!isCollapsed)}
+        dir={isRTL ? 'rtl' : 'ltr'}
       >
         {isCollapsed ? <ChevronRight /> : <ChevronLeft />}
       </Button>

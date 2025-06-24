@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import {
@@ -6,6 +7,7 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { CornerDownLeft, CornerDownRight, Settings } from 'lucide-react';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface QRCornerSelectorProps {
   value: 'top-left' | 'top-right';
@@ -14,6 +16,8 @@ interface QRCornerSelectorProps {
 }
 
 const QRCornerSelector = ({ value, onChange, disabled = false }: QRCornerSelectorProps) => {
+  const { isRTL } = useLanguage();
+
   return (
     <Popover>
       <PopoverTrigger asChild>
@@ -32,8 +36,9 @@ const QRCornerSelector = ({ value, onChange, disabled = false }: QRCornerSelecto
           <Button
             variant={value === 'top-left' ? 'default' : 'ghost'}
             size="sm"
-            className="w-full justify-start"
+            className="w-full justify-start rtl-button-icons"
             onClick={() => onChange('top-left')}
+            dir={isRTL ? 'rtl' : 'ltr'}
           >
             <CornerDownLeft className="h-4 w-4 mr-2" />
             QR on Left
@@ -41,8 +46,9 @@ const QRCornerSelector = ({ value, onChange, disabled = false }: QRCornerSelecto
           <Button
             variant={value === 'top-right' ? 'default' : 'ghost'}
             size="sm"
-            className="w-full justify-start"
+            className="w-full justify-start rtl-button-icons"
             onClick={() => onChange('top-right')}
+            dir={isRTL ? 'rtl' : 'ltr'}
           >
             <CornerDownRight className="h-4 w-4 mr-2" />
             QR on Right
