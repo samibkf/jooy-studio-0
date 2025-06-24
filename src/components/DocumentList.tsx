@@ -9,6 +9,8 @@ import { ChevronLeft, ChevronRight, FileText, Pencil, Trash2 } from 'lucide-reac
 import { Document } from '@/types/documents';
 import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { useTranslation } from '@/hooks/useTranslation';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface DocumentListProps {
   documents: Document[];
@@ -34,6 +36,8 @@ const DocumentList: React.FC<DocumentListProps> = ({
   const [isRenaming, setIsRenaming] = useState<string | null>(null);
   const [newName, setNewName] = useState("");
   const [documentToDelete, setDocumentToDelete] = useState<string | null>(null);
+  const { t } = useTranslation();
+  const { isRTL } = useLanguage();
 
   const handleRenameSubmit = (documentId: string) => {
     if (newName.trim()) {
@@ -66,16 +70,21 @@ const DocumentList: React.FC<DocumentListProps> = ({
         variant="ghost"
         size="icon"
         className="fixed z-20 top-20 bg-background shadow-md border rounded-full transition-all duration-300"
-        style={{ left: isCollapsed ? '16px' : '250px' }}
+        style={{ 
+          [isRTL ? 'right' : 'left']: isCollapsed ? '16px' : '250px' 
+        }}
         onClick={() => onCollapsedChange(!isCollapsed)}
       >
-        {isCollapsed ? <ChevronRight /> : <ChevronLeft />}
+        {isCollapsed ? 
+          (isRTL ? <ChevronLeft /> : <ChevronRight />) : 
+          (isRTL ? <ChevronRight /> : <ChevronLeft />)
+        }
       </Button>
 
       {/* Document list sidebar content */}
-      <div className={`w-[250px] h-full bg-background border-r transition-all duration-300 ease-in-out ${isCollapsed ? '-translate-x-full' : 'translate-x-0'} fixed top-16 left-0 z-10`}>
+      <div className={`w-[250px] h-full bg-background border-r transition-all duration-300 ease-in-out ${isCollapsed ? (isRTL ? 'translate-x-full' : '-translate-x-full') : 'translate-x-0'} fixed top-16 ${isRTL ? 'right-0' : 'left-0'} z-10`}>
         <div className="p-4 border-b">
-          <h2 className="font-semibold">Documents</h2>
+          <h2 className="font-semibold">{t('documentList.documents')}</h2>
         </div>
 
         <ScrollArea className="h-[calc(100vh-10rem)]">
@@ -100,7 +109,7 @@ const DocumentList: React.FC<DocumentListProps> = ({
                   </div>
 
                   {/* Action buttons that appear on hover */}
-                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200 ml-2">
+                  <div className={`flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200 ${isRTL ? 'mr-2' : 'ml-2'}`}>
                     <Button
                       variant="ghost"
                       size="icon"
@@ -137,13 +146,13 @@ const DocumentList: React.FC<DocumentListProps> = ({
         }}>
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
-              <DialogTitle>Rename document</DialogTitle>
+              <DialogTitle>{t('documentList.renameDocument')}</DialogTitle>
             </DialogHeader>
             <div className="py-4">
               <Input
                 value={newName}
                 onChange={(e) => setNewName(e.target.value)}
-                placeholder="Enter new name"
+                placeholder={t('documentList.enterNewName')}
                 autoFocus
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && isRenaming) {
@@ -153,8 +162,8 @@ const DocumentList: React.FC<DocumentListProps> = ({
               />
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setIsRenaming(null)}>Cancel</Button>
-              <Button onClick={() => isRenaming && handleRenameSubmit(isRenaming)}>Save</Button>
+              <Button variant="outline" onClick={() => setIsRenaming(null)}>{t('documentList.cancel')}</Button>
+              <Button onClick={() => isRenaming && handleRenameSubmit(isRenaming)}>{t('documentList.save')}</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
@@ -163,14 +172,14 @@ const DocumentList: React.FC<DocumentListProps> = ({
         <AlertDialog open={!!documentToDelete} onOpenChange={() => setDocumentToDelete(null)}>
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>Delete document?</AlertDialogTitle>
+              <AlertDialogTitle>{t('documentList.deleteDocument')}</AlertDialogTitle>
               <AlertDialogDescription>
-                This action cannot be undone. The document and all its regions will be permanently deleted.
+                {t('documentList.deleteWarning')}
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction onClick={handleDeleteConfirm}>Delete</AlertDialogAction>
+              <AlertDialogCancel>{t('documentList.cancel')}</AlertDialogCancel>
+              <AlertDialogAction onClick={handleDeleteConfirm}>{t('documentList.delete')}</AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>

@@ -1,3 +1,4 @@
+
 import type { Config } from "tailwindcss";
 
 export default {
@@ -92,5 +93,42 @@ export default {
 			}
 		}
 	},
-	plugins: [require("tailwindcss-animate")],
+	plugins: [
+		require("tailwindcss-animate"),
+		function({ addUtilities }: { addUtilities: Function }) {
+			addUtilities({
+				'.rtl-flip': {
+					'transform': 'scaleX(-1)',
+				},
+				'.ltr\\:ml-2': {
+					'@media (min-width: 0px)': {
+						'[dir="ltr"] &': {
+							'margin-left': '0.5rem',
+						},
+					},
+				},
+				'.rtl\\:mr-2': {
+					'@media (min-width: 0px)': {
+						'[dir="rtl"] &': {
+							'margin-right': '0.5rem',
+						},
+					},
+				},
+				'.ltr\\:mr-2': {
+					'@media (min-width: 0px)': {
+						'[dir="ltr"] &': {
+							'margin-right': '0.5rem',
+						},
+					},
+				},
+				'.rtl\\:ml-2': {
+					'@media (min-width: 0px)': {
+						'[dir="rtl"] &': {
+							'margin-left': '0.5rem',
+						},
+					},
+				},
+			});
+		}
+	],
 } satisfies Config;
