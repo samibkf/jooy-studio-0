@@ -32,8 +32,6 @@ import { DocumentSettingsDialog } from '@/components/DocumentSettingsDialog';
 import { useLanguage } from '@/contexts/LanguageContext';
 
 const Index = () => {
-  // ... keep existing code (state declarations and useDocumentState hook) the same
-
   const [documents, setDocuments] = useState<DocumentData[]>([]);
   const [selectedDocumentId, setSelectedDocumentId] = useState<string | null>(null);
   const [isDocumentListCollapsed, setIsDocumentListCollapsed] = useState(true);
@@ -79,8 +77,6 @@ const Index = () => {
     autoSync: true,
     syncInterval: 2000
   });
-
-  // ... keep existing code (loadDocuments function) the same
 
   const loadDocuments = async () => {
     if (documentsLoaded && !isInitialLoad) {
@@ -200,8 +196,6 @@ const Index = () => {
     
     loadDocuments();
   }, [authState.user]);
-
-  // ... keep existing code (handleFileUpload, handleFileChange, handleDocumentSelect, handleDocumentRename, handleDocumentDelete) the same
 
   const handleFileUpload = () => {
     fileInputRef.current?.click();
@@ -502,8 +496,6 @@ const Index = () => {
     }
   };
 
-  // ... keep existing code (handleRegionCreate, handleRegionUpdate, handleRegionDelete, handleExport) the same
-
   const handleRegionCreate = async (regionData: Omit<Region, 'id'>) => {
     if (!selectedDocumentId || !authState.user) return;
 
@@ -729,8 +721,6 @@ const Index = () => {
     toast.success('Data exported successfully');
   };
 
-  // ... keep existing code (QR export functions, retry functions, other handlers) the same
-
   const fetchPdfArrayBuffer = async (documentId: string): Promise<ArrayBuffer> => {
     const response = await fetch(`/functions/v1/stream-pdf?document_id=${documentId}`, {
       headers: { 'Cache-Control': 'no-store' },
@@ -739,7 +729,6 @@ const Index = () => {
     return await response.arrayBuffer();
   };
 
-  // Refactor: update to fetch ArrayBuffer for QR export/embedding
   const handleQRExport = async () => {
     if (!selectedDocument) {
       toast.error('No valid document selected');
@@ -982,11 +971,11 @@ const Index = () => {
             <Button
               variant="ghost"
               size="icon"
-              className="fixed z-20 top-20 bg-background shadow-md border rounded-full transition-all duration-300"
+              className="fixed z-20 top-20 bg-green-50 hover:bg-green-100 shadow-md border border-green-200 rounded-full transition-all duration-300"
               style={getSidebarTogglePosition()}
               onClick={toggleSidebar}
             >
-              <ChevronIcon className="h-4 w-4" />
+              <ChevronIcon className="h-4 w-4 text-green-600" />
             </Button>
             
             <div className={`transition-all duration-300 ${isSidebarCollapsed ? 'w-0 opacity-0 overflow-hidden' : 'w-[400px]'}`}>
