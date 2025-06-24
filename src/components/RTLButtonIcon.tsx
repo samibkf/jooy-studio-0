@@ -10,11 +10,12 @@ interface RTLButtonIconProps {
 const RTLButtonIcon: React.FC<RTLButtonIconProps> = ({ children, className = '' }) => {
   const { isRTL } = useLanguage();
   
-  // For RTL, we need to position the icon on the right side (beginning of Arabic text)
-  // We'll use CSS classes that control flex ordering and margins
+  // For RTL with flex-direction: row-reverse, we need right margin
+  // For LTR with flex-direction: row, we need right margin
+  // The flex-direction: row-reverse will automatically move the icon to the right (beginning of Arabic text)
   const iconClasses = isRTL 
-    ? `order-2 ml-2 ${className}` // In RTL: icon goes after text (right side) with left margin
-    : `order-1 mr-2 ${className}`; // In LTR: icon goes before text (left side) with right margin
+    ? `mr-2 ${className}` // Right margin for RTL (icon will be on right due to row-reverse)
+    : `mr-2 ${className}`; // Right margin for LTR (icon will be on left)
   
   return (
     <span className={iconClasses}>
