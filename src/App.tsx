@@ -20,7 +20,7 @@ function App() {
           <TextAssignmentProvider>
             <Router>
               <Routes>
-                <Route path="/" element={<Index />} />
+                <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
                 <Route path="/auth" element={<Auth />} />
                 <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
                 <Route path="/tts-history" element={<ProtectedRoute><TTSHistory /></ProtectedRoute>} />
