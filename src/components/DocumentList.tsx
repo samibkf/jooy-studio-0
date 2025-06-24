@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ChevronRight, FileText, Pencil, Trash2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, FileText, Pencil, Trash2 } from 'lucide-react';
 import { Document } from '@/types/documents';
 import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
@@ -80,7 +80,7 @@ const DocumentList: React.FC<DocumentListProps> = ({
         style={getTogglePosition()}
         onClick={() => onCollapsedChange(!isCollapsed)}
       >
-        <ChevronRight className="h-4 w-4" />
+        {isCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
       </Button>
 
       {/* Document list sidebar content - Fixed translation behavior */}
