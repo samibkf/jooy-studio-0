@@ -54,6 +54,15 @@ const DocumentList: React.FC<DocumentListProps> = ({
     }
   };
 
+  // Fixed RTL-aware positioning calculation
+  const getTogglePosition = () => {
+    if (isRTL) {
+      return { right: isCollapsed ? '16px' : '250px' };
+    } else {
+      return { left: isCollapsed ? '16px' : '250px' };
+    }
+  };
+
   const DocumentSkeleton = () => (
     <div className="p-3 rounded-md flex items-center gap-2">
       <Skeleton className="h-4 w-4 rounded" />
@@ -63,21 +72,25 @@ const DocumentList: React.FC<DocumentListProps> = ({
 
   return (
     <div className="relative">
-      {/* Fixed toggle button that's always visible */}
+      {/* Fixed toggle button with proper RTL positioning */}
       <Button
         variant="ghost"
         size="icon"
-        className="fixed z-20 top-20 left-4 bg-background shadow-md border rounded-full transition-all duration-300"
-        style={{ left: isCollapsed ? '16px' : '250px' }}
+        className="fixed z-30 top-24 bg-background shadow-md border rounded-full transition-all duration-300"
+        style={getTogglePosition()}
         onClick={() => onCollapsedChange(!isCollapsed)}
       >
-        {isCollapsed ? <ChevronRight /> : <ChevronLeft />}
+        {isCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
       </Button>
 
-      {/* Document list sidebar content */}
-      <div className={`w-[250px] h-full bg-background border-r transition-all duration-300 ease-in-out ${isCollapsed ? '-translate-x-full' : 'translate-x-0'} fixed top-16 left-0 z-10`}>
+      {/* Document list sidebar content - Fixed translation behavior */}
+      <div className={`w-[250px] h-full bg-background border-inline-end transition-all duration-300 ease-in-out ${
+        isCollapsed 
+          ? (isRTL ? 'translate-x-full' : '-translate-x-full') 
+          : 'translate-x-0'
+      } fixed top-16 z-10 ${isRTL ? 'right-0' : 'left-0'}`}>
         <div className="p-4 border-b">
-          <h2 className="font-semibold" dir={isRTL ? 'rtl' : 'ltr'}>{t('docs.documents')}</h2>
+          <h2 className="font-semibold text-start" dir={isRTL ? 'rtl' : 'ltr'}>{t('docs.documents')}</h2>
         </div>
 
         <ScrollArea className="h-[calc(100vh-10rem)]">
@@ -96,13 +109,13 @@ const DocumentList: React.FC<DocumentListProps> = ({
                   }`}
                   onClick={() => onDocumentSelect(doc.id)}
                 >
-                  <div className="flex items-center gap-2 flex-1 text-left min-w-0">
+                  <div className="flex items-center gap-2 flex-1 text-start min-w-0">
                     <FileText className="h-4 w-4 flex-shrink-0" />
                     <span className="truncate" dir={isRTL ? 'rtl' : 'ltr'}>{doc.name}</span>
                   </div>
 
                   {/* Action buttons that appear on hover */}
-                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200 ml-2">
+                  <div className={`flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200 ${isRTL ? 'me-2' : 'ms-2'}`}>
                     <Button
                       variant="ghost"
                       size="icon"

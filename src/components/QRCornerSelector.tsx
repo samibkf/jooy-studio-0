@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import {
@@ -35,7 +36,7 @@ const QRCornerSelector = ({ value, onChange, disabled = false }: QRCornerSelecto
             className="w-full justify-start"
             onClick={() => onChange('top-left')}
           >
-            <CornerDownLeft className="h-4 w-4 mr-2" />
+            <CornerDownLeft className="h-4 w-4 icon-start" />
             QR on Left
           </Button>
           <Button
@@ -44,7 +45,7 @@ const QRCornerSelector = ({ value, onChange, disabled = false }: QRCornerSelecto
             className="w-full justify-start"
             onClick={() => onChange('top-right')}
           >
-            <CornerDownRight className="h-4 w-4 mr-2" />
+            <CornerDownRight className="h-4 w-4 icon-start" />
             QR on Right
           </Button>
         </div>

@@ -40,7 +40,7 @@ const Sidebar = ({
   if (!textAssignmentContext) {
     console.error('TextAssignmentContext is not available');
     return (
-      <div className="h-full w-full flex flex-col bg-background border-l" style={{ width: '400px' }}>
+      <div className="h-full w-full flex flex-col bg-background border-s-rtl" style={{ width: '400px' }}>
         <div className="flex flex-col flex-1 p-4 h-full overflow-y-auto px-[24px] py-[8px] rounded-none">
           <div className="flex items-center justify-center h-full">
             <p className="text-muted-foreground">{t('sidebar.loading')}</p>
@@ -105,7 +105,7 @@ const Sidebar = ({
   }, []);
 
   return (
-    <div className="h-full w-full flex flex-col bg-background border-l" style={{
+    <div className="h-full w-full flex flex-col bg-background border-s-rtl" style={{
       width: '400px'
     }}>
       <div className="flex items-center justify-between p-4 border-b">
@@ -133,7 +133,7 @@ const Sidebar = ({
             
             <div className="flex justify-between items-center">
               <h3 className="text-lg font-medium">{selectedRegion.name || t('sidebar.unnamed_region')}</h3>
-              <div className="flex space-x-2">
+              <div className="flex gap-2">
                 {documentId && isRegionAssigned(selectedRegion.id, documentId) && (
                   <Button variant="outline" size="sm" onClick={handleUndoRegionText} className="text-blue-600 hover:text-blue-800">
                     <Undo2 className="h-4 w-4" />
