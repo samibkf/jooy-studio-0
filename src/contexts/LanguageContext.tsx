@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 
 type Language = 'en' | 'ar';
@@ -197,13 +196,13 @@ const translations = {
     // Header
     'header.jooy_studio': 'Jooy Studio',
     'header.virtual_tutor': 'المعلم الافتراضي',
-    'header.virtual_tutor_tooltip': 'عرض سجل المعلم الافتراضي وطلبات جديدة',
+    'header.virtual_tutor_tooltip': 'عرض سجل المعلم الافتراضي وطلب جلسات جديدة',
     'header.upload': 'رفع',
-    'header.export': 'تحميل',
-    'header.export_tooltip': 'خيارات التحميل للمستند المحدد',
-    'header.export_options': 'خيارات التحميل',
-    'header.exporting': 'جارٍ التحميل...',
-    'header.export_qr_codes': 'تحميل رموز QR (ملف .zip)',
+    'header.export': 'تصدير',
+    'header.export_tooltip': 'خيارات التصدير للمستند المحدد',
+    'header.export_options': 'خيارات التصدير',
+    'header.exporting': 'جارٍ التصدير...',
+    'header.export_qr_codes': 'تصدير رموز QR (ملف .zip)',
     'header.processing': 'جارٍ المعالجة...',
     'header.download_pdf_qr': 'تنزيل PDF مع رموز QR',
     'header.qr_position': 'موضع رمز QR',
