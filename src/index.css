@@ -1,192 +1,349 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-@import './styles/rtl.css';
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 47.4% 11.2%;
+    --background: 210 40% 98%;
+    --foreground: 222.2 84% 4.9%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+
+    --primary: 217 91% 60%;
+    --primary-foreground: 210 40% 98%;
+
+    --secondary: 38 92% 50%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
 
     --muted: 210 40% 96.1%;
     --muted-foreground: 215.4 16.3% 46.9%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 47.4% 11.2%;
-
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 47.4% 11.2%;
- 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
-
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
- 
-    --accent: 210 40% 96.1%;
+    --accent: 142 71% 45%;
     --accent-foreground: 222.2 47.4% 11.2%;
 
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
 
-    --ring: 222.2 47.4% 11.2%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 217 91% 60%;
 
     --radius: 0.5rem;
   }
- 
+
   .dark {
     --background: 222.2 84% 4.9%;
     --foreground: 210 40% 98%;
 
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
 
     --popover: 222.2 84% 4.9%;
     --popover-foreground: 210 40% 98%;
 
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
- 
-    --border: 216 34% 17%;
-    --input: 216 34% 17%;
-
-    --primary: 210 40% 98%;
+    --primary: 217 91% 60%;
     --primary-foreground: 222.2 47.4% 11.2%;
 
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
- 
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
+    --secondary: 38 92% 50%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+
+    --accent: 142 71% 45%;
+    --accent-foreground: 222.2 47.4% 11.2%;
 
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 40% 98%;
 
-    --ring: 210 40% 98%;
-
-    --radius: 0.5rem;
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 212.7 26.8% 83.9%;
   }
 }
- 
+
 @layer base {
   * {
     @apply border-border;
   }
+
   body {
     @apply bg-background text-foreground;
-    font-feature-settings:
-      "rlig" 1,
-      "calt" 1;
+  }
+
+  /* RTL Text Content Support - Only for text, not UI layout */
+  [dir="rtl"] {
+    text-align: right;
+  }
+
+  /* RTL Input fields */
+  input[dir="rtl"], 
+  textarea[dir="rtl"] {
+    text-align: right;
+    direction: rtl;
+  }
+
+  /* RTL Text content in dropdowns and dialogs */
+  [data-radix-dropdown-menu-content] [dir="rtl"],
+  [data-radix-dialog-content] [dir="rtl"] {
+    text-align: right;
+    direction: rtl;
+  }
+
+  /* Ensure Arabic text displays properly */
+  [dir="rtl"] {
+    font-family: system-ui, -apple-system, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+  }
+
+  /* RTL-specific overrides for dropdown content */
+  [data-radix-popper-content-wrapper] [dir="rtl"] {
+    direction: rtl;
+  }
+
+  /* Ensure dropdowns have proper background and z-index */
+  [data-radix-dropdown-menu-content] {
+    background: hsl(var(--popover));
+    z-index: 50;
   }
 }
 
-/* Enhanced RTL support */
-[dir="rtl"] {
-  direction: rtl;
-  text-align: start;
+/* PDF Viewer Styles */
+.pdf-container {
+  position: relative;
+  overflow: hidden;
+  background-color: #f0f0f0;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
 }
 
-[dir="rtl"] .prose {
-  direction: rtl;
-  text-align: start;
+.pdf-page {
+  position: relative;
+  background-color: white;
+  margin: 10px auto;
+  box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
 }
 
-/* Fix for common UI elements in RTL */
-[dir="rtl"] .lucide {
-  display: inline-block;
+.region-overlay {
+  position: absolute;
+  border: 2px solid #9b87f5;
+  background-color: rgba(155, 135, 245, 0.1);
+  cursor: move;
+  transition: all 0.2s ease;
+  backdrop-filter: blur(1px);
 }
 
-[dir="rtl"] .lucide[data-flip="true"] {
-  transform: scaleX(-1);
+.region-overlay:hover {
+  background-color: rgba(155, 135, 245, 0.15);
+  border-color: #7b66d9;
 }
 
-/* Ensure proper text direction inheritance */
-[dir="rtl"] * {
-  direction: inherit;
+.region-overlay.selected {
+  border: 2px solid #7b66d9;
+  background-color: rgba(155, 135, 245, 0.2);
+  box-shadow: 0 0 0 1px rgba(123, 102, 217, 0.3);
 }
 
-/* Override specific Tailwind utilities for better RTL support */
-[dir="rtl"] .text-left {
-  text-align: right;
+.region-selection {
+  position: absolute;
+  border: 2px dashed #9b87f5;
+  background-color: rgba(155, 135, 245, 0.1);
+  backdrop-filter: blur(1px);
+  animation: pulse 2s infinite;
 }
 
-[dir="rtl"] .text-right {
-  text-align: left;
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(155, 135, 245, 0.4);
+  }
+  70% {
+    box-shadow: 0 0 0 4px rgba(155, 135, 245, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(155, 135, 245, 0);
+  }
 }
 
-[dir="rtl"] .float-left {
-  float: right;
+/* Resize handles for regions */
+.resize-handle {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  background-color: #9b87f5;
+  border: 1px solid white;
+  box-shadow: 0 0 3px rgba(0, 0, 0, 0.2);
+  transition: transform 0.2s ease;
 }
 
-[dir="rtl"] .float-right {
-  float: left;
+.resize-handle:hover {
+  transform: scale(1.2);
+  background-color: #7b66d9;
 }
 
-/* Improved focus styles for RTL */
-[dir="rtl"] input:focus,
-[dir="rtl"] textarea:focus,
-[dir="rtl"] select:focus {
-  outline-offset: -2px;
+.resize-handle.n {
+  top: -4px;
+  left: 50%;
+  transform: translateX(-50%);
+  cursor: n-resize;
 }
 
-/* Better spacing for Arabic text */
-[dir="rtl"] {
-  font-feature-settings: "kern" 1, "liga" 1, "clig" 1, "calt" 1;
+.resize-handle.s {
+  bottom: -4px;
+  left: 50%;
+  transform: translateX(-50%);
+  cursor: s-resize;
 }
 
-/* Ensure proper alignment for form elements */
-[dir="rtl"] label {
-  text-align: start;
+.resize-handle.e {
+  right: -4px;
+  top: 50%;
+  transform: translateY(-50%);
+  cursor: e-resize;
 }
 
-[dir="rtl"] .form-control {
-  text-align: start;
+.resize-handle.w {
+  left: -4px;
+  top: 50%;
+  transform: translateY(-50%);
+  cursor: w-resize;
 }
 
-/* Toast positioning for RTL */
-[dir="rtl"] .sonner-toaster {
-  left: auto;
-  right: 1rem;
+.resize-handle.ne {
+  top: -4px;
+  right: -4px;
+  cursor: ne-resize;
 }
 
-/* Dialog adjustments for RTL */
-[dir="rtl"] .dialog-content {
-  text-align: start;
+.resize-handle.nw {
+  top: -4px;
+  left: -4px;
+  cursor: nw-resize;
 }
 
-/* Menu and dropdown improvements */
-[dir="rtl"] .dropdown-content {
-  text-align: start;
+.resize-handle.se {
+  bottom: -4px;
+  right: -4px;
+  cursor: se-resize;
 }
 
-[dir="rtl"] .menu-item {
-  text-align: start;
+.resize-handle.sw {
+  bottom: -4px;
+  left: -4px;
+  cursor: sw-resize;
 }
 
-/* Table improvements for RTL */
-[dir="rtl"] table {
-  direction: rtl;
+/* Drawing tool cursor styles */
+.cursor-crosshair {
+  cursor: crosshair;
 }
 
-[dir="rtl"] th,
-[dir="rtl"] td {
-  text-align: start;
+.cursor-text {
+  cursor: text;
 }
 
-/* Code block adjustments */
-[dir="rtl"] code,
-[dir="rtl"] pre {
-  direction: ltr;
-  text-align: left;
+.cursor-cell {
+  cursor: cell;
 }
 
-/* Number and date input adjustments */
-[dir="rtl"] input[type="number"],
-[dir="rtl"] input[type="date"],
-[dir="rtl"] input[type="time"],
-[dir="rtl"] input[type="datetime-local"] {
-  direction: ltr;
+/* Text layer styles - Improved for better selection */
+.text-layer {
+  position: absolute;
+  left: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  overflow: hidden;
+  opacity: 0.2;
+  line-height: 1.0;
+  user-select: text;
+  -webkit-user-select: text;
+  -moz-user-select: text;
+  -ms-user-select: text;
+  pointer-events: auto;
+}
+
+.text-layer > span {
+  color: transparent;
+  position: absolute;
+  white-space: pre;
+  cursor: text;
+  transform-origin: 0% 0%;
+  padding: 0;
+  margin: 0;
+  pointer-events: all !important;
+}
+
+/* Show text layer for debugging */
+.text-layer.debug > span {
+  border: 1px solid rgba(255, 0, 0, 0.3);
+}
+
+/* Selection styles */
+::selection {
+  background: rgba(155, 135, 245, 0.3) !important;
+}
+
+::-moz-selection {
+  background: rgba(155, 135, 245, 0.3) !important;
+}
+
+.text-layer > span::selection {
+  background: rgba(155, 135, 245, 0.3) !important;
+  color: transparent;
+}
+
+.text-layer > span::-moz-selection {
+  background: rgba(155, 135, 245, 0.3) !important;
+  color: transparent;
+}
+
+/* Highlight styles */
+.text-layer > span.highlight {
+  margin: -1px;
+  padding: 1px;
+  background-color: rgba(180, 0, 170, 0.2);
+  border-radius: 4px;
+}
+
+.text-layer > span.highlight.begin {
+  border-radius: 4px 0px 0px 4px;
+}
+
+.text-layer > span.highlight.end {
+  border-radius: 0px 4px 4px 0px;
+}
+
+.text-layer > span.highlight.middle {
+  border-radius: 0px;
+}
+
+.text-layer > span.highlight.selected {
+  background-color: rgba(0, 100, 0, 0.2);
+}
+
+/* Custom text selections */
+.text-selection-active {
+  background: rgba(0, 100, 255, 0.2);
+}
+
+/* Text selection modes */
+.text-layer.text-selection-enabled {
+  z-index: 2;
+  pointer-events: auto !important;
+  opacity: 0.3;
+}
+
+.text-layer.text-selection-disabled {
+  pointer-events: none !important;
+  opacity: 0.1;
+  user-select: none;
+}
+
+.text-layer-debug .text-item {
+  color: black !important;
+  border: 1px solid red;
+  background-color: rgba(255, 255, 0, 0.2);
 }
