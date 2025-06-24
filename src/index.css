@@ -76,31 +76,39 @@
     @apply bg-background text-foreground;
   }
 
-  /* RTL Support */
+  /* RTL Text Content Support - Only for text, not UI layout */
   [dir="rtl"] {
     text-align: right;
   }
 
-  [dir="rtl"] .text-left {
+  /* RTL Input fields */
+  input[dir="rtl"], 
+  textarea[dir="rtl"] {
     text-align: right;
-  }
-
-  [dir="rtl"] .text-right {
-    text-align: left;
-  }
-
-  /* Ensure Arabic text displays properly */
-  [dir="rtl"] * {
-    font-family: system-ui, -apple-system, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
-  }
-
-  /* RTL-specific overrides for dropdowns */
-  [dir="rtl"] [data-radix-popper-content-wrapper] {
     direction: rtl;
   }
 
-  [dir="rtl"] .dropdown-content {
+  /* RTL Text content in dropdowns and dialogs */
+  [data-radix-dropdown-menu-content] [dir="rtl"],
+  [data-radix-dialog-content] [dir="rtl"] {
     text-align: right;
+    direction: rtl;
+  }
+
+  /* Ensure Arabic text displays properly */
+  [dir="rtl"] {
+    font-family: system-ui, -apple-system, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+  }
+
+  /* RTL-specific overrides for dropdown content */
+  [data-radix-popper-content-wrapper] [dir="rtl"] {
+    direction: rtl;
+  }
+
+  /* Ensure dropdowns have proper background and z-index */
+  [data-radix-dropdown-menu-content] {
+    background: hsl(var(--popover));
+    z-index: 50;
   }
 }
 

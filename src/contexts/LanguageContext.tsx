@@ -145,8 +145,7 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   useEffect(() => {
     localStorage.setItem('language', language);
     
-    // Set document direction and lang attributes
-    document.documentElement.dir = language === 'ar' ? 'rtl' : 'ltr';
+    // Only set the language attribute for accessibility, not the direction
     document.documentElement.lang = language;
   }, [language]);
 
