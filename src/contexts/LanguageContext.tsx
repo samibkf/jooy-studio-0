@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 
 type Language = 'en' | 'ar';
@@ -75,6 +76,18 @@ const translations = {
     'auth.account_created': 'Account created! Please check your email for verification.',
     'auth.welcome_back_toast': 'Welcome back!',
     'auth.loading_authentication': 'Loading authentication...',
+    'auth.error_invalid_credentials': 'Invalid email or password',
+    'auth.error_weak_password': 'Password should be at least 6 characters',
+    'auth.error_email_taken': 'Email address is already registered',
+    'auth.error_network': 'Network error. Please check your connection',
+    'auth.error_generic': 'An error occurred. Please try again',
+    'auth.verification_email_sent': 'Verification email sent',
+    'auth.password_reset_sent': 'Password reset email sent',
+    'auth.forgot_password': 'Forgot your password?',
+    'auth.reset_password': 'Reset Password',
+    'auth.back_to_sign_in': 'Back to Sign In',
+    'auth.send_reset_email': 'Send Reset Email',
+    'auth.enter_email_reset': 'Enter your email to reset your password',
     
     // Protected Route
     'protected.loading_auth': 'Loading authentication...',
@@ -254,6 +267,18 @@ const translations = {
     'auth.account_created': 'تم إنشاء الحساب! يرجى التحقق من بريدك الإلكتروني للتأكيد.',
     'auth.welcome_back_toast': 'مرحبا بعودتك!',
     'auth.loading_authentication': 'جارٍ تحميل المصادقة...',
+    'auth.error_invalid_credentials': 'البريد الإلكتروني أو كلمة المرور غير صحيحة',
+    'auth.error_weak_password': 'يجب أن تكون كلمة المرور 6 أحرف على الأقل',
+    'auth.error_email_taken': 'عنوان البريد الإلكتروني مسجل بالفعل',
+    'auth.error_network': 'خطأ في الشبكة. يرجى التحقق من اتصالك',
+    'auth.error_generic': 'حدث خطأ. يرجى المحاولة مرة أخرى',
+    'auth.verification_email_sent': 'تم إرسال بريد التحقق الإلكتروني',
+    'auth.password_reset_sent': 'تم إرسال بريد إعادة تعيين كلمة المرور',
+    'auth.forgot_password': 'نسيت كلمة المرور؟',
+    'auth.reset_password': 'إعادة تعيين كلمة المرور',
+    'auth.back_to_sign_in': 'العودة إلى تسجيل الدخول',
+    'auth.send_reset_email': 'إرسال بريد إعادة التعيين',
+    'auth.enter_email_reset': 'أدخل بريدك الإلكتروني لإعادة تعيين كلمة المرور',
     
     // Protected Route
     'protected.loading_auth': 'جارٍ تحميل المصادقة...',
