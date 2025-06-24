@@ -1,6 +1,48 @@
 
 /* RTL Layout Utilities */
 
+/* RTL-aware icon spacing utilities */
+.icon-start {
+  margin-inline-end: 0.5rem; /* 8px */
+}
+
+.icon-end {
+  margin-inline-start: 0.5rem; /* 8px */
+}
+
+.icon-start-sm {
+  margin-inline-end: 0.25rem; /* 4px */
+}
+
+.icon-end-sm {
+  margin-inline-start: 0.25rem; /* 4px */
+}
+
+.icon-start-lg {
+  margin-inline-end: 0.75rem; /* 12px */
+}
+
+.icon-end-lg {
+  margin-inline-start: 0.75rem; /* 12px */
+}
+
+/* Icon flipping for directional icons in RTL */
+[dir="rtl"] .icon-flip,
+.rtl .icon-flip {
+  transform: scaleX(-1);
+}
+
+/* Specific icon flips for common directional icons */
+[dir="rtl"] .lucide-arrow-left,
+[dir="rtl"] .lucide-arrow-right,
+[dir="rtl"] .lucide-chevron-left,
+[dir="rtl"] .lucide-chevron-right,
+[dir="rtl"] .lucide-corner-down-left,
+[dir="rtl"] .lucide-corner-down-right,
+[dir="rtl"] .lucide-log-out {
+  transform: scaleX(-1);
+}
+
 /* Text alignment utilities */
 .text-start-rtl {
   text-align: start;
@@ -76,11 +118,6 @@
 
 .rtl input[type="search"] {
   direction: rtl;
-}
-
-/* Icon adjustments for RTL */
-.rtl .icon-flip {
-  transform: scaleX(-1);
 }
 
 /* Navigation adjustments */
@@ -195,4 +232,25 @@
   border-bottom-left-radius: 0;
   border-top-left-radius: inherit;
   border-bottom-right-radius: inherit;
+}
+
+/* Button icon spacing fixes */
+[dir="rtl"] .mr-2 {
+  margin-right: 0;
+  margin-left: 0.5rem;
+}
+
+[dir="rtl"] .ml-2 {
+  margin-left: 0;
+  margin-right: 0.5rem;
+}
+
+[dir="rtl"] .ml-auto {
+  margin-left: 0;
+  margin-right: auto;
+}
+
+[dir="rtl"] .mr-auto {
+  margin-right: 0;
+  margin-left: auto;
 }
