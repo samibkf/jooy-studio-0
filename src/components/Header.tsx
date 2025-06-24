@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import {
@@ -14,7 +13,6 @@ import {
   CornerDownRight,
   FileJson,
   Settings,
-  Languages,
 } from 'lucide-react';
 import type { Profile } from '@/types/auth';
 import { GeminiApiKeyDialog, getGeminiApiKeys } from './GeminiApiKeyDialog';
@@ -38,8 +36,6 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { useTranslation } from '@/hooks/useTranslation';
-import { useLanguage } from '@/contexts/LanguageContext';
 
 interface HeaderProps {
   onUploadClick: () => void;
@@ -70,8 +66,6 @@ const Header = ({
 }: HeaderProps) => {
   const [isGeminiDialogOpen, setGeminiDialogOpen] = useState(false);
   const [isGeminiKeySet, setGeminiKeySet] = useState(false);
-  const { t } = useTranslation();
-  const { language, setLanguage, isRTL } = useLanguage();
 
   useEffect(() => {
     setGeminiKeySet(getGeminiApiKeys().length > 0);
@@ -92,7 +86,7 @@ const Header = ({
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
                 <File className="h-6 w-6 text-primary" />
-                <h1 className="text-2xl font-bold text-gray-800">{t('header.title')}</h1>
+                <h1 className="text-2xl font-bold text-gray-800">Jooy Studio</h1>
               </div>
               {user && <CreditDisplay credits={user.credits_remaining || 0} />}
             </div>
@@ -102,10 +96,10 @@ const Header = ({
               <Button asChild variant="outline" size="sm" className="px-3">
                 <Link
                   to="/tts-history"
-                  title={t('header.virtualTutorTooltip')}
+                  title="View Virtual Tutor history and request new sessions"
                 >
-                  <UserRound className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
-                  {t('header.virtualTutor')}
+                  <UserRound className="h-4 w-4 mr-2" />
+                  Virtual Tutor
                 </Link>
               </Button>
             </div>
@@ -119,7 +113,7 @@ const Header = ({
                 className="flex items-center gap-2 px-3"
               >
                 <Upload className="h-4 w-4" />
-                {t('header.upload')}
+                Upload
               </Button>
 
               <DropdownMenu>
@@ -133,20 +127,20 @@ const Header = ({
                         disabled={isExportDisabled}
                       >
                         <Share className="h-4 w-4" />
-                        {t('header.export')}
+                        Export
                       </Button>
                     </DropdownMenuTrigger>
                   </TooltipTrigger>
                   <TooltipContent>
-                    <p>{t('header.exportTooltip')}</p>
+                    <p>Export options for the selected document</p>
                   </TooltipContent>
                 </Tooltip>
                 <DropdownMenuContent align="end">
-                  <DropdownMenuLabel>{t('header.exportOptions')}</DropdownMenuLabel>
+                  <DropdownMenuLabel>Export Options</DropdownMenuLabel>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={onQRExport} disabled={isQRExporting}>
-                    <QrCode className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
-                    <span>{isQRExporting ? t('header.exporting') : t('header.exportQR')}</span>
+                    <QrCode className="mr-2 h-4 w-4" />
+                    <span>{isQRExporting ? 'Exporting...' : 'Export QR Codes (.zip)'}</span>
                   </DropdownMenuItem>
 
                   {/* Improved PDF with QR Codes Export */}
@@ -156,8 +150,8 @@ const Header = ({
                       disabled={isPDFQRExporting}
                       className="flex-grow"
                     >
-                      <QrCode className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
-                      <span>{isPDFQRExporting ? t('header.processing') : t('header.downloadPDFQR')}</span>
+                      <QrCode className="mr-2 h-4 w-4" />
+                      <span>{isPDFQRExporting ? 'Processing...' : 'Download PDF with QRs'}</span>
                     </DropdownMenuItem>
                     <DropdownMenuSub>
                       <DropdownMenuSubTrigger className="w-8 h-8 p-0 flex items-center justify-center">
@@ -165,29 +159,30 @@ const Header = ({
                       </DropdownMenuSubTrigger>
                        <DropdownMenuPortal>
                           <DropdownMenuSubContent>
-                            <DropdownMenuLabel>{t('header.qrPosition')}</DropdownMenuLabel>
+                            <DropdownMenuLabel>QR Position</DropdownMenuLabel>
                             <DropdownMenuSeparator />
                             <DropdownMenuItem onSelect={() => onQRCornerChange('top-left')}>
-                              <CornerDownLeft className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
-                              <span>{t('header.topLeft')}</span>
-                              {qrCorner === 'top-left' && <span className={`text-xs ${isRTL ? 'mr-auto' : 'ml-auto'}`}>✓</span>}
+                              <CornerDownLeft className="mr-2 h-4 w-4" />
+                              <span>Top Left</span>
+                              {qrCorner === 'top-left' && <span className="ml-auto text-xs">✓</span>}
                             </DropdownMenuItem>
                             <DropdownMenuItem onSelect={() => onQRCornerChange('top-right')}>
-                              <CornerDownRight className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
-                              <span>{t('header.topRight')}</span>
-                              {qrCorner === 'top-right' && <span className={`text-xs ${isRTL ? 'mr-auto' : 'ml-auto'}`}>✓</span>}
+                              <CornerDownRight className="mr-2 h-4 w-4" />
+                              <span>Top Right</span>
+                              {qrCorner === 'top-right' && <span className="ml-auto text-xs">✓</span>}
                             </DropdownMenuItem>
                           </DropdownMenuSubContent>
                        </DropdownMenuPortal>
                     </DropdownMenuSub>
                   </div>
 
+
                   {user?.role === 'admin' && (
                     <>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem onClick={onExport}>
-                        <FileJson className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
-                        <span>{t('header.exportRegionData')}</span>
+                        <FileJson className="mr-2 h-4 w-4" />
+                        <span>Export Region Data</span>
                       </DropdownMenuItem>
                     </>
                   )}
@@ -204,7 +199,7 @@ const Header = ({
                     </DropdownMenuTrigger>
                   </TooltipTrigger>
                   <TooltipContent>
-                    <p>{t('header.account')}</p>
+                    <p>Account</p>
                   </TooltipContent>
                 </Tooltip>
                 <DropdownMenuContent align="end">
@@ -212,35 +207,13 @@ const Header = ({
                     {user?.full_name || user?.email}
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  
-                  {/* Language Switcher */}
-                  <DropdownMenuSub>
-                    <DropdownMenuSubTrigger>
-                      <Languages className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
-                      <span>{t('header.language')}</span>
-                    </DropdownMenuSubTrigger>
-                    <DropdownMenuPortal>
-                      <DropdownMenuSubContent>
-                        <DropdownMenuItem onSelect={() => setLanguage('en')}>
-                          <span>{t('header.english')}</span>
-                          {language === 'en' && <span className={`text-xs ${isRTL ? 'mr-auto' : 'ml-auto'}`}>✓</span>}
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onSelect={() => setLanguage('ar')}>
-                          <span>{t('header.arabic')}</span>
-                          {language === 'ar' && <span className={`text-xs ${isRTL ? 'mr-auto' : 'ml-auto'}`}>✓</span>}
-                        </DropdownMenuItem>
-                      </DropdownMenuSubContent>
-                    </DropdownMenuPortal>
-                  </DropdownMenuSub>
-                  
-                  <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={() => setGeminiDialogOpen(true)}>
-                    <KeyRound className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
-                    <span>{t('header.apiKeys')}</span>
+                    <KeyRound className="mr-2 h-4 w-4" />
+                    <span>API Keys</span>
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={onSignOut}>
-                    <LogOut className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
-                    <span>{t('header.signOut')}</span>
+                    <LogOut className="mr-2 h-4 w-4" />
+                    <span>Sign Out</span>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
