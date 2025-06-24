@@ -21,6 +21,7 @@ import { GeminiApiKeyDialog, getGeminiApiKeys } from './GeminiApiKeyDialog';
 import { Link } from 'react-router-dom';
 import CreditDisplay from './CreditDisplay';
 import { useLanguage } from '@/contexts/LanguageContext';
+import RTLButtonIcon from './RTLButtonIcon';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -102,7 +103,9 @@ const Header = ({
                   to="/tts-history"
                   title={t('header.virtual_tutor_tooltip')}
                 >
-                  <UserRound className="h-4 w-4 mr-2" />
+                  <RTLButtonIcon>
+                    <UserRound className="h-4 w-4" />
+                  </RTLButtonIcon>
                   {t('header.virtual_tutor')}
                 </Link>
               </Button>
@@ -116,7 +119,9 @@ const Header = ({
                 size="sm"
                 className="flex items-center gap-2 px-3"
               >
-                <Upload className="h-4 w-4" />
+                <RTLButtonIcon>
+                  <Upload className="h-4 w-4" />
+                </RTLButtonIcon>
                 {t('header.upload')}
               </Button>
 
@@ -130,7 +135,9 @@ const Header = ({
                         className="flex items-center gap-2 px-3"
                         disabled={isExportDisabled}
                       >
-                        <Share className="h-4 w-4" />
+                        <RTLButtonIcon>
+                          <Share className="h-4 w-4" />
+                        </RTLButtonIcon>
                         {t('header.export')}
                       </Button>
                     </DropdownMenuTrigger>
@@ -143,7 +150,9 @@ const Header = ({
                   <DropdownMenuLabel>{t('header.export_options')}</DropdownMenuLabel>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={onQRExport} disabled={isQRExporting}>
-                    <QrCode className="h-4 w-4 mr-2" />
+                    <RTLButtonIcon>
+                      <QrCode className="h-4 w-4" />
+                    </RTLButtonIcon>
                     <span dir={isRTL ? 'rtl' : 'ltr'}>{isQRExporting ? t('header.exporting') : t('header.export_qr_codes')}</span>
                   </DropdownMenuItem>
 
@@ -154,7 +163,9 @@ const Header = ({
                       disabled={isPDFQRExporting}
                       className="flex-grow"
                     >
-                      <QrCode className="h-4 w-4 mr-2" />
+                      <RTLButtonIcon>
+                        <QrCode className="h-4 w-4" />
+                      </RTLButtonIcon>
                       <span dir={isRTL ? 'rtl' : 'ltr'}>{isPDFQRExporting ? t('header.processing') : t('header.download_pdf_qr')}</span>
                     </DropdownMenuItem>
                     <DropdownMenuSub>
@@ -166,12 +177,16 @@ const Header = ({
                             <DropdownMenuLabel dir={isRTL ? 'rtl' : 'ltr'}>{t('header.qr_position')}</DropdownMenuLabel>
                             <DropdownMenuSeparator />
                             <DropdownMenuItem onSelect={() => onQRCornerChange('top-left')}>
-                              <CornerDownLeft className="h-4 w-4 mr-2" />
+                              <RTLButtonIcon>
+                                <CornerDownLeft className="h-4 w-4" />
+                              </RTLButtonIcon>
                               <span dir={isRTL ? 'rtl' : 'ltr'}>{t('header.top_left')}</span>
                               {qrCorner === 'top-left' && <span className="text-xs ml-auto">✓</span>}
                             </DropdownMenuItem>
                             <DropdownMenuItem onSelect={() => onQRCornerChange('top-right')}>
-                              <CornerDownRight className="h-4 w-4 mr-2" />
+                              <RTLButtonIcon>
+                                <CornerDownRight className="h-4 w-4" />
+                              </RTLButtonIcon>
                               <span dir={isRTL ? 'rtl' : 'ltr'}>{t('header.top_right')}</span>
                               {qrCorner === 'top-right' && <span className="text-xs ml-auto">✓</span>}
                             </DropdownMenuItem>
@@ -184,7 +199,9 @@ const Header = ({
                     <>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem onClick={onExport}>
-                        <FileJson className="h-4 w-4 mr-2" />
+                        <RTLButtonIcon>
+                          <FileJson className="h-4 w-4" />
+                        </RTLButtonIcon>
                         <span dir={isRTL ? 'rtl' : 'ltr'}>{t('header.export_region_data')}</span>
                       </DropdownMenuItem>
                     </>
@@ -214,7 +231,9 @@ const Header = ({
                   {/* Language Switcher */}
                   <DropdownMenuSub>
                     <DropdownMenuSubTrigger>
-                      <Languages className="h-4 w-4 mr-2" />
+                      <RTLButtonIcon>
+                        <Languages className="h-4 w-4" />
+                      </RTLButtonIcon>
                       <span dir={isRTL ? 'rtl' : 'ltr'}>{t('header.language')}</span>
                     </DropdownMenuSubTrigger>
                     <DropdownMenuPortal>
@@ -233,11 +252,15 @@ const Header = ({
                   
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={() => setGeminiDialogOpen(true)}>
-                    <KeyRound className="h-4 w-4 mr-2" />
+                    <RTLButtonIcon>
+                      <KeyRound className="h-4 w-4" />
+                    </RTLButtonIcon>
                     <span dir={isRTL ? 'rtl' : 'ltr'}>{t('header.api_keys')}</span>
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={onSignOut}>
-                    <LogOut className="h-4 w-4 mr-2" />
+                    <RTLButtonIcon>
+                      <LogOut className="h-4 w-4" />
+                    </RTLButtonIcon>
                     <span dir={isRTL ? 'rtl' : 'ltr'}>{t('header.sign_out')}</span>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
