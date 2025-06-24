@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ChevronLeft, ChevronRight, FileText, Pencil, Trash2 } from 'lucide-react';
+import { ChevronRight, FileText, Pencil, Trash2 } from 'lucide-react';
 import { Document } from '@/types/documents';
 import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
@@ -54,21 +54,6 @@ const DocumentList: React.FC<DocumentListProps> = ({
     }
   };
 
-  // Fixed RTL-aware chevron logic: Show semantic meaning correctly
-  // When collapsed, show expand icon (pointing toward content)
-  // When expanded, show collapse icon (pointing away from content)
-  const getChevronIcon = () => {
-    if (isCollapsed) {
-      // Collapsed state - show expand icon (toward content)
-      return isRTL ? ChevronLeft : ChevronRight;
-    } else {
-      // Expanded state - show collapse icon (away from content)
-      return isRTL ? ChevronRight : ChevronLeft;
-    }
-  };
-
-  const ChevronIcon = getChevronIcon();
-
   // Fixed RTL-aware positioning calculation
   const getTogglePosition = () => {
     if (isRTL) {
@@ -87,15 +72,15 @@ const DocumentList: React.FC<DocumentListProps> = ({
 
   return (
     <div className="relative">
-      {/* Fixed toggle button with proper RTL positioning and visual distinction */}
+      {/* Fixed toggle button with proper RTL positioning */}
       <Button
         variant="ghost"
         size="icon"
-        className="fixed z-30 top-24 bg-blue-50 hover:bg-blue-100 shadow-md border border-blue-200 rounded-full transition-all duration-300"
+        className="fixed z-30 top-24 bg-background shadow-md border rounded-full transition-all duration-300"
         style={getTogglePosition()}
         onClick={() => onCollapsedChange(!isCollapsed)}
       >
-        <ChevronIcon className="h-4 w-4 text-blue-600" />
+        <ChevronRight className="h-4 w-4" />
       </Button>
 
       {/* Document list sidebar content - Fixed translation behavior */}
