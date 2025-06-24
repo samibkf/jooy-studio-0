@@ -60,10 +60,10 @@ const DocumentList: React.FC<DocumentListProps> = ({
   const getChevronIcon = () => {
     if (isCollapsed) {
       // Collapsed state - show expand icon (toward content)
-      return isRTL ? ChevronRight : ChevronLeft;
+      return isRTL ? ChevronLeft : ChevronRight;
     } else {
       // Expanded state - show collapse icon (away from content)
-      return isRTL ? ChevronLeft : ChevronRight;
+      return isRTL ? ChevronRight : ChevronLeft;
     }
   };
 
@@ -72,7 +72,7 @@ const DocumentList: React.FC<DocumentListProps> = ({
   // Fixed RTL-aware positioning calculation
   const getTogglePosition = () => {
     if (isRTL) {
-      return { left: isCollapsed ? '16px' : '250px' };
+      return { right: isCollapsed ? '16px' : '250px' };
     } else {
       return { left: isCollapsed ? '16px' : '250px' };
     }
@@ -87,15 +87,15 @@ const DocumentList: React.FC<DocumentListProps> = ({
 
   return (
     <div className="relative">
-      {/* Fixed toggle button that's always visible */}
+      {/* Fixed toggle button with proper RTL positioning and visual distinction */}
       <Button
         variant="ghost"
         size="icon"
-        className="fixed z-20 top-20 bg-background shadow-md border rounded-full transition-all duration-300"
+        className="fixed z-30 top-24 bg-blue-50 hover:bg-blue-100 shadow-md border border-blue-200 rounded-full transition-all duration-300"
         style={getTogglePosition()}
         onClick={() => onCollapsedChange(!isCollapsed)}
       >
-        <ChevronIcon className="h-4 w-4" />
+        <ChevronIcon className="h-4 w-4 text-blue-600" />
       </Button>
 
       {/* Document list sidebar content - Fixed translation behavior */}
