@@ -1,12 +1,12 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
-import { useRouter } from 'next/router';
-import { DocumentList } from '@/components/DocumentList';
-import { PdfViewer } from '@/components/PdfViewer';
-import { Header } from '@/components/Header';
-import { TTSRequestModal } from '@/components/TTSRequestModal';
-import { Sidebar } from '@/components/Sidebar';
-import { CompactPageNavigation } from '@/components/CompactPageNavigation';
+import { useNavigate } from 'react-router-dom';
+import DocumentList from '@/components/DocumentList';
+import PdfViewer from '@/components/PdfViewer';
+import Header from '@/components/Header';
+import TTSRequestModal from '@/components/TTSRequestModal';
+import Sidebar from '@/components/Sidebar';
+import CompactPageNavigation from '@/components/CompactPageNavigation';
 import {
   SidebarProvider,
   SidebarInset,
@@ -35,8 +35,7 @@ interface Region {
 }
 
 const IndexPage: React.FC = () => {
-  const { isAuthenticated } = useAuth();
-  const router = useRouter();
+  const navigate = useNavigate();
   const { t, isRTL } = useLanguage();
   const [documents, setDocuments] = useState<Document[]>([]);
   const [selectedDocument, setSelectedDocument] = useState<Document | null>(null);
@@ -48,12 +47,8 @@ const IndexPage: React.FC = () => {
   const [totalPages, setTotalPages] = useState(1);
 
   useEffect(() => {
-    if (!isAuthenticated) {
-      router.push('/auth/sign-in');
-    } else {
-      fetchDocuments();
-    }
-  }, [isAuthenticated, router]);
+    fetchDocuments();
+  }, []);
 
   const fetchDocuments = useCallback(async () => {
     setIsLoading(true);
@@ -293,12 +288,14 @@ const IndexPage: React.FC = () => {
   };
 
   const handleExport = () => {
-    // Placeholder for export functionality
     toast.info("Export functionality not implemented yet.");
   };
 
+  const handleTTSRequest = () => {
+    setTtsRequestModalOpen(true);
+  };
+
   const handleTTSSubmit = () => {
-    // Placeholder for TTS request submission
     toast.info("TTS request submission not implemented yet.");
     setTtsRequestModalOpen(false);
   };
@@ -307,7 +304,6 @@ const IndexPage: React.FC = () => {
     setIsSidebarCollapsed(!isSidebarCollapsed);
   };
 
-  // Simplified sidebar toggle positioning - no RTL conditionals
   const getSidebarTogglePosition = () => {
     return { right: isSidebarCollapsed ? '16px' : '390px' };
   };
@@ -316,19 +312,17 @@ const IndexPage: React.FC = () => {
     <div className="min-h-screen flex w-full">
       <SidebarProvider>
         <div className="flex w-full">
-          {/* Documents sidebar - always on left */}
           <DocumentList
             documents={documents}
-            selectedDocument={selectedDocument}
+            selectedDocumentId={selectedDocument?.id || null}
             onDocumentSelect={handleDocumentSelect}
-            onDocumentUpload={handleDocumentUpload}
             onDocumentRename={handleDocumentRename}
             onDocumentDelete={handleDocumentDelete}
+            isCollapsed={false}
+            onCollapsedChange={() => {}}
             isLoading={isLoading}
-            className="flex-shrink-0"
           />
 
-          {/* Main content area */}
           <SidebarInset className="flex-1 relative">
             <div className="flex flex-col h-screen">
               <Header
@@ -341,54 +335,43 @@ const IndexPage: React.FC = () => {
               />
 
               <div className="flex-1 flex flex-col overflow-hidden">
-                {isAuthenticated ? (
-                  <>
-                    {selectedDocument && selectedDocument.file_url ? (
-                      <div className="flex-1 relative">
-                        <PdfViewer
-                          fileUrl={selectedDocument.file_url}
-                          regions={selectedDocument.regions}
-                          selectedRegionId={selectedRegionId}
-                          onRegionCreate={handleRegionCreate}
-                          onRegionUpdate={handleRegionUpdate}
-                          onRegionSelect={setSelectedRegionId}
-                          onRegionDelete={handleRegionDelete}
-                          onPageChange={setCurrentPage}
-                          documentId={selectedDocument.id}
-                          onTotalPagesChange={setTotalPages}
-                        />
-                        <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-10 bg-background rounded-lg border shadow-lg p-2">
-                          <CompactPageNavigation
-                            currentPage={currentPage}
-                            totalPages={totalPages}
-                            onPageChange={setCurrentPage}
-                          />
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="flex-1 flex items-center justify-center">
-                        <div className="text-center space-y-4">
-                          <h1 className={`text-4xl font-bold text-primary ${isRTL ? 'rtl-text' : ''}`}>
-                            {t('pdf.welcome_title')}
-                          </h1>
-                          <p className={`text-xl text-muted-foreground ${isRTL ? 'rtl-text' : ''}`}>
-                            {t('pdf.welcome_subtitle')}
-                          </p>
-                        </div>
-                      </div>
-                    )}
-                  </>
+                {selectedDocument && selectedDocument.file_url ? (
+                  <div className="flex-1 relative">
+                    <PdfViewer
+                      fileUrl={selectedDocument.file_url}
+                      regions={selectedDocument.regions}
+                      selectedRegionId={selectedRegionId}
+                      onRegionCreate={handleRegionCreate}
+                      onRegionUpdate={handleRegionUpdate}
+                      onRegionSelect={setSelectedRegionId}
+                      onRegionDelete={handleRegionDelete}
+                      onPageChange={setCurrentPage}
+                      documentId={selectedDocument.id}
+                      onTotalPagesChange={setTotalPages}
+                    />
+                    <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-10 bg-background rounded-lg border shadow-lg p-2">
+                      <CompactPageNavigation
+                        currentPage={currentPage}
+                        totalPages={totalPages}
+                        onPageChange={setCurrentPage}
+                      />
+                    </div>
+                  </div>
                 ) : (
                   <div className="flex-1 flex items-center justify-center">
-                    <p className={`text-muted-foreground ${isRTL ? 'rtl-text' : ''}`}>
-                      {t('pdf.login_required')}
-                    </p>
+                    <div className="text-center space-y-4">
+                      <h1 className={`text-4xl font-bold text-primary ${isRTL ? 'rtl-text' : ''}`}>
+                        {t('pdf.welcome_title')}
+                      </h1>
+                      <p className={`text-xl text-muted-foreground ${isRTL ? 'rtl-text' : ''}`}>
+                        {t('pdf.welcome_subtitle')}
+                      </p>
+                    </div>
                   </div>
                 )}
               </div>
             </div>
 
-            {/* Content Tools sidebar toggle - always on right */}
             <Button
               variant="ghost"
               size="icon"
@@ -399,7 +382,6 @@ const IndexPage: React.FC = () => {
               {isSidebarCollapsed ? <ChevronLeft className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
             </Button>
 
-            {/* Content Tools sidebar - always on right */}
             {!isSidebarCollapsed && (
               <div className="fixed right-0 top-0 h-full z-10 transition-all duration-300">
                 <div className="h-full">
