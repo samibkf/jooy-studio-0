@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface CompactPageNavigationProps {
   currentPage: number;
@@ -15,6 +16,7 @@ const CompactPageNavigation: React.FC<CompactPageNavigationProps> = ({
   totalPages,
   onPageChange,
 }) => {
+  const { t, isRTL } = useLanguage();
   const [isEditing, setIsEditing] = useState(false);
   const [inputValue, setInputValue] = useState(currentPage.toString());
 
@@ -86,7 +88,9 @@ const CompactPageNavigation: React.FC<CompactPageNavigationProps> = ({
             {currentPage}
           </button>
         )}
-        <span className="text-muted-foreground">of {totalPages}</span>
+        <span className="text-muted-foreground" dir={isRTL ? 'rtl' : 'ltr'}>
+          {t('nav.of')} {totalPages}
+        </span>
       </div>
 
       <Button

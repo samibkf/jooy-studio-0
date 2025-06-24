@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 
 type Language = 'en' | 'ar';
@@ -51,6 +50,9 @@ const translations = {
     // Credit Display
     'credits.credits': 'Credits',
     
+    // Navigation
+    'nav.of': 'of',
+    
     // Auth
     'auth.create_account': 'Create an Account',
     'auth.welcome_back': 'Welcome Back',
@@ -64,8 +66,31 @@ const translations = {
     'auth.password': 'Password',
     'auth.remember_me': 'Remember me',
     'auth.loading': 'Loading...',
+    'auth.create_account_btn': 'Create Account',
+    'auth.sign_in_btn': 'Sign In',
     'auth.have_account': 'Already have an account? Sign in',
     'auth.no_account': "Don't have an account? Sign up",
+    'auth.account_created': 'Account created! Please check your email for verification.',
+    'auth.welcome_back_toast': 'Welcome back!',
+    
+    // TTS History
+    'tts.virtual_tutor_requests': 'Virtual Tutor Requests',
+    'tts.back_to_studio': 'Back to Studio',
+    'tts.your_documents': 'Your Documents',
+    'tts.loading': 'Loading...',
+    'tts.request_virtual_tutor': 'Request Virtual Tutor',
+    'tts.no_documents': 'No documents found.',
+    'tts.request_history': 'Virtual Tutor Request History',
+    'tts.document': 'Document',
+    'tts.status': 'Status',
+    'tts.pages': 'Pages',
+    'tts.no_requests': 'No Virtual Tutor requests yet.',
+    'tts.failed_fetch': 'Failed to fetch data.',
+    
+    // Not Found
+    'error.404': '404',
+    'error.page_not_found': 'Oops! Page not found',
+    'error.return_home': 'Return to Home',
     
     // Common
     'common.loading': 'Loading...',
@@ -111,6 +136,9 @@ const translations = {
     // Credit Display
     'credits.credits': 'أرصدة',
     
+    // Navigation
+    'nav.of': 'من',
+    
     // Auth
     'auth.create_account': 'إنشاء حساب',
     'auth.welcome_back': 'مرحبا بعودتك',
@@ -124,8 +152,31 @@ const translations = {
     'auth.password': 'كلمة المرور',
     'auth.remember_me': 'تذكرني',
     'auth.loading': 'جارٍ التحميل...',
+    'auth.create_account_btn': 'إنشاء حساب',
+    'auth.sign_in_btn': 'تسجيل الدخول',
     'auth.have_account': 'هل لديك حساب بالفعل؟ تسجيل الدخول',
     'auth.no_account': 'ليس لديك حساب؟ قم بالتسجيل',
+    'auth.account_created': 'تم إنشاء الحساب! يرجى التحقق من بريدك الإلكتروني للتأكيد.',
+    'auth.welcome_back_toast': 'مرحبا بعودتك!',
+    
+    // TTS History
+    'tts.virtual_tutor_requests': 'طلبات المعلم الافتراضي',
+    'tts.back_to_studio': 'العودة إلى الاستوديو',
+    'tts.your_documents': 'مستنداتك',
+    'tts.loading': 'جارٍ التحميل...',
+    'tts.request_virtual_tutor': 'طلب معلم افتراضي',
+    'tts.no_documents': 'لم يتم العثور على مستندات.',
+    'tts.request_history': 'سجل طلبات المعلم الافتراضي',
+    'tts.document': 'المستند',
+    'tts.status': 'الحالة',
+    'tts.pages': 'الصفحات',
+    'tts.no_requests': 'لا توجد طلبات معلم افتراضي حتى الآن.',
+    'tts.failed_fetch': 'فشل جلب البيانات.',
+    
+    // Not Found
+    'error.404': '٤٠٤',
+    'error.page_not_found': 'عفوًا! الصفحة غير موجودة',
+    'error.return_home': 'العودة إلى الصفحة الرئيسية',
     
     // Common
     'common.loading': 'جارٍ التحميل...',

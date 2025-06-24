@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Card } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Separator } from '@/components/ui/separator';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 const Auth = () => {
   const {
@@ -17,6 +18,7 @@ const Auth = () => {
     signInWithGoogle,
     signUp
   } = useAuth();
+  const { t, isRTL } = useLanguage();
   const [isSignUp, setIsSignUp] = useState(false);
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
@@ -37,10 +39,10 @@ const Auth = () => {
     try {
       if (isSignUp) {
         await signUp(formData.email, formData.password, formData.fullName);
-        toast.success('Account created! Please check your email for verification.');
+        toast.success(t('auth.account_created'));
       } else {
         await signIn(formData.email, formData.password, rememberMe);
-        toast.success('Welcome back!');
+        toast.success(t('auth.welcome_back_toast'));
       }
     } catch (error: any) {
       toast.error(error.message);
@@ -64,11 +66,11 @@ const Auth = () => {
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <Card className="w-full max-w-md p-6 space-y-6">
         <div className="text-center">
-          <h1 className="text-2xl font-bold">
-            {isSignUp ? 'Create an Account' : 'Welcome Back'}
+          <h1 className="text-2xl font-bold" dir={isRTL ? 'rtl' : 'ltr'}>
+            {isSignUp ? t('auth.create_account') : t('auth.welcome_back')}
           </h1>
-          <p className="text-muted-foreground mt-2">
-            {isSignUp ? 'Sign up to get started' : 'Sign in to your account'}
+          <p className="text-muted-foreground mt-2" dir={isRTL ? 'rtl' : 'ltr'}>
+            {isSignUp ? t('auth.sign_up_to_start') : t('auth.sign_in_account')}
           </p>
         </div>
 
@@ -85,16 +87,16 @@ const Auth = () => {
               <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
               <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
             </svg>
-            <span className="flex-1">
-              {googleLoading ? 'Signing in...' : `Continue with Google`}
+            <span className="flex-1" dir={isRTL ? 'rtl' : 'ltr'}>
+              {googleLoading ? t('auth.signing_in') : t('auth.continue_google')}
             </span>
           </Button>
 
           <div className="relative">
             <Separator />
             <div className="absolute inset-0 flex items-center justify-center">
-              <span className="bg-background px-2 text-muted-foreground text-sm">
-                or continue with email
+              <span className="bg-background px-2 text-muted-foreground text-sm" dir={isRTL ? 'rtl' : 'ltr'}>
+                {t('auth.continue_email')}
               </span>
             </div>
           </div>
@@ -103,7 +105,7 @@ const Auth = () => {
         <form onSubmit={handleSubmit} className="space-y-4">
           {isSignUp && (
             <div className="space-y-2">
-              <Label htmlFor="fullName">Full Name</Label>
+              <Label htmlFor="fullName" dir={isRTL ? 'rtl' : 'ltr'}>{t('auth.full_name')}</Label>
               <Input 
                 id="fullName" 
                 type="text" 
@@ -113,34 +115,61 @@ const Auth = () => {
                   fullName: e.target.value
                 }))} 
                 required={isSignUp} 
-                disabled={loading || googleLoading} 
+                disabled={loading || googleLoading}
+                dir={isRTL ? 'rtl' : 'ltr'}
               />
             </div>
           )}
 
           <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
-            <Input id="email" type="email" value={formData.email} onChange={e => setFormData(prev => ({
-              ...prev,
-              email: e.target.value
-            }))} required disabled={loading} />
+            <Label htmlFor="email" dir={isRTL ? 'rtl' : 'ltr'}>{t('auth.email')}</Label>
+            <Input 
+              id="email" 
+              type="email" 
+              value={formData.email} 
+              onChange={e => setFormData(prev => ({
+                ...prev,
+                email: e.target.value
+              }))} 
+              required 
+              disabled={loading}
+              dir={isRTL ? 'rtl' : 'ltr'}
+            />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="password">Password</Label>
-            <Input id="password" type="password" value={formData.password} onChange={e => setFormData(prev => ({
-              ...prev,
-              password: e.target.value
-            }))} required disabled={loading} />
+            <Label htmlFor="password" dir={isRTL ? 'rtl' : 'ltr'}>{t('auth.password')}</Label>
+            <Input 
+              id="password" 
+              type="password" 
+              value={formData.password} 
+              onChange={e => setFormData(prev => ({
+                ...prev,
+                password: e.target.value
+              }))} 
+              required 
+              disabled={loading}
+              dir={isRTL ? 'rtl' : 'ltr'}
+            />
           </div>
 
-          {!isSignUp && <div className="flex items-center space-x-2">
-              <Checkbox id="rememberMe" checked={rememberMe} onCheckedChange={checked => setRememberMe(checked === true)} />
-              <Label htmlFor="rememberMe" className="text-sm font-normal cursor-pointer">Remember me</Label>
-            </div>}
+          {!isSignUp && (
+            <div className="flex items-center space-x-2">
+              <Checkbox 
+                id="rememberMe" 
+                checked={rememberMe} 
+                onCheckedChange={checked => setRememberMe(checked === true)} 
+              />
+              <Label htmlFor="rememberMe" className="text-sm font-normal cursor-pointer" dir={isRTL ? 'rtl' : 'ltr'}>
+                {t('auth.remember_me')}
+              </Label>
+            </div>
+          )}
 
           <Button type="submit" className="w-full" disabled={loading || googleLoading}>
-            {loading ? 'Loading...' : isSignUp ? 'Create Account' : 'Sign In'}
+            <span dir={isRTL ? 'rtl' : 'ltr'}>
+              {loading ? t('auth.loading') : isSignUp ? t('auth.create_account_btn') : t('auth.sign_in_btn')}
+            </span>
           </Button>
         </form>
 
@@ -150,8 +179,9 @@ const Auth = () => {
             onClick={() => setIsSignUp(!isSignUp)} 
             className="text-sm text-primary hover:underline"
             disabled={loading || googleLoading}
+            dir={isRTL ? 'rtl' : 'ltr'}
           >
-            {isSignUp ? 'Already have an account? Sign in' : "Don't have an account? Sign up"}
+            {isSignUp ? t('auth.have_account') : t('auth.no_account')}
           </button>
         </div>
       </Card>
