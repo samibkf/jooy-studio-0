@@ -1,3 +1,4 @@
+
 import React, { useState, useRef } from 'react';
 import { Textarea } from '@/components/ui/textarea';
 import { Button, buttonVariants } from '@/components/ui/button';
@@ -29,6 +30,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface TextInsertProps {
   regions: Region[];
@@ -99,6 +101,7 @@ const TextInsert = ({
   currentPage,
   showManualInsert,
 }: TextInsertProps) => {
+  const { t, isRTL } = useLanguage();
   const [inputText, setInputText] = useState<string>('');
   const [activeTextIndex, setActiveTextIndex] = useState<number | null>(null);
   const [systemInstructions, setSystemInstructions] = useState(SYSTEM_INSTRUCTIONS_TEMPLATE);
@@ -148,26 +151,26 @@ const TextInsert = ({
 
   const handleGenerateFromPage = async () => {
     if (!documentId) {
-      toast.error('No document selected.');
+      toast.error(t('textinsert.no_document_selected'));
       return;
     }
     const apiKeys = getGeminiApiKeys();
     if (apiKeys.length === 0) {
-      toast.error('Gemini API Key is not set. Please set it in the header.');
+      toast.error(t('textinsert.api_key_not_set'));
       return;
     }
     if (!systemInstructions.trim()) {
-      toast.error('System instructions cannot be empty.');
+      toast.error(t('textinsert.system_instructions_empty'));
       return;
     }
 
     setIsGenerating(true);
     console.log(`[TextInsert] Starting AI generation for page ${currentPage}`);
-    toast.loading('Generating guidance from page...', { id: 'gemini-generate' });
+    toast.loading(t('textinsert.generating_guidance'), { id: 'gemini-generate' });
 
     const currentPageRegionsCheck = regions.filter(r => r.page === currentPage);
     if (currentPageRegionsCheck.length === 0) {
-      toast.warning(`No regions found on page ${currentPage}. Please add regions first.`, { id: 'gemini-generate' });
+      toast.warning(`${t('textinsert.no_regions_found')} ${currentPage}. ${t('textinsert.add_regions_first')}`, { id: 'gemini-generate' });
       setIsGenerating(false);
       return;
     }
@@ -176,7 +179,7 @@ const TextInsert = ({
       console.log(`[TextInsert] Getting cached PDF for document ${documentId}`);
       const cachedPdf = await pdfCacheService.getCachedPDF(documentId);
       if (!cachedPdf) {
-        throw new Error('PDF is not loaded. Please wait a moment and try again.');
+        throw new Error(t('textinsert.pdf_not_loaded'));
       }
 
       console.log(`[TextInsert] Rendering page ${currentPage} to canvas`);
@@ -198,7 +201,7 @@ const TextInsert = ({
       const generatedText = await generateGuidanceFromImage(systemInstructions, imageBase64, apiKeys);
 
       if (!generatedText || !generatedText.trim()) {
-        throw new Error('AI returned empty content.');
+        throw new Error(t('textinsert.ai_empty_content'));
       }
       
       console.log(`[TextInsert] AI generated ${generatedText.length} characters of content`);
@@ -228,9 +231,9 @@ const TextInsert = ({
             assignedCount++;
           }
         });
-        toast.success(`AI guidance generated and automatically assigned to ${assignedCount} regions.`, { id: 'gemini-generate' });
+        toast.success(`${t('textinsert.guidance_generated_assigned')} ${assignedCount} ${t('textinsert.regions_text')}`, { id: 'gemini-generate' });
       } else {
-        toast.success(`AI guidance generated with ${newTexts.length} texts. Please assign them manually.`, { id: 'gemini-generate' });
+        toast.success(`${t('textinsert.guidance_generated_manual')} ${newTexts.length} ${t('textinsert.texts_assign_manual')}`, { id: 'gemini-generate' });
       }
 
     } catch (error) {
@@ -240,7 +243,7 @@ const TextInsert = ({
       
       // Provide more specific error messages
       if (errorMessage.includes('could not be parsed')) {
-        toast.error('AI response format is not compatible. Try adjusting the system instructions.', { id: 'gemini-generate' });
+        toast.error(t('textinsert.ai_format_error'), { id: 'gemini-generate' });
       } else {
         toast.error(errorMessage, { id: 'gemini-generate' });
       }
@@ -251,19 +254,19 @@ const TextInsert = ({
 
   const handleInsertText = async () => {
     if (!inputText.trim()) {
-      toast.error('Please enter some text to insert');
+      toast.error(t('textinsert.enter_text'));
       return;
     }
 
     if (!documentId) {
-      toast.error('No document selected');
+      toast.error(t('textinsert.no_document_selected'));
       return;
     }
 
     const currentPageRegions = regions.filter(region => region.page === currentPage);
 
     if (currentPageRegions.length === 0) {
-      toast.error(`No regions available on page ${currentPage}`);
+      toast.error(`${t('textinsert.no_regions_available')} ${currentPage}`);
       return;
     }
 
@@ -284,7 +287,7 @@ const TextInsert = ({
           });
         }
       });
-      toast.success(`Text assigned to ${processedTexts.length} regions on page ${currentPage}`);
+      toast.success(`${t('textinsert.text_assigned_to_regions')} ${processedTexts.length} ${t('textinsert.regions_on_page')} ${currentPage}`);
       setInputText('');
     }
   };
@@ -304,7 +307,7 @@ const TextInsert = ({
       }
     });
     
-    toast.success(`Text assignments undone for page ${currentPage}`);
+    toast.success(`${t('textinsert.assignments_undone')} ${currentPage}`);
   };
 
   const handleUndoSpecificText = (regionId: string) => {
@@ -314,7 +317,7 @@ const TextInsert = ({
     if (!region) return;
 
     if (region.page !== currentPage) {
-      toast.error('Cannot undo assignment from a different page');
+      toast.error(t('textinsert.cannot_undo_different_page'));
       return;
     }
 
@@ -324,7 +327,7 @@ const TextInsert = ({
       ...region,
       description: null
     });
-    toast.success(`Text unassigned from region ${region.name || regionId}`);
+    toast.success(`${t('textinsert.text_unassigned')} ${region.name || regionId}`);
   };
 
   const handleAssignToRegion = (text: TitledText, regionId: string) => {
@@ -334,7 +337,7 @@ const TextInsert = ({
     if (!text || !region) return;
 
     if (region.page !== currentPage) {
-      toast.error('Cannot assign text to a region on a different page');
+      toast.error(t('textinsert.cannot_assign_different_page'));
       return;
     }
 
@@ -345,7 +348,7 @@ const TextInsert = ({
       description: text.content
     });
     setActiveTextIndex(null);
-    toast.success(`Assigned "${text.title}" to region ${region.name}`);
+    toast.success(`${t('textinsert.assigned_to_region')} "${text.title}" ${t('textinsert.to_region')} ${region.name}`);
   };
 
   const handleRegionSelect = (regionId: string) => {
@@ -364,15 +367,15 @@ const TextInsert = ({
 
   const handleDeleteText = async () => {
     if (!textToDelete || !documentId) {
-      toast.error("No text selected for deletion.");
+      toast.error(t('textinsert.no_text_selected'));
       return;
     }
     try {
       await deleteDocumentText(documentId, textToDelete.id);
-      toast.success(`"${textToDelete.title}" deleted successfully.`);
+      toast.success(`"${textToDelete.title}" ${t('textinsert.text_deleted')}`);
     } catch (error) {
       console.error("Error deleting text:", error);
-      toast.error("Failed to delete text.");
+      toast.error(t('textinsert.delete_failed'));
     } finally {
       setTextToDelete(null);
     }
@@ -388,7 +391,7 @@ const TextInsert = ({
       {/* AI Generation Section */}
       <div className="space-y-2">
         <div className="flex items-center justify-between">
-          <label className="text-sm font-medium">AI Generation</label>
+          <label className="text-sm font-medium">{t('textinsert.ai_generation')}</label>
         </div>
         <div className="flex flex-col items-center gap-2 pt-1">
           <div className="flex items-center gap-2">
@@ -403,11 +406,11 @@ const TextInsert = ({
                     className="h-12 w-12 rounded-full"
                   >
                     <Sparkles className={`h-6 w-6 ${isGenerating ? 'animate-spin' : ''}`} />
-                    <span className="sr-only">Generate AI Guidance for this page</span>
+                    <span className="sr-only">{t('textinsert.generate_tooltip')}</span>
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>
-                  <p>Generate AI Guidance for this page</p>
+                  <p>{t('textinsert.generate_tooltip')}</p>
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
@@ -415,22 +418,23 @@ const TextInsert = ({
               <PopoverTrigger asChild>
                 <Button variant="ghost" size="icon">
                   <Settings2 className="h-5 w-5" />
-                  <span className="sr-only">AI System Instructions</span>
+                  <span className="sr-only">{t('textinsert.system_instructions')}</span>
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-80">
                 <div className="grid gap-4">
                   <div className="space-y-2">
-                    <h4 className="font-medium leading-none">System Instructions</h4>
+                    <h4 className="font-medium leading-none">{t('textinsert.system_instructions')}</h4>
                     <p className="text-sm text-muted-foreground">
-                      Define the AI's behavior for content generation.
+                      {t('textinsert.system_instructions_desc')}
                     </p>
                   </div>
                   <Textarea
                     value={systemInstructions}
                     onChange={(e) => setSystemInstructions(e.target.value)}
                     placeholder="Enter system instructions for the AI..."
-                    className="min-h-0 h-48 text-xs"
+                    className={`min-h-0 h-48 text-xs ${isRTL ? 'text-right' : ''}`}
+                    dir={isRTL ? 'rtl' : 'ltr'}
                   />
                 </div>
               </PopoverContent>
@@ -443,7 +447,7 @@ const TextInsert = ({
               htmlFor="auto-assign"
               className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
             >
-              Auto-assign to regions
+              {t('textinsert.auto_assign')}
             </label>
           </div>
         </div>
@@ -456,26 +460,27 @@ const TextInsert = ({
               <span className="w-full border-t" />
             </div>
             <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-background px-2 text-muted-foreground">Or</span>
+              <span className="bg-background px-2 text-muted-foreground">{t('textinsert.or')}</span>
             </div>
           </div>
 
           <div className="space-y-3">
             <div className="space-y-2">
               <div className="flex justify-between items-center">
-                <label className="text-sm font-medium">Insert Text Manually:</label>
-                <span className="text-xs text-muted-foreground">Page {currentPage}</span>
+                <label className="text-sm font-medium">{t('textinsert.insert_manually')}</label>
+                <span className="text-xs text-muted-foreground">{t('textinsert.page')} {currentPage}</span>
               </div>
               <Textarea 
                 ref={textareaRef} 
                 value={inputText} 
                 onChange={e => setInputText(e.target.value)} 
-                placeholder="Paste your markdown text here..." 
-                className="min-h-0 h-24" 
+                placeholder={t('textinsert.paste_markdown')}
+                className={`min-h-0 h-24 ${isRTL ? 'text-right' : ''}`}
+                dir={isRTL ? 'rtl' : 'ltr'}
               />
               <div className="flex space-x-2">
                 <Button onClick={handleInsertText} className="flex-1" disabled={!inputText.trim()}>
-                  Insert to Page {currentPage}
+                  {t('textinsert.insert_to_page')} {currentPage}
                 </Button>
                 <Button onClick={handleUndo} variant="outline" className="flex-shrink-0" disabled={assignedTexts.length === 0}>
                   <Undo2 className="h-4 w-4" />
@@ -490,7 +495,7 @@ const TextInsert = ({
         <div className="space-y-3 pt-4">
           {unassignedTexts.length > 0 && (
             <div className="space-y-2">
-              <p className="text-sm font-medium">Unassigned Texts (Page {currentPage}):</p>
+              <p className="text-sm font-medium">{t('textinsert.unassigned_texts')} {currentPage}):</p>
               <ScrollArea className="h-[150px] border rounded-md p-2">
                 <div className="space-y-2">
                   {unassignedTexts.map((text, index) => {
@@ -506,7 +511,7 @@ const TextInsert = ({
                           </PopoverTrigger>
                           <PopoverContent className="w-72 p-0">
                             <div className="p-2 border-b">
-                              <p className="font-medium">Assign to Region (Page {currentPage}):</p>
+                              <p className="font-medium">{t('textinsert.assign_to_region')} {currentPage}):</p>
                             </div>
                             <ScrollArea className="h-[200px]">
                               {unassignedRegionsByPage.length > 0 ? (
@@ -514,8 +519,8 @@ const TextInsert = ({
                                   {unassignedRegionsByPage.map(region => (
                                     <div key={region.id} className="p-2 hover:bg-muted rounded-md cursor-pointer flex items-center justify-between" onClick={() => handleAssignToRegion(text, region.id)}>
                                       <div>
-                                        <p className="font-medium">{region.name || 'Unnamed Region'}</p>
-                                        <p className="text-xs text-muted-foreground">Page: {region.page}</p>
+                                        <p className="font-medium">{region.name || t('sidebar.unnamed_region')}</p>
+                                        <p className="text-xs text-muted-foreground">{t('textinsert.page')}: {region.page}</p>
                                       </div>
                                       <ArrowRight className="h-4 w-4" />
                                     </div>
@@ -523,7 +528,7 @@ const TextInsert = ({
                                 </div>
                               ) : (
                                 <div className="p-4 text-center text-muted-foreground">
-                                  No unassigned regions on page {currentPage}
+                                  {t('textinsert.no_unassigned_regions')} {currentPage}
                                 </div>
                               )}
                             </ScrollArea>
@@ -537,7 +542,7 @@ const TextInsert = ({
                             onClick={(e) => { e.stopPropagation(); setTextToPreview(text); }}
                           >
                             <Text className="h-4 w-4" />
-                            <span className="sr-only">Preview Text</span>
+                            <span className="sr-only">{t('textinsert.preview_text')}</span>
                           </Button>
                           <Button
                             variant="ghost"
@@ -546,7 +551,7 @@ const TextInsert = ({
                             onClick={(e) => { e.stopPropagation(); setTextToDelete(text); }}
                           >
                             <Trash2 className="h-4 w-4" />
-                            <span className="sr-only">Delete Text</span>
+                            <span className="sr-only">{t('textinsert.delete_text')}</span>
                           </Button>
                         </div>
                       </div>
@@ -559,7 +564,7 @@ const TextInsert = ({
           
           {assignedTexts.length > 0 && (
             <div className="space-y-2">
-              <p className="text-sm font-medium">Assigned Texts (Page {currentPage}):</p>
+              <p className="text-sm font-medium">{t('textinsert.assigned_texts')} {currentPage}):</p>
               <ScrollArea className="h-[150px] border rounded-md p-2">
                 <div className="space-y-2">
                   {assignedTexts.map((text, index) => {
@@ -577,7 +582,7 @@ const TextInsert = ({
                         </div>
                         <p className="text-xs">{text.content.substring(0, 50)}...</p>
                         {assignedRegion && (
-                          <p className="text-xs mt-1 text-green-700">Assigned to: {assignedRegion.name || 'Unnamed Region'}</p>
+                          <p className="text-xs mt-1 text-green-700">{t('textinsert.assigned_to')}: {assignedRegion.name || t('sidebar.unnamed_region')}</p>
                         )}
                       </div>
                     );
@@ -592,14 +597,14 @@ const TextInsert = ({
       <AlertDialog open={!!textToDelete} onOpenChange={() => setTextToDelete(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogTitle>{t('textinsert.delete_confirm')}</AlertDialogTitle>
             <AlertDialogDescription>
-              This will permanently delete the text titled "{textToDelete?.title}". This action cannot be undone.
+              {t('textinsert.delete_warning')} "{textToDelete?.title}". {t('textinsert.delete_warning_end')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDeleteText} className={buttonVariants({ variant: "destructive" })}>Delete</AlertDialogAction>
+            <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteText} className={buttonVariants({ variant: "destructive" })}>{t('common.delete')}</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
@@ -610,12 +615,12 @@ const TextInsert = ({
             <AlertDialogTitle>{textToPreview?.title}</AlertDialogTitle>
             <AlertDialogDescription asChild>
               <ScrollArea className="max-h-[60vh] mt-4 pr-4">
-                <p className="text-sm text-foreground whitespace-pre-wrap">{textToPreview?.content}</p>
+                <p className={`text-sm text-foreground whitespace-pre-wrap ${isRTL ? 'text-right' : ''}`} dir={isRTL ? 'rtl' : 'ltr'}>{textToPreview?.content}</p>
               </ScrollArea>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogAction onClick={() => setTextToPreview(null)}>Close</AlertDialogAction>
+            <AlertDialogAction onClick={() => setTextToPreview(null)}>{t('textinsert.close')}</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

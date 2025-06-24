@@ -14,6 +14,7 @@ import { decryptData } from '@/utils/crypto';
 import { pdfCacheService } from '@/services/pdfCacheService';
 import { Separator } from '@/components/ui/separator';
 import CompactPageNavigation from './CompactPageNavigation';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
 
@@ -51,6 +52,7 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
   onDrmSettingsClick,
 }) => {
   const { authState } = useAuth();
+  const { t, isRTL } = useLanguage();
   
   const [pdf, setPdf] = useState<PDFDocumentProxy | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
@@ -245,12 +247,12 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.key === 'Delete' || e.key === 'Backspace') && selectedRegionId && document.activeElement instanceof HTMLElement && !['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) {
         onRegionDelete(selectedRegionId);
-        toast.success('Region deleted');
+        toast.success(t('sidebar.region_deleted'));
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [selectedRegionId, onRegionDelete]);
+  }, [selectedRegionId, onRegionDelete, t]);
   
   useEffect(() => {
     return () => {
@@ -456,7 +458,7 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
   
   const copyPageToClipboard = async () => {
     if (!canvasRef.current) {
-      toast.error('Canvas not available');
+      toast.error(t('pdf.canvas_not_available'));
       return;
     }
     
@@ -468,17 +470,17 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
       const blob = await new Promise<Blob>((resolve) => {
         canvas.toBlob((blob) => {
           if (blob) resolve(blob);
-          else toast.error('Failed to create image blob');
+          else toast.error(t('pdf.failed_create_blob'));
         }, 'image/png');
       });
       
       const clipboardItem = new ClipboardItem({ 'image/png': blob });
       await navigator.clipboard.write([clipboardItem]);
       
-      toast.success('Page copied to clipboard');
+      toast.success(t('pdf.page_copied'));
     } catch (error) {
       console.error('Error copying to clipboard:', error);
-      toast.error('Failed to copy page: ' + (error instanceof Error ? error.message : 'Unknown error'));
+      toast.error(t('pdf.copy_failed') + ': ' + (error instanceof Error ? error.message : 'Unknown error'));
     } finally {
       setIsCopyingPage(false);
     }
@@ -507,7 +509,7 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
       setPreventCreateRegion(false);
       setIsDoubleClickMode(false);
     } else {
-      toast.error(`Please enter a page number between 1 and ${totalPages}`);
+      toast.error(`${t('pdf.page_number_error')} ${totalPages}`);
     }
   };
 
@@ -520,26 +522,26 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
   if (!documentId) {
     return <div className="flex flex-col items-center justify-center h-[calc(100vh-72px)] bg-muted">
         <div className="text-center p-10">
-          <h2 className="font-bold mb-2 text-3xl">Welcome to Jooy Studio</h2>
-          <p className="text-muted-foreground text-lg">Interactive Books Start Here</p>
+          <h2 className="font-bold mb-2 text-3xl">{t('pdf.welcome_title')}</h2>
+          <p className="text-muted-foreground text-lg">{t('pdf.welcome_subtitle')}</p>
         </div>
       </div>;
   }
   
   if (!authState.user) {
     return <div className="flex flex-col items-center justify-center h-[calc(100vh-72px)]">
-      <span className="text-muted-foreground">Please log in to view PDFs</span>
+      <span className="text-muted-foreground">{t('pdf.login_required')}</span>
     </div>;
   }
   
   if (loading) {
     return <div className="flex flex-col items-center justify-center h-[calc(100vh-72px)]">
       <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
-      <span className="mt-3">Loading PDF...</span>
+      <span className="mt-3">{t('pdf.loading_pdf')}</span>
       {debugInfo && (
         <div className="mt-4 text-sm text-muted-foreground max-w-md text-center">
           <details>
-            <summary className="cursor-pointer">Debug Info</summary>
+            <summary className="cursor-pointer">{t('pdf.debug_info')}</summary>
             <pre className="whitespace-pre-wrap text-xs mt-2 p-2 bg-muted rounded">
               {debugInfo}
             </pre>
@@ -555,7 +557,7 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
       {debugInfo && (
         <div className="text-sm text-muted-foreground max-w-md">
           <details>
-            <summary className="cursor-pointer">Debug Info</summary>
+            <summary className="cursor-pointer">{t('pdf.debug_info')}</summary>
             <pre className="whitespace-pre-wrap text-xs mt-2 p-2 bg-muted rounded">
               {debugInfo}
             </pre>
@@ -567,7 +569,7 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
         variant="outline" 
         className="mt-4"
       >
-        Retry
+        {t('pdf.retry')}
       </Button>
     </div>
   }
@@ -581,11 +583,11 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
                 <TooltipTrigger asChild>
                   <Toggle pressed={currentSelectionType === 'area'} onPressedChange={() => onCurrentSelectionTypeChange(currentSelectionType === 'area' ? null : 'area')} aria-label="Toggle area selection tool" className={`${currentSelectionType === 'area' ? 'bg-blue-100 ring-2 ring-primary' : ''}`}>
                     <MousePointer className="h-4 w-4" />
-                    <span className="sr-only">Area Selection</span>
+                    <span className="sr-only">{t('pdf.area_selection')}</span>
                   </Toggle>
                 </TooltipTrigger>
                 <TooltipContent>
-                  <p>Draw custom area regions on the PDF</p>
+                  <p>{t('pdf.area_selection_tooltip')}</p>
                 </TooltipContent>
               </Tooltip>
               
@@ -599,11 +601,11 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
                     className="h-9 w-9"
                   >
                     <Copy className="h-4 w-4" />
-                    <span className="sr-only">Copy Page</span>
+                    <span className="sr-only">{t('pdf.copy_page')}</span>
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>
-                  <p>Copy current page as image to clipboard</p>
+                  <p>{t('pdf.copy_page_tooltip')}</p>
                 </TooltipContent>
               </Tooltip>
             </div>
@@ -626,7 +628,7 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>
-                  <p>Zoom out</p>
+                  <p>{t('pdf.zoom_out')}</p>
                 </TooltipContent>
               </Tooltip>
               <span className="text-sm w-16 text-center">
@@ -639,7 +641,7 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>
-                  <p>Zoom in</p>
+                  <p>{t('pdf.zoom_in')}</p>
                 </TooltipContent>
               </Tooltip>
             </div>
@@ -659,7 +661,7 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>
-                  <p>{isPrivate ? 'Make document public' : 'Make document private'}</p>
+                  <p>{isPrivate ? t('pdf.make_public') : t('pdf.make_private')}</p>
                 </TooltipContent>
               </Tooltip>
               <Tooltip>
@@ -674,7 +676,7 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>
-                  <p>Configure DRM protection settings</p>
+                  <p>{t('pdf.drm_settings')}</p>
                 </TooltipContent>
               </Tooltip>
             </div>
