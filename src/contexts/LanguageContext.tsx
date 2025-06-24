@@ -11,8 +11,8 @@ interface LanguageContextType {
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
 
-// Translation keys and values
-const translations = {
+// Translation keys and values - now exported
+export const translations = {
   en: {
     // Header
     'header.jooy_studio': 'Jooy Studio',
