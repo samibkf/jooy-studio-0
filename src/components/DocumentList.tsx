@@ -54,25 +54,25 @@ const DocumentList: React.FC<DocumentListProps> = ({
     }
   };
 
-  // RTL-aware chevron logic: In RTL, we want the semantic meaning to be preserved
+  // Fixed RTL-aware chevron logic: Show semantic meaning correctly
   // When collapsed, show expand icon (pointing toward content)
   // When expanded, show collapse icon (pointing away from content)
   const getChevronIcon = () => {
     if (isCollapsed) {
       // Collapsed state - show expand icon (toward content)
-      return isRTL ? ChevronLeft : ChevronRight;
+      return isRTL ? ChevronRight : ChevronLeft;
     } else {
       // Expanded state - show collapse icon (away from content)
-      return isRTL ? ChevronRight : ChevronLeft;
+      return isRTL ? ChevronLeft : ChevronRight;
     }
   };
 
   const ChevronIcon = getChevronIcon();
 
-  // RTL-aware positioning calculation
+  // Fixed RTL-aware positioning calculation
   const getTogglePosition = () => {
     if (isRTL) {
-      return { right: isCollapsed ? '16px' : '250px' };
+      return { left: isCollapsed ? '16px' : '250px' };
     } else {
       return { left: isCollapsed ? '16px' : '250px' };
     }
@@ -98,14 +98,14 @@ const DocumentList: React.FC<DocumentListProps> = ({
         <ChevronIcon className="h-4 w-4" />
       </Button>
 
-      {/* Document list sidebar content */}
-      <div className={`w-[250px] h-full bg-background border-e transition-all duration-300 ease-in-out ${
+      {/* Document list sidebar content - Fixed translation behavior */}
+      <div className={`w-[250px] h-full bg-background border-inline-end transition-all duration-300 ease-in-out ${
         isCollapsed 
           ? (isRTL ? 'translate-x-full' : '-translate-x-full') 
           : 'translate-x-0'
-      } fixed top-16 z-10 ${isRTL ? 'end-0' : 'start-0'}`}>
+      } fixed top-16 z-10 ${isRTL ? 'right-0' : 'left-0'}`}>
         <div className="p-4 border-b">
-          <h2 className="font-semibold" dir={isRTL ? 'rtl' : 'ltr'}>{t('docs.documents')}</h2>
+          <h2 className="font-semibold text-start" dir={isRTL ? 'rtl' : 'ltr'}>{t('docs.documents')}</h2>
         </div>
 
         <ScrollArea className="h-[calc(100vh-10rem)]">
