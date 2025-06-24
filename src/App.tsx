@@ -15,10 +15,10 @@ import { LanguageProvider } from './contexts/LanguageContext';
 function App() {
   return (
     <LanguageProvider>
-      <Router>
-        <AuthProvider>
-          <TextAssignmentProvider>
-            <TooltipProvider>
+      <TooltipProvider>
+        <Router>
+          <AuthProvider>
+            <TextAssignmentProvider>
               <Routes>
                 <Route path="/" element={<Index />} />
                 <Route path="/auth" element={<Auth />} />
@@ -27,10 +27,10 @@ function App() {
                 <Route path="*" element={<NotFound />} />
               </Routes>
               <Toaster richColors position="top-center" />
-            </TooltipProvider>
-          </TextAssignmentProvider>
-        </AuthProvider>
-      </Router>
+            </TextAssignmentProvider>
+          </AuthProvider>
+        </Router>
+      </TooltipProvider>
     </LanguageProvider>
   );
 }
