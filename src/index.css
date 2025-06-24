@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -73,6 +74,33 @@
 
   body {
     @apply bg-background text-foreground;
+  }
+
+  /* RTL Support */
+  [dir="rtl"] {
+    text-align: right;
+  }
+
+  [dir="rtl"] .text-left {
+    text-align: right;
+  }
+
+  [dir="rtl"] .text-right {
+    text-align: left;
+  }
+
+  /* Ensure Arabic text displays properly */
+  [dir="rtl"] * {
+    font-family: system-ui, -apple-system, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+  }
+
+  /* RTL-specific overrides for dropdowns */
+  [dir="rtl"] [data-radix-popper-content-wrapper] {
+    direction: rtl;
+  }
+
+  [dir="rtl"] .dropdown-content {
+    text-align: right;
   }
 }
 
