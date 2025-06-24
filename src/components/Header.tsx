@@ -98,7 +98,7 @@ const Header = ({
 
             {/* Center Group */}
             <div className="flex-1 flex justify-center items-center">
-              <Button asChild variant="outline" size="sm" className="px-3">
+              <Button asChild variant="outline" size="sm" className={`px-3 ${isRTL ? 'rtl-button-flex' : 'ltr-button-flex'}`}>
                 <Link
                   to="/tts-history"
                   title={t('header.virtual_tutor_tooltip')}
@@ -106,7 +106,7 @@ const Header = ({
                   <RTLButtonIcon>
                     <UserRound className="h-4 w-4" />
                   </RTLButtonIcon>
-                  {t('header.virtual_tutor')}
+                  <span dir={isRTL ? 'rtl' : 'ltr'}>{t('header.virtual_tutor')}</span>
                 </Link>
               </Button>
             </div>
@@ -117,12 +117,12 @@ const Header = ({
                 onClick={onUploadClick}
                 variant="outline"
                 size="sm"
-                className="flex items-center gap-2 px-3"
+                className={`px-3 ${isRTL ? 'rtl-button-flex' : 'ltr-button-flex'}`}
               >
                 <RTLButtonIcon>
                   <Upload className="h-4 w-4" />
                 </RTLButtonIcon>
-                {t('header.upload')}
+                <span dir={isRTL ? 'rtl' : 'ltr'}>{t('header.upload')}</span>
               </Button>
 
               <DropdownMenu>
@@ -132,13 +132,13 @@ const Header = ({
                       <Button
                         variant="outline"
                         size="sm"
-                        className="flex items-center gap-2 px-3"
+                        className={`px-3 ${isRTL ? 'rtl-button-flex' : 'ltr-button-flex'}`}
                         disabled={isExportDisabled}
                       >
                         <RTLButtonIcon>
                           <Share className="h-4 w-4" />
                         </RTLButtonIcon>
-                        {t('header.export')}
+                        <span dir={isRTL ? 'rtl' : 'ltr'}>{t('header.export')}</span>
                       </Button>
                     </DropdownMenuTrigger>
                   </TooltipTrigger>
@@ -149,7 +149,7 @@ const Header = ({
                 <DropdownMenuContent align="end" className="min-w-[200px]">
                   <DropdownMenuLabel>{t('header.export_options')}</DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={onQRExport} disabled={isQRExporting}>
+                  <DropdownMenuItem onClick={onQRExport} disabled={isQRExporting} className={isRTL ? 'rtl-button-flex' : 'ltr-button-flex'}>
                     <RTLButtonIcon>
                       <QrCode className="h-4 w-4" />
                     </RTLButtonIcon>
@@ -161,7 +161,7 @@ const Header = ({
                     <DropdownMenuItem
                       onClick={() => onPDFQRExport(qrCorner)}
                       disabled={isPDFQRExporting}
-                      className="flex-grow"
+                      className={`flex-grow ${isRTL ? 'rtl-button-flex' : 'ltr-button-flex'}`}
                     >
                       <RTLButtonIcon>
                         <QrCode className="h-4 w-4" />
@@ -176,14 +176,14 @@ const Header = ({
                           <DropdownMenuSubContent>
                             <DropdownMenuLabel dir={isRTL ? 'rtl' : 'ltr'}>{t('header.qr_position')}</DropdownMenuLabel>
                             <DropdownMenuSeparator />
-                            <DropdownMenuItem onSelect={() => onQRCornerChange('top-left')}>
+                            <DropdownMenuItem onSelect={() => onQRCornerChange('top-left')} className={isRTL ? 'rtl-button-flex' : 'ltr-button-flex'}>
                               <RTLButtonIcon>
                                 <CornerDownLeft className="h-4 w-4" />
                               </RTLButtonIcon>
                               <span dir={isRTL ? 'rtl' : 'ltr'}>{t('header.top_left')}</span>
                               {qrCorner === 'top-left' && <span className="text-xs ml-auto">✓</span>}
                             </DropdownMenuItem>
-                            <DropdownMenuItem onSelect={() => onQRCornerChange('top-right')}>
+                            <DropdownMenuItem onSelect={() => onQRCornerChange('top-right')} className={isRTL ? 'rtl-button-flex' : 'ltr-button-flex'}>
                               <RTLButtonIcon>
                                 <CornerDownRight className="h-4 w-4" />
                               </RTLButtonIcon>
@@ -198,7 +198,7 @@ const Header = ({
                   {user?.role === 'admin' && (
                     <>
                       <DropdownMenuSeparator />
-                      <DropdownMenuItem onClick={onExport}>
+                      <DropdownMenuItem onClick={onExport} className={isRTL ? 'rtl-button-flex' : 'ltr-button-flex'}>
                         <RTLButtonIcon>
                           <FileJson className="h-4 w-4" />
                         </RTLButtonIcon>
@@ -230,7 +230,7 @@ const Header = ({
                   
                   {/* Language Switcher */}
                   <DropdownMenuSub>
-                    <DropdownMenuSubTrigger>
+                    <DropdownMenuSubTrigger className={isRTL ? 'rtl-button-flex' : 'ltr-button-flex'}>
                       <RTLButtonIcon>
                         <Languages className="h-4 w-4" />
                       </RTLButtonIcon>
@@ -251,13 +251,13 @@ const Header = ({
                   </DropdownMenuSub>
                   
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => setGeminiDialogOpen(true)}>
+                  <DropdownMenuItem onClick={() => setGeminiDialogOpen(true)} className={isRTL ? 'rtl-button-flex' : 'ltr-button-flex'}>
                     <RTLButtonIcon>
                       <KeyRound className="h-4 w-4" />
                     </RTLButtonIcon>
                     <span dir={isRTL ? 'rtl' : 'ltr'}>{t('header.api_keys')}</span>
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={onSignOut}>
+                  <DropdownMenuItem onClick={onSignOut} className={isRTL ? 'rtl-button-flex' : 'ltr-button-flex'}>
                     <RTLButtonIcon>
                       <LogOut className="h-4 w-4" />
                     </RTLButtonIcon>

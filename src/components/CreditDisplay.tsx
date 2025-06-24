@@ -12,7 +12,7 @@ const CreditDisplay = ({ credits }: CreditDisplayProps) => {
   const { t, isRTL } = useLanguage();
 
   return (
-    <div className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-muted-foreground bg-slate-100 rounded-full">
+    <div className={`flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-muted-foreground bg-slate-100 rounded-full ${isRTL ? 'rtl-button-flex' : 'ltr-button-flex'}`}>
       <RTLButtonIcon>
         <Coins className="h-4 w-4 text-yellow-500" />
       </RTLButtonIcon>
