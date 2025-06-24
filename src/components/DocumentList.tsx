@@ -10,6 +10,7 @@ import { Document } from '@/types/documents';
 import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { useLanguage } from '@/contexts/LanguageContext';
+import RTLButtonIcon from './RTLButtonIcon';
 
 interface DocumentListProps {
   documents: Document[];
@@ -67,11 +68,13 @@ const DocumentList: React.FC<DocumentListProps> = ({
       <Button
         variant="ghost"
         size="icon"
-        className="fixed z-20 top-20 left-4 bg-background shadow-md border rounded-full transition-all duration-300"
+        className={`fixed z-20 top-20 bg-background shadow-md border rounded-full transition-all duration-300 ${isRTL ? 'rtl-button-flex' : 'ltr-button-flex'}`}
         style={{ left: isCollapsed ? '16px' : '250px' }}
         onClick={() => onCollapsedChange(!isCollapsed)}
       >
-        {isCollapsed ? <ChevronRight /> : <ChevronLeft />}
+        <RTLButtonIcon>
+          {isCollapsed ? <ChevronRight /> : <ChevronLeft />}
+        </RTLButtonIcon>
       </Button>
 
       {/* Document list sidebar content */}
@@ -106,25 +109,29 @@ const DocumentList: React.FC<DocumentListProps> = ({
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-7 w-7 hover:bg-accent"
+                      className={`h-7 w-7 hover:bg-accent ${isRTL ? 'rtl-button-flex' : 'ltr-button-flex'}`}
                       onClick={(e) => {
                         e.stopPropagation();
                         setIsRenaming(doc.id);
                         setNewName(doc.name);
                       }}
                     >
-                      <Pencil className="h-3 w-3" />
+                      <RTLButtonIcon>
+                        <Pencil className="h-3 w-3" />
+                      </RTLButtonIcon>
                     </Button>
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-7 w-7 text-destructive hover:bg-destructive/10"
+                      className={`h-7 w-7 text-destructive hover:bg-destructive/10 ${isRTL ? 'rtl-button-flex' : 'ltr-button-flex'}`}
                       onClick={(e) => {
                         e.stopPropagation();
                         setDocumentToDelete(doc.id);
                       }}
                     >
-                      <Trash2 className="h-3 w-3" />
+                      <RTLButtonIcon>
+                        <Trash2 className="h-3 w-3" />
+                      </RTLButtonIcon>
                     </Button>
                   </div>
                 </div>
@@ -156,8 +163,8 @@ const DocumentList: React.FC<DocumentListProps> = ({
               />
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setIsRenaming(null)}>{t('docs.cancel')}</Button>
-              <Button onClick={() => isRenaming && handleRenameSubmit(isRenaming)}>{t('docs.save')}</Button>
+              <Button variant="outline" onClick={() => setIsRenaming(null)} dir={isRTL ? 'rtl' : 'ltr'}>{t('docs.cancel')}</Button>
+              <Button onClick={() => isRenaming && handleRenameSubmit(isRenaming)} dir={isRTL ? 'rtl' : 'ltr'}>{t('docs.save')}</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
@@ -172,8 +179,8 @@ const DocumentList: React.FC<DocumentListProps> = ({
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel>{t('docs.cancel')}</AlertDialogCancel>
-              <AlertDialogAction onClick={handleDeleteConfirm}>{t('docs.delete')}</AlertDialogAction>
+              <AlertDialogCancel dir={isRTL ? 'rtl' : 'ltr'}>{t('docs.cancel')}</AlertDialogCancel>
+              <AlertDialogAction onClick={handleDeleteConfirm} dir={isRTL ? 'rtl' : 'ltr'}>{t('docs.delete')}</AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
