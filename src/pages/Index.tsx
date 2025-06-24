@@ -15,30 +15,14 @@ import { Button } from "@/components/ui/button"
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { toast } from 'sonner';
 import { useLanguage } from '@/contexts/LanguageContext';
-
-interface Document {
-  id: string;
-  name: string;
-  file_url: string;
-  regions: Region[];
-}
-
-interface Region {
-  id: string;
-  name: string;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  page_number: number;
-  description: string | null;
-}
+import { DocumentData } from '@/types/documents';
+import { Region } from '@/types/regions';
 
 const IndexPage: React.FC = () => {
   const navigate = useNavigate();
   const { t, isRTL } = useLanguage();
-  const [documents, setDocuments] = useState<Document[]>([]);
-  const [selectedDocument, setSelectedDocument] = useState<Document | null>(null);
+  const [documents, setDocuments] = useState<DocumentData[]>([]);
+  const [selectedDocument, setSelectedDocument] = useState<DocumentData | null>(null);
   const [selectedRegionId, setSelectedRegionId] = useState<string | null>(null);
   const [ttsRequestModalOpen, setTtsRequestModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -326,19 +310,24 @@ const IndexPage: React.FC = () => {
           <SidebarInset className="flex-1 relative">
             <div className="flex flex-col h-screen">
               <Header
-                selectedDocument={selectedDocument}
+                onUploadClick={() => {}}
                 onExport={handleExport}
-                onTTSRequest={handleTTSRequest}
-                currentPage={currentPage}
-                totalPages={totalPages}
-                regions={selectedDocument?.regions || []}
+                onQRExport={() => {}}
+                onPDFQRExport={() => {}}
+                hasDocument={!!selectedDocument}
+                isQRExporting={false}
+                isPDFQRExporting={false}
+                qrCorner="top-left"
+                onQRCornerChange={() => {}}
+                user={null}
+                onSignOut={async () => {}}
               />
 
               <div className="flex-1 flex flex-col overflow-hidden">
-                {selectedDocument && selectedDocument.file_url ? (
+                {selectedDocument ? (
                   <div className="flex-1 relative">
                     <PdfViewer
-                      fileUrl={selectedDocument.file_url}
+                      fileUrl={`/api/documents/${selectedDocument.id}/file`}
                       regions={selectedDocument.regions}
                       selectedRegionId={selectedRegionId}
                       onRegionCreate={handleRegionCreate}
@@ -398,11 +387,13 @@ const IndexPage: React.FC = () => {
               </div>
             )}
 
-            {ttsRequestModalOpen && (
+            {ttsRequestModalOpen && selectedDocument && (
               <TTSRequestModal
-                onClose={() => setTtsRequestModalOpen(false)}
-                documents={documents}
-                onSubmit={handleTTSSubmit}
+                isOpen={ttsRequestModalOpen}
+                onOpenChange={setTtsRequestModalOpen}
+                documentId={selectedDocument.id}
+                documentName={selectedDocument.name}
+                onSuccess={handleTTSSubmit}
               />
             )}
           </SidebarInset>
