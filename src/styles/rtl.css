@@ -1,72 +1,198 @@
 
-/* Simplified RTL CSS - Text Direction Only */
+/* RTL Layout Utilities */
 
-/* RTL text utility class */
-.rtl-text {
-  direction: rtl;
+/* Text alignment utilities */
+.text-start-rtl {
   text-align: start;
-  font-feature-settings: "kern" 1, "liga" 1, "clig" 1, "calt" 1;
 }
 
-/* Ensure proper text direction inheritance for RTL content */
-.rtl-text * {
-  direction: inherit;
+.text-end-rtl {
+  text-align: end;
 }
 
-/* Code blocks should always be LTR regardless of text direction */
-.rtl-text code,
-.rtl-text pre {
-  direction: ltr;
+/* Margin utilities for RTL */
+.me-auto-rtl {
+  margin-inline-end: auto;
+}
+
+.ms-auto-rtl {
+  margin-inline-start: auto;
+}
+
+/* Padding utilities for RTL */
+.pe-rtl-2 {
+  padding-inline-end: 0.5rem;
+}
+
+.ps-rtl-2 {
+  padding-inline-start: 0.5rem;
+}
+
+.pe-rtl-4 {
+  padding-inline-end: 1rem;
+}
+
+.ps-rtl-4 {
+  padding-inline-start: 1rem;
+}
+
+/* Border utilities for RTL */
+.border-e-rtl {
+  border-inline-end: 1px solid;
+}
+
+.border-s-rtl {
+  border-inline-start: 1px solid;
+}
+
+/* Flexbox utilities for RTL */
+.flex-row-reverse-rtl {
+  flex-direction: row-reverse;
+}
+
+/* Position utilities for RTL */
+.start-0-rtl {
+  inset-inline-start: 0;
+}
+
+.end-0-rtl {
+  inset-inline-end: 0;
+}
+
+/* Transform utilities for RTL */
+.rtl .transform-rtl {
+  transform: scaleX(-1);
+}
+
+/* Custom RTL-aware components */
+.rtl .dropdown-menu {
+  left: auto;
+  right: 0;
+}
+
+.rtl .tooltip {
+  direction: rtl;
+}
+
+.rtl input[type="search"] {
+  direction: rtl;
+}
+
+/* Icon adjustments for RTL */
+.rtl .icon-flip {
+  transform: scaleX(-1);
+}
+
+/* Navigation adjustments */
+.rtl .breadcrumb-item + .breadcrumb-item::before {
+  transform: scaleX(-1);
+}
+
+/* Table adjustments */
+.rtl table {
+  direction: rtl;
+}
+
+.rtl th,
+.rtl td {
+  text-align: right;
+}
+
+.rtl th:first-child,
+.rtl td:first-child {
+  text-align: right;
+}
+
+.rtl th:last-child,
+.rtl td:last-child {
   text-align: left;
 }
 
-/* Number and date inputs should always be LTR */
-.rtl-text input[type="number"],
-.rtl-text input[type="date"],
-.rtl-text input[type="time"],
-.rtl-text input[type="datetime-local"] {
-  direction: ltr;
+/* Form adjustments */
+.rtl .form-check-input {
+  margin-left: auto;
+  margin-right: 0;
 }
 
-/* Form labels should follow text direction */
-.rtl-text label {
-  text-align: start;
+.rtl .form-check-label {
+  padding-left: 0;
+  padding-right: 1.25em;
 }
 
-/* Form controls should follow text direction */
-.rtl-text .form-control {
-  text-align: start;
+/* Modal adjustments */
+.rtl .modal-header .btn-close {
+  margin: -0.5rem -0.5rem -0.5rem auto;
 }
 
-/* Toast positioning - keep toasts in their normal position */
-.sonner-toaster {
-  /* No RTL-specific positioning changes */
+/* Toast adjustments */
+.rtl .toast {
+  direction: rtl;
 }
 
-/* Dialog and modal content should follow text direction */
-.rtl-text .dialog-content {
-  text-align: start;
+.rtl .toast-header {
+  flex-direction: row-reverse;
 }
 
-/* Menu and dropdown content should follow text direction */
-.rtl-text .dropdown-content,
-.rtl-text .menu-item {
-  text-align: start;
+/* Carousel adjustments */
+.rtl .carousel-control-prev {
+  left: auto;
+  right: 0;
 }
 
-/* Table text should follow direction */
-.rtl-text table th,
-.rtl-text table td {
-  text-align: start;
+.rtl .carousel-control-next {
+  right: auto;
+  left: 0;
 }
 
-/* Button text should follow direction */
-.rtl-text button {
-  text-align: center;
+/* Dropdown adjustments */
+.rtl .dropdown-menu {
+  text-align: right;
 }
 
-/* Input placeholder text direction */
-.rtl-text input::placeholder,
-.rtl-text textarea::placeholder {
-  text-align: start;
+.rtl .dropdown-item {
+  text-align: right;
+}
+
+/* Progress bar adjustments */
+.rtl .progress-bar {
+  animation-direction: reverse;
+}
+
+/* Floating labels */
+.rtl .form-floating > label {
+  left: auto;
+  right: 0;
+  transform-origin: 100% 0;
+}
+
+/* Input group adjustments */
+.rtl .input-group > :not(:first-child):not(.dropdown-menu):not(.valid-tooltip):not(.valid-feedback):not(.invalid-tooltip):not(.invalid-feedback) {
+  margin-left: 0;
+  margin-right: -1px;
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+  border-top-right-radius: inherit;
+  border-bottom-right-radius: inherit;
+}
+
+.rtl .input-group > :not(:last-child):not(.dropdown-toggle):not(.dropdown-menu):not(.valid-tooltip):not(.valid-feedback):not(.invalid-tooltip):not(.invalid-feedback) {
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+  border-top-left-radius: inherit;
+  border-bottom-left-radius: inherit;
+}
+
+/* List group adjustments */
+.rtl .list-group-horizontal > .list-group-item:first-child {
+  border-bottom-left-radius: 0;
+  border-top-right-radius: 0;
+  border-top-left-radius: inherit;
+  border-bottom-right-radius: inherit;
+}
+
+.rtl .list-group-horizontal > .list-group-item:last-child {
+  border-top-right-radius: 0;
+  border-bottom-left-radius: 0;
+  border-top-left-radius: inherit;
+  border-bottom-right-radius: inherit;
 }
