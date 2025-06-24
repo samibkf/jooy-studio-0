@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import {
@@ -83,7 +84,7 @@ const Header = ({
   return (
     <>
       <TooltipProvider>
-        <header className="bg-white border-b border-gray-200 shadow-sm py-4" dir={isRTL ? 'rtl' : 'ltr'}>
+        <header className="bg-white border-b border-gray-200 shadow-sm py-4">
           <div className="container mx-auto px-4 flex justify-between items-center">
             {/* Left Group */}
             <div className="flex items-center gap-4">
@@ -164,12 +165,12 @@ const Header = ({
                           <DropdownMenuSubContent>
                             <DropdownMenuLabel dir={isRTL ? 'rtl' : 'ltr'}>{t('header.qr_position')}</DropdownMenuLabel>
                             <DropdownMenuSeparator />
-                            <DropdownMenuItem onSelect={() => onQRCornerChange('top-left')} className="rtl-button-icons">
+                            <DropdownMenuItem onSelect={() => onQRCornerChange('top-left')}>
                               <CornerDownLeft className="h-4 w-4 mr-2" />
                               <span dir={isRTL ? 'rtl' : 'ltr'}>{t('header.top_left')}</span>
                               {qrCorner === 'top-left' && <span className="text-xs ml-auto">✓</span>}
                             </DropdownMenuItem>
-                            <DropdownMenuItem onSelect={() => onQRCornerChange('top-right')} className="rtl-button-icons">
+                            <DropdownMenuItem onSelect={() => onQRCornerChange('top-right')}>
                               <CornerDownRight className="h-4 w-4 mr-2" />
                               <span dir={isRTL ? 'rtl' : 'ltr'}>{t('header.top_right')}</span>
                               {qrCorner === 'top-right' && <span className="text-xs ml-auto">✓</span>}
