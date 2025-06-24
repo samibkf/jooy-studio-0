@@ -61,6 +61,14 @@
   margin-inline-start: auto;
 }
 
+.ms-2 {
+  margin-inline-start: 0.5rem;
+}
+
+.me-2 {
+  margin-inline-end: 0.5rem;
+}
+
 /* Padding utilities for RTL */
 .pe-rtl-2 {
   padding-inline-end: 0.5rem;
@@ -87,11 +95,6 @@
   border-inline-start: 1px solid;
 }
 
-/* Flexbox utilities for RTL */
-.flex-row-reverse-rtl {
-  flex-direction: row-reverse;
-}
-
 /* Position utilities for RTL */
 .start-0-rtl {
   inset-inline-start: 0;
@@ -99,6 +102,19 @@
 
 .end-0-rtl {
   inset-inline-end: 0;
+}
+
+.start-4 {
+  inset-inline-start: 1rem;
+}
+
+.end-4 {
+  inset-inline-end: 1rem;
+}
+
+/* Flexbox utilities for RTL */
+.flex-row-reverse-rtl {
+  flex-direction: row-reverse;
 }
 
 /* Transform utilities for RTL */
@@ -253,4 +269,29 @@
 [dir="rtl"] .mr-auto {
   margin-right: 0;
   margin-left: auto;
+}
+
+/* Sidebar and panel positioning for RTL */
+[dir="rtl"] .sidebar-left {
+  right: 0;
+  left: auto;
+}
+
+[dir="rtl"] .sidebar-right {
+  left: 0;
+  right: auto;
+}
+
+/* Chevron button spacing and positioning */
+.rtl .chevron-nav {
+  flex-direction: row-reverse;
+}
+
+/* RTL-aware gap utilities */
+.gap-rtl-2 {
+  gap: 0.5rem;
+}
+
+.gap-rtl-4 {
+  gap: 1rem;
 }

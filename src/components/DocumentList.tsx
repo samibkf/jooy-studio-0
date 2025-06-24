@@ -67,15 +67,15 @@ const DocumentList: React.FC<DocumentListProps> = ({
       <Button
         variant="ghost"
         size="icon"
-        className="fixed z-20 top-20 left-4 bg-background shadow-md border rounded-full transition-all duration-300"
-        style={{ left: isCollapsed ? '16px' : '250px' }}
+        className="fixed z-20 top-20 start-4 bg-background shadow-md border rounded-full transition-all duration-300"
+        style={{ [isRTL ? 'right' : 'left']: isCollapsed ? '16px' : '250px' }}
         onClick={() => onCollapsedChange(!isCollapsed)}
       >
-        {isCollapsed ? <ChevronRight /> : <ChevronLeft />}
+        {isCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
       </Button>
 
       {/* Document list sidebar content */}
-      <div className={`w-[250px] h-full bg-background border-r transition-all duration-300 ease-in-out ${isCollapsed ? '-translate-x-full' : 'translate-x-0'} fixed top-16 left-0 z-10`}>
+      <div className={`w-[250px] h-full bg-background border-e-rtl transition-all duration-300 ease-in-out ${isCollapsed ? '-translate-x-full' : 'translate-x-0'} fixed top-16 start-0 z-10`}>
         <div className="p-4 border-b">
           <h2 className="font-semibold" dir={isRTL ? 'rtl' : 'ltr'}>{t('docs.documents')}</h2>
         </div>
@@ -96,13 +96,13 @@ const DocumentList: React.FC<DocumentListProps> = ({
                   }`}
                   onClick={() => onDocumentSelect(doc.id)}
                 >
-                  <div className="flex items-center gap-2 flex-1 text-left min-w-0">
+                  <div className="flex items-center gap-2 flex-1 text-start-rtl min-w-0">
                     <FileText className="h-4 w-4 flex-shrink-0" />
                     <span className="truncate" dir={isRTL ? 'rtl' : 'ltr'}>{doc.name}</span>
                   </div>
 
                   {/* Action buttons that appear on hover */}
-                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200 ml-2">
+                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200 ms-2">
                     <Button
                       variant="ghost"
                       size="icon"
