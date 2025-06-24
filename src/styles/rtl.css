@@ -39,7 +39,8 @@
 [dir="rtl"] .lucide-chevron-right,
 [dir="rtl"] .lucide-corner-down-left,
 [dir="rtl"] .lucide-corner-down-right,
-[dir="rtl"] .lucide-log-out {
+[dir="rtl"] .lucide-log-out,
+[dir="rtl"] .lucide-panel-left {
   transform: scaleX(-1);
 }
 
@@ -110,6 +111,14 @@
 
 .end-4 {
   inset-inline-end: 1rem;
+}
+
+.start-2 {
+  inset-inline-start: 0.5rem;
+}
+
+.end-2 {
+  inset-inline-end: 0.5rem;
 }
 
 /* Flexbox utilities for RTL */
@@ -294,4 +303,56 @@
 
 .gap-rtl-4 {
   gap: 1rem;
+}
+
+/* Sidebar specific RTL utilities */
+.sidebar-toggle-rtl {
+  transition: inset-inline-end 300ms ease-in-out;
+}
+
+/* RTL-aware positioning for sidebar elements */
+.rtl .sidebar-menu-action {
+  right: auto;
+  left: 0.25rem;
+}
+
+.rtl .sidebar-menu-badge {
+  right: auto;
+  left: 0.25rem;
+}
+
+/* RTL-aware submenu borders */
+.rtl .sidebar-submenu {
+  border-left: none;
+  border-right: 1px solid;
+  margin-left: 0;
+  margin-right: 0.875rem;
+  padding-left: 0;
+  padding-right: 0.625rem;
+}
+
+/* Context-aware chevron flipping */
+.chevron-context-start {
+  transition: transform 200ms ease-in-out;
+}
+
+[dir="rtl"] .chevron-context-start {
+  transform: scaleX(-1);
+}
+
+.chevron-context-end {
+  transition: transform 200ms ease-in-out;
+}
+
+[dir="rtl"] .chevron-context-end {
+  transform: scaleX(-1);
+}
+
+/* Sidebar collapse/expand states */
+.sidebar-collapsed[dir="rtl"] .chevron-expand {
+  transform: scaleX(-1);
+}
+
+.sidebar-expanded[dir="rtl"] .chevron-collapse {
+  transform: scaleX(-1);
 }

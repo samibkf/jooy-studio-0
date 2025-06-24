@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
@@ -30,6 +29,7 @@ import {
 } from '@/utils/pdfQrEmbedding';
 import { decryptData } from '@/utils/crypto';
 import { DocumentSettingsDialog } from '@/components/DocumentSettingsDialog';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 const Index = () => {
   // ... keep existing code (state declarations and useDocumentState hook) the same
@@ -64,6 +64,7 @@ const Index = () => {
   const selectedDocument = documents.find(doc => doc.id === selectedDocumentId);
   
   const { authState, signOut } = useAuth();
+  const { isRTL } = useLanguage();
   const navigate = useNavigate();
 
   // Fix 1: Get PDF page count by fetching PDF via Edge Function
@@ -890,6 +891,19 @@ const Index = () => {
     setCurrentPage(page); // page is now consistently 1-based from PdfViewer
   };
   
+  // Get the correct chevron icon based on sidebar state and RTL direction
+  const getSidebarChevronIcon = () => {
+    if (isSidebarCollapsed) {
+      // Sidebar is collapsed, show expand icon
+      return isRTL ? ChevronRight : ChevronLeft;
+    } else {
+      // Sidebar is expanded, show collapse icon
+      return isRTL ? ChevronLeft : ChevronRight;
+    }
+  };
+
+  const ChevronIcon = getSidebarChevronIcon();
+  
   return (
     <ProtectedRoute>
       <div className="flex flex-col h-screen">
@@ -957,11 +971,11 @@ const Index = () => {
             <Button
               variant="ghost"
               size="icon"
-              className="fixed z-20 top-20 bg-background shadow-md border rounded-full"
-              style={{ right: isSidebarCollapsed ? '16px' : '390px' }}
+              className="fixed z-20 top-20 bg-background shadow-md border rounded-full sidebar-toggle-rtl"
+              style={{ [isRTL ? 'left' : 'right']: isSidebarCollapsed ? '16px' : '390px' }}
               onClick={toggleSidebar}
             >
-              {isSidebarCollapsed ? <ChevronLeft /> : <ChevronRight />}
+              <ChevronIcon className="h-4 w-4" />
             </Button>
             
             <div className={`transition-all duration-300 ${isSidebarCollapsed ? 'w-0 opacity-0 overflow-hidden' : 'w-[400px]'}`}>
