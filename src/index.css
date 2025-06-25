@@ -211,12 +211,12 @@
 
   /* ===== ULTRA-SPECIFIC COMPACT PAGE NAVIGATION BUTTON FIXES ===== */
   
-  /* Target CompactPageNavigation buttons specifically - MAXIMUM SPECIFICITY */
-  html body div.flex.items-center.gap-2 button.h-8.w-8[class*="outline"][class*="icon-button-center"][class*="light-button-forced"],
-  html body .CompactPageNavigation button.h-8.w-8[class*="outline"][class*="icon-button-center"][class*="light-button-forced"],
-  html body button[class*="h-8"][class*="w-8"][class*="outline"][class*="icon-button-center"][class*="light-button-forced"],
-  html body button.h-8.w-8.icon-button-center.light-button-forced[data-variant="outline"],
-  html body button.h-8.w-8.icon-button-center.light-button-forced[class*="outline"] {
+  /* Target CompactPageNavigation buttons WITHOUT gradient border class - MAXIMUM SPECIFICITY */
+  html body div.flex.items-center.gap-2 button.h-8.w-8[class*="outline"][class*="icon-button-center"][class*="light-button-forced"]:not([class*="gradient-border-orange-purple"]),
+  html body .CompactPageNavigation button.h-8.w-8[class*="outline"][class*="icon-button-center"][class*="light-button-forced"]:not([class*="gradient-border-orange-purple"]),
+  html body button[class*="h-8"][class*="w-8"][class*="outline"][class*="icon-button-center"][class*="light-button-forced"]:not([class*="gradient-border-orange-purple"]),
+  html body button.h-8.w-8.icon-button-center.light-button-forced[data-variant="outline"]:not([class*="gradient-border-orange-purple"]),
+  html body button.h-8.w-8.icon-button-center.light-button-forced[class*="outline"]:not([class*="gradient-border-orange-purple"]) {
     /* Force centering */
     display: flex !important;
     align-items: center !important;
@@ -239,17 +239,45 @@
     text-shadow: none !important;
   }
 
-  /* Dark mode overrides for CompactPageNavigation buttons */
-  html.dark body div.flex.items-center.gap-2 button.h-8.w-8[class*="outline"][class*="icon-button-center"][class*="light-button-forced"],
-  html.dark body .CompactPageNavigation button.h-8.w-8[class*="outline"][class*="icon-button-center"][class*="light-button-forced"],
-  html.dark body button[class*="h-8"][class*="w-8"][class*="outline"][class*="icon-button-center"][class*="light-button-forced"],
-  html.dark body button.h-8.w-8.icon-button-center.light-button-forced[data-variant="outline"],
-  html.dark body button.h-8.w-8.icon-button-center.light-button-forced[class*="outline"],
-  .dark div.flex.items-center.gap-2 button.h-8.w-8[class*="outline"][class*="icon-button-center"][class*="light-button-forced"],
-  .dark .CompactPageNavigation button.h-8.w-8[class*="outline"][class*="icon-button-center"][class*="light-button-forced"],
-  .dark button[class*="h-8"][class*="w-8"][class*="outline"][class*="icon-button-center"][class*="light-button-forced"],
-  .dark button.h-8.w-8.icon-button-center.light-button-forced[data-variant="outline"],
-  .dark button.h-8.w-8.icon-button-center.light-button-forced[class*="outline"] {
+  /* Target CompactPageNavigation buttons WITH gradient border class - MAXIMUM SPECIFICITY */
+  html body div.flex.items-center.gap-2 button.h-8.w-8[class*="outline"][class*="icon-button-center"][class*="light-button-forced"][class*="gradient-border-orange-purple"],
+  html body .CompactPageNavigation button.h-8.w-8[class*="outline"][class*="icon-button-center"][class*="light-button-forced"][class*="gradient-border-orange-purple"],
+  html body button[class*="h-8"][class*="w-8"][class*="outline"][class*="icon-button-center"][class*="light-button-forced"][class*="gradient-border-orange-purple"],
+  html body button.h-8.w-8.icon-button-center.light-button-forced[data-variant="outline"][class*="gradient-border-orange-purple"],
+  html body button.h-8.w-8.icon-button-center.light-button-forced[class*="outline"][class*="gradient-border-orange-purple"] {
+    /* Force centering */
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 0 !important;
+    
+    /* Force light background but allow gradient border */
+    background: linear-gradient(white, white) padding-box, var(--gradient-orange-purple) border-box !important;
+    border: 2px solid transparent !important;
+    color: #374151 !important;
+    
+    /* Ensure size */
+    width: 2rem !important;
+    height: 2rem !important;
+    min-width: 2rem !important;
+    min-height: 2rem !important;
+    
+    /* Remove any conflicting styles */
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+
+  /* Dark mode overrides for CompactPageNavigation buttons WITHOUT gradient */
+  html.dark body div.flex.items-center.gap-2 button.h-8.w-8[class*="outline"][class*="icon-button-center"][class*="light-button-forced"]:not([class*="gradient-border-orange-purple"]),
+  html.dark body .CompactPageNavigation button.h-8.w-8[class*="outline"][class*="icon-button-center"][class*="light-button-forced"]:not([class*="gradient-border-orange-purple"]),
+  html.dark body button[class*="h-8"][class*="w-8"][class*="outline"][class*="icon-button-center"][class*="light-button-forced"]:not([class*="gradient-border-orange-purple"]),
+  html.dark body button.h-8.w-8.icon-button-center.light-button-forced[data-variant="outline"]:not([class*="gradient-border-orange-purple"]),
+  html.dark body button.h-8.w-8.icon-button-center.light-button-forced[class*="outline"]:not([class*="gradient-border-orange-purple"]),
+  .dark div.flex.items-center.gap-2 button.h-8.w-8[class*="outline"][class*="icon-button-center"][class*="light-button-forced"]:not([class*="gradient-border-orange-purple"]),
+  .dark .CompactPageNavigation button.h-8.w-8[class*="outline"][class*="icon-button-center"][class*="light-button-forced"]:not([class*="gradient-border-orange-purple"]),
+  .dark button[class*="h-8"][class*="w-8"][class*="outline"][class*="icon-button-center"][class*="light-button-forced"]:not([class*="gradient-border-orange-purple"]),
+  .dark button.h-8.w-8.icon-button-center.light-button-forced[data-variant="outline"]:not([class*="gradient-border-orange-purple"]),
+  .dark button.h-8.w-8.icon-button-center.light-button-forced[class*="outline"]:not([class*="gradient-border-orange-purple"]) {
     /* Keep light grey appearance in dark mode */
     background-color: #f3f4f6 !important;
     border-color: #d1d5db !important;
@@ -262,31 +290,85 @@
     padding: 0 !important;
   }
 
-  /* Hover states for CompactPageNavigation buttons */
-  html body div.flex.items-center.gap-2 button.h-8.w-8[class*="outline"][class*="icon-button-center"][class*="light-button-forced"]:hover:not(:disabled),
-  html body .CompactPageNavigation button.h-8.w-8[class*="outline"][class*="icon-button-center"][class*="light-button-forced"]:hover:not(:disabled),
-  html body button[class*="h-8"][class*="w-8"][class*="outline"][class*="icon-button-center"][class*="light-button-forced"]:hover:not(:disabled),
-  html body button.h-8.w-8.icon-button-center.light-button-forced[data-variant="outline"]:hover:not(:disabled),
-  html body button.h-8.w-8.icon-button-center.light-button-forced[class*="outline"]:hover:not(:disabled) {
+  /* Dark mode overrides for CompactPageNavigation buttons WITH gradient */
+  html.dark body div.flex.items-center.gap-2 button.h-8.w-8[class*="outline"][class*="icon-button-center"][class*="light-button-forced"][class*="gradient-border-orange-purple"],
+  html.dark body .CompactPageNavigation button.h-8.w-8[class*="outline"][class*="icon-button-center"][class*="light-button-forced"][class*="gradient-border-orange-purple"],
+  html.dark body button[class*="h-8"][class*="w-8"][class*="outline"][class*="icon-button-center"][class*="light-button-forced"][class*="gradient-border-orange-purple"],
+  html.dark body button.h-8.w-8.icon-button-center.light-button-forced[data-variant="outline"][class*="gradient-border-orange-purple"],
+  html.dark body button.h-8.w-8.icon-button-center.light-button-forced[class*="outline"][class*="gradient-border-orange-purple"],
+  .dark div.flex.items-center.gap-2 button.h-8.w-8[class*="outline"][class*="icon-button-center"][class*="light-button-forced"][class*="gradient-border-orange-purple"],
+  .dark .CompactPageNavigation button.h-8.w-8[class*="outline"][class*="icon-button-center"][class*="light-button-forced"][class*="gradient-border-orange-purple"],
+  .dark button[class*="h-8"][class*="w-8"][class*="outline"][class*="icon-button-center"][class*="light-button-forced"][class*="gradient-border-orange-purple"],
+  .dark button.h-8.w-8.icon-button-center.light-button-forced[data-variant="outline"][class*="gradient-border-orange-purple"],
+  .dark button.h-8.w-8.icon-button-center.light-button-forced[class*="outline"][class*="gradient-border-orange-purple"] {
+    /* Keep light background with gradient border in dark mode */
+    background: linear-gradient(#f3f4f6, #f3f4f6) padding-box, var(--gradient-orange-purple) border-box !important;
+    border: 2px solid transparent !important;
+    color: #374151 !important;
+    
+    /* Force centering */
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 0 !important;
+  }
+
+  /* Hover states for CompactPageNavigation buttons WITHOUT gradient */
+  html body div.flex.items-center.gap-2 button.h-8.w-8[class*="outline"][class*="icon-button-center"][class*="light-button-forced"]:not([class*="gradient-border-orange-purple"]):hover:not(:disabled),
+  html body .CompactPageNavigation button.h-8.w-8[class*="outline"][class*="icon-button-center"][class*="light-button-forced"]:not([class*="gradient-border-orange-purple"]):hover:not(:disabled),
+  html body button[class*="h-8"][class*="w-8"][class*="outline"][class*="icon-button-center"][class*="light-button-forced"]:not([class*="gradient-border-orange-purple"]):hover:not(:disabled),
+  html body button.h-8.w-8.icon-button-center.light-button-forced[data-variant="outline"]:not([class*="gradient-border-orange-purple"]):hover:not(:disabled),
+  html body button.h-8.w-8.icon-button-center.light-button-forced[class*="outline"]:not([class*="gradient-border-orange-purple"]):hover:not(:disabled) {
     background-color: #f9fafb !important;
     border-color: #d1d5db !important;
     color: #374151 !important;
   }
 
-  /* Dark mode hover states */
-  html.dark body div.flex.items-center.gap-2 button.h-8.w-8[class*="outline"][class*="icon-button-center"][class*="light-button-forced"]:hover:not(:disabled),
-  html.dark body .CompactPageNavigation button.h-8.w-8[class*="outline"][class*="icon-button-center"][class*="light-button-forced"]:hover:not(:disabled),
-  html.dark body button[class*="h-8"][class*="w-8"][class*="outline"][class*="icon-button-center"][class*="light-button-forced"]:hover:not(:disabled),
-  html.dark body button.h-8.w-8.icon-button-center.light-button-forced[data-variant="outline"]:hover:not(:disabled),
-  html.dark body button.h-8.w-8.icon-button-center.light-button-forced[class*="outline"]:hover:not(:disabled),
-  .dark div.flex.items-center.gap-2 button.h-8.w-8[class*="outline"][class*="icon-button-center"][class*="light-button-forced"]:hover:not(:disabled),
-  .dark .CompactPageNavigation button.h-8.w-8[class*="outline"][class*="icon-button-center"][class*="light-button-forced"]:hover:not(:disabled),
-  .dark button[class*="h-8"][class*="w-8"][class*="outline"][class*="icon-button-center"][class*="light-button-forced"]:hover:not(:disabled),
-  .dark button.h-8.w-8.icon-button-center.light-button-forced[data-variant="outline"]:hover:not(:disabled),
-  .dark button.h-8.w-8.icon-button-center.light-button-forced[class*="outline"]:hover:not(:disabled) {
+  /* Hover states for CompactPageNavigation buttons WITH gradient */
+  html body div.flex.items-center.gap-2 button.h-8.w-8[class*="outline"][class*="icon-button-center"][class*="light-button-forced"][class*="gradient-border-orange-purple"]:hover:not(:disabled),
+  html body .CompactPageNavigation button.h-8.w-8[class*="outline"][class*="icon-button-center"][class*="light-button-forced"][class*="gradient-border-orange-purple"]:hover:not(:disabled),
+  html body button[class*="h-8"][class*="w-8"][class*="outline"][class*="icon-button-center"][class*="light-button-forced"][class*="gradient-border-orange-purple"]:hover:not(:disabled),
+  html body button.h-8.w-8.icon-button-center.light-button-forced[data-variant="outline"][class*="gradient-border-orange-purple"]:hover:not(:disabled),
+  html body button.h-8.w-8.icon-button-center.light-button-forced[class*="outline"][class*="gradient-border-orange-purple"]:hover:not(:disabled) {
+    background: linear-gradient(#f9fafb, #f9fafb) padding-box, linear-gradient(135deg, #FF7722 0%, #FF11FF 100%) border-box !important;
+    border: 2px solid transparent !important;
+    color: #374151 !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 2px 8px rgba(255, 102, 0, 0.2) !important;
+  }
+
+  /* Dark mode hover states for buttons WITHOUT gradient */
+  html.dark body div.flex.items-center.gap-2 button.h-8.w-8[class*="outline"][class*="icon-button-center"][class*="light-button-forced"]:not([class*="gradient-border-orange-purple"]):hover:not(:disabled),
+  html.dark body .CompactPageNavigation button.h-8.w-8[class*="outline"][class*="icon-button-center"][class*="light-button-forced"]:not([class*="gradient-border-orange-purple"]):hover:not(:disabled),
+  html.dark body button[class*="h-8"][class*="w-8"][class*="outline"][class*="icon-button-center"][class*="light-button-forced"]:not([class*="gradient-border-orange-purple"]):hover:not(:disabled),
+  html.dark body button.h-8.w-8.icon-button-center.light-button-forced[data-variant="outline"]:not([class*="gradient-border-orange-purple"]):hover:not(:disabled),
+  html.dark body button.h-8.w-8.icon-button-center.light-button-forced[class*="outline"]:not([class*="gradient-border-orange-purple"]):hover:not(:disabled),
+  .dark div.flex.items-center.gap-2 button.h-8.w-8[class*="outline"][class*="icon-button-center"][class*="light-button-forced"]:not([class*="gradient-border-orange-purple"]):hover:not(:disabled),
+  .dark .CompactPageNavigation button.h-8.w-8[class*="outline"][class*="icon-button-center"][class*="light-button-forced"]:not([class*="gradient-border-orange-purple"]):hover:not(:disabled),
+  .dark button[class*="h-8"][class*="w-8"][class*="outline"][class*="icon-button-center"][class*="light-button-forced"]:not([class*="gradient-border-orange-purple"]):hover:not(:disabled),
+  .dark button.h-8.w-8.icon-button-center.light-button-forced[data-variant="outline"]:not([class*="gradient-border-orange-purple"]):hover:not(:disabled),
+  .dark button.h-8.w-8.icon-button-center.light-button-forced[class*="outline"]:not([class*="gradient-border-orange-purple"]):hover:not(:disabled) {
     background-color: #e5e7eb !important;
     border-color: #d1d5db !important;
     color: #374151 !important;
+  }
+
+  /* Dark mode hover states for buttons WITH gradient */
+  html.dark body div.flex.items-center.gap-2 button.h-8.w-8[class*="outline"][class*="icon-button-center"][class*="light-button-forced"][class*="gradient-border-orange-purple"]:hover:not(:disabled),
+  html.dark body .CompactPageNavigation button.h-8.w-8[class*="outline"][class*="icon-button-center"][class*="light-button-forced"][class*="gradient-border-orange-purple"]:hover:not(:disabled),
+  html.dark body button[class*="h-8"][class*="w-8"][class*="outline"][class*="icon-button-center"][class*="light-button-forced"][class*="gradient-border-orange-purple"]:hover:not(:disabled),
+  html.dark body button.h-8.w-8.icon-button-center.light-button-forced[data-variant="outline"][class*="gradient-border-orange-purple"]:hover:not(:disabled),
+  html.dark body button.h-8.w-8.icon-button-center.light-button-forced[class*="outline"][class*="gradient-border-orange-purple"]:hover:not(:disabled),
+  .dark div.flex.items-center.gap-2 button.h-8.w-8[class*="outline"][class*="icon-button-center"][class*="light-button-forced"][class*="gradient-border-orange-purple"]:hover:not(:disabled),
+  .dark .CompactPageNavigation button.h-8.w-8[class*="outline"][class*="icon-button-center"][class*="light-button-forced"][class*="gradient-border-orange-purple"]:hover:not(:disabled),
+  .dark button[class*="h-8"][class*="w-8"][class*="outline"][class*="icon-button-center"][class*="light-button-forced"][class*="gradient-border-orange-purple"]:hover:not(:disabled),
+  .dark button.h-8.w-8.icon-button-center.light-button-forced[data-variant="outline"][class*="gradient-border-orange-purple"]:hover:not(:disabled),
+  .dark button.h-8.w-8.icon-button-center.light-button-forced[class*="outline"][class*="gradient-border-orange-purple"]:hover:not(:disabled) {
+    background: linear-gradient(#e5e7eb, #e5e7eb) padding-box, linear-gradient(135deg, #FF7722 0%, #FF11FF 100%) border-box !important;
+    border: 2px solid transparent !important;
+    color: #374151 !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 2px 8px rgba(255, 102, 0, 0.2) !important;
   }
 
   /* Icons inside CompactPageNavigation buttons */
@@ -350,12 +432,12 @@
   }
 
   /* MAXIMUM SPECIFICITY LIGHT BUTTON FORCING - BULLETPROOF */
-  html body .light-button-forced,
-  html body button.light-button-forced,
-  html body [data-radix-popover-trigger].light-button-forced,
-  html body [class*="Button"].light-button-forced,
-  html body button[class*="outline"].light-button-forced,
-  html body button[class*="border"].light-button-forced {
+  html body .light-button-forced:not([class*="gradient-border-orange-purple"]),
+  html body button.light-button-forced:not([class*="gradient-border-orange-purple"]),
+  html body [data-radix-popover-trigger].light-button-forced:not([class*="gradient-border-orange-purple"]),
+  html body [class*="Button"].light-button-forced:not([class*="gradient-border-orange-purple"]),
+  html body button[class*="outline"].light-button-forced:not([class*="gradient-border-orange-purple"]),
+  html body button[class*="border"].light-button-forced:not([class*="gradient-border-orange-purple"]) {
     background-color: white !important;
     border-color: #d1d5db !important;
     color: #374151 !important;
@@ -364,10 +446,10 @@
   }
 
   /* LIGHT BUTTON HOVER STATES - MAXIMUM SPECIFICITY */
-  html body .light-button-forced:hover,
-  html body button.light-button-forced:hover,
-  html body .light-button-forced:hover:not(:disabled),
-  html body button.light-button-forced:hover:not(:disabled) {
+  html body .light-button-forced:not([class*="gradient-border-orange-purple"]):hover,
+  html body button.light-button-forced:not([class*="gradient-border-orange-purple"]):hover,
+  html body .light-button-forced:not([class*="gradient-border-orange-purple"]):hover:not(:disabled),
+  html body button.light-button-forced:not([class*="gradient-border-orange-purple"]):hover:not(:disabled) {
     background-color: #f9fafb !important;
     border-color: #d1d5db !important;
     color: #374151 !important;
@@ -385,12 +467,12 @@
   }
 
   /* DARK MODE OVERRIDES FOR LIGHT BUTTONS - MAXIMUM SPECIFICITY */
-  html.dark body .light-button-forced,
-  html.dark body button.light-button-forced,
-  html.dark body [data-radix-popover-trigger].light-button-forced,
-  html.dark body [class*="Button"].light-button-forced,
-  .dark .light-button-forced,
-  .dark button.light-button-forced {
+  html.dark body .light-button-forced:not([class*="gradient-border-orange-purple"]),
+  html.dark body button.light-button-forced:not([class*="gradient-border-orange-purple"]),
+  html.dark body [data-radix-popover-trigger].light-button-forced:not([class*="gradient-border-orange-purple"]),
+  html.dark body [class*="Button"].light-button-forced:not([class*="gradient-border-orange-purple"]),
+  .dark .light-button-forced:not([class*="gradient-border-orange-purple"]),
+  .dark button.light-button-forced:not([class*="gradient-border-orange-purple"]) {
     background-color: #f3f4f6 !important;
     border-color: #d1d5db !important;
     color: #374151 !important;
@@ -399,12 +481,12 @@
   }
 
   /* DARK MODE HOVER STATES FOR LIGHT BUTTONS */
-  html.dark body .light-button-forced:hover,
-  html.dark body button.light-button-forced:hover,
-  html.dark body .light-button-forced:hover:not(:disabled),
-  html.dark body button.light-button-forced:hover:not(:disabled),
-  .dark .light-button-forced:hover:not(:disabled),
-  .dark button.light-button-forced:hover:not(:disabled) {
+  html.dark body .light-button-forced:not([class*="gradient-border-orange-purple"]):hover,
+  html.dark body button.light-button-forced:not([class*="gradient-border-orange-purple"]):hover,
+  html.dark body .light-button-forced:not([class*="gradient-border-orange-purple"]):hover:not(:disabled),
+  html.dark body button.light-button-forced:not([class*="gradient-border-orange-purple"]):hover:not(:disabled),
+  .dark .light-button-forced:not([class*="gradient-border-orange-purple"]):hover:not(:disabled),
+  .dark button.light-button-forced:not([class*="gradient-border-orange-purple"]):hover:not(:disabled) {
     background-color: #e5e7eb !important;
     border-color: #d1d5db !important;
     color: #374151 !important;
@@ -444,7 +526,7 @@
   }
 
   /* NUCLEAR OPTION - ATTRIBUTE BASED SELECTORS FOR MAXIMUM SPECIFICITY */
-  html body button[class~="icon-button-center"][class~="light-button-forced"] {
+  html body button[class~="icon-button-center"][class~="light-button-forced"]:not([class*="gradient-border-orange-purple"]) {
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
@@ -454,10 +536,27 @@
     padding: 0 !important;
   }
 
-  html.dark body button[class~="icon-button-center"][class~="light-button-forced"],
-  .dark button[class~="icon-button-center"][class~="light-button-forced"] {
+  html.dark body button[class~="icon-button-center"][class~="light-button-forced"]:not([class*="gradient-border-orange-purple"]),
+  .dark button[class~="icon-button-center"][class~="light-button-forced"]:not([class*="gradient-border-orange-purple"]) {
     background-color: #f3f4f6 !important;
     border-color: #d1d5db !important;
+    color: #374151 !important;
+  }
+
+  html body button[class~="icon-button-center"][class~="light-button-forced"][class*="gradient-border-orange-purple"] {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    background: linear-gradient(white, white) padding-box, var(--gradient-orange-purple) border-box !important;
+    border: 2px solid transparent !important;
+    color: #374151 !important;
+    padding: 0 !important;
+  }
+
+  html.dark body button[class~="icon-button-center"][class~="light-button-forced"][class*="gradient-border-orange-purple"],
+  .dark button[class~="icon-button-center"][class~="light-button-forced"][class*="gradient-border-orange-purple"] {
+    background: linear-gradient(#f3f4f6, #f3f4f6) padding-box, var(--gradient-orange-purple) border-box !important;
+    border: 2px solid transparent !important;
     color: #374151 !important;
   }
 }
