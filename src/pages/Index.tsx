@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
@@ -32,8 +31,6 @@ import { decryptData } from '@/utils/crypto';
 import { DocumentSettingsDialog } from '@/components/DocumentSettingsDialog';
 
 const Index = () => {
-  // ... keep existing code (state declarations and useDocumentState hook) the same
-
   const [documents, setDocuments] = useState<DocumentData[]>([]);
   const [selectedDocumentId, setSelectedDocumentId] = useState<string | null>(null);
   const [isDocumentListCollapsed, setIsDocumentListCollapsed] = useState(true);
@@ -78,8 +75,6 @@ const Index = () => {
     autoSync: true,
     syncInterval: 2000
   });
-
-  // ... keep existing code (loadDocuments function) the same
 
   const loadDocuments = async () => {
     if (documentsLoaded && !isInitialLoad) {
@@ -199,8 +194,6 @@ const Index = () => {
     
     loadDocuments();
   }, [authState.user]);
-
-  // ... keep existing code (handleFileUpload, handleFileChange, handleDocumentSelect, handleDocumentRename, handleDocumentDelete) the same
 
   const handleFileUpload = () => {
     fileInputRef.current?.click();
@@ -501,8 +494,6 @@ const Index = () => {
     }
   };
 
-  // ... keep existing code (handleRegionCreate, handleRegionUpdate, handleRegionDelete, handleExport) the same
-
   const handleRegionCreate = async (regionData: Omit<Region, 'id'>) => {
     if (!selectedDocumentId || !authState.user) return;
 
@@ -727,8 +718,6 @@ const Index = () => {
     exportRegionMapping(mapping);
     toast.success('Data exported successfully');
   };
-
-  // ... keep existing code (QR export functions, retry functions, other handlers) the same
 
   const fetchPdfArrayBuffer = async (documentId: string): Promise<ArrayBuffer> => {
     const response = await fetch(`/functions/v1/stream-pdf?document_id=${documentId}`, {
@@ -957,7 +946,7 @@ const Index = () => {
             <Button
               variant="ghost"
               size="icon"
-              className="fixed z-20 top-20 bg-background shadow-md border rounded-full"
+              className="fixed z-20 top-20 bg-background shadow-md border rounded-full gradient-border-orange-purple icon-button-center"
               style={{ right: isSidebarCollapsed ? '16px' : '390px' }}
               onClick={toggleSidebar}
             >
