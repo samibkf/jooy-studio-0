@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import {
@@ -25,6 +24,7 @@ import CreditDisplay from './CreditDisplay';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import RTLButtonIcon from './RTLButtonIcon';
+import GradientSvgDefs from './GradientSvgDefs';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -88,21 +88,22 @@ const Header = ({
 
   return (
     <>
+      <GradientSvgDefs />
       <TooltipProvider>
         <header className="bg-card border-b border-border shadow-sm py-4">
           <div className="container mx-auto px-4 flex justify-between items-center">
             {/* Left Group */}
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
-                <File className="h-6 w-6 text-primary" />
-                <h1 className="text-2xl font-bold text-foreground">{t('header.jooy_studio')}</h1>
+                <File className="h-6 w-6 text-primary gradient-icon-orange-purple" />
+                <h1 className="text-2xl font-bold gradient-text-orange-purple">{t('header.jooy_studio')}</h1>
               </div>
               {user && <CreditDisplay credits={user.credits_remaining || 0} />}
             </div>
 
             {/* Center Group */}
             <div className="flex-1 flex justify-center items-center">
-              <Button asChild variant="outline" size="sm" className={`px-3 ${isRTL ? 'rtl-button-flex' : 'ltr-button-flex'}`}>
+              <Button asChild size="sm" className={`px-3 gradient-bg-orange-purple ${isRTL ? 'rtl-button-flex' : 'ltr-button-flex'}`}>
                 <Link
                   to="/tts-history"
                   title={t('header.virtual_tutor_tooltip')}
@@ -121,10 +122,10 @@ const Header = ({
                 onClick={onUploadClick}
                 variant="outline"
                 size="sm"
-                className={`px-3 ${isRTL ? 'rtl-button-flex' : 'ltr-button-flex'}`}
+                className={`px-3 gradient-border-orange-purple ${isRTL ? 'rtl-button-flex' : 'ltr-button-flex'}`}
               >
                 <RTLButtonIcon>
-                  <Upload className="h-4 w-4" />
+                  <Upload className="h-4 w-4 gradient-icon-orange-purple" />
                 </RTLButtonIcon>
                 <span dir={isRTL ? 'rtl' : 'ltr'}>{t('header.upload')}</span>
               </Button>
@@ -136,11 +137,11 @@ const Header = ({
                       <Button
                         variant="outline"
                         size="sm"
-                        className={`px-3 ${isRTL ? 'rtl-button-flex' : 'ltr-button-flex'}`}
+                        className={`px-3 gradient-border-orange-purple ${isRTL ? 'rtl-button-flex' : 'ltr-button-flex'}`}
                         disabled={isExportDisabled}
                       >
                         <RTLButtonIcon>
-                          <Download className="h-4 w-4" />
+                          <Download className="h-4 w-4 gradient-icon-orange-purple" />
                         </RTLButtonIcon>
                         <span dir={isRTL ? 'rtl' : 'ltr'}>{t('header.export')}</span>
                       </Button>

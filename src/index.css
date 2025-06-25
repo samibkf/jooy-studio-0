@@ -34,6 +34,9 @@
     --ring: 0 0% 25%;
 
     --radius: 0.5rem;
+
+    /* Orange to Purple Gradient */
+    --gradient-orange-purple: linear-gradient(135deg, #FF6600 0%, #EE00FF 100%);
   }
 
   .dark {
@@ -159,6 +162,51 @@
     display: flex;
     justify-content: space-between;
     flex-direction: row; /* Normal order */
+  }
+
+  /* ===== ORANGE TO PURPLE GRADIENT UTILITIES ===== */
+  
+  /* Gradient Background */
+  .gradient-bg-orange-purple {
+    background: var(--gradient-orange-purple) !important;
+    color: white !important;
+  }
+
+  /* Gradient Text */
+  .gradient-text-orange-purple {
+    background: var(--gradient-orange-purple) !important;
+    -webkit-background-clip: text !important;
+    background-clip: text !important;
+    -webkit-text-fill-color: transparent !important;
+    background-size: 100% !important;
+  }
+
+  /* Gradient Border */
+  .gradient-border-orange-purple {
+    border: 2px solid transparent !important;
+    background: linear-gradient(white, white) padding-box, var(--gradient-orange-purple) border-box !important;
+  }
+
+  .dark .gradient-border-orange-purple {
+    background: linear-gradient(hsl(var(--background)), hsl(var(--background))) padding-box, var(--gradient-orange-purple) border-box !important;
+  }
+
+  /* Gradient Icon Filter */
+  .gradient-icon-orange-purple svg {
+    filter: drop-shadow(0 0 0 #FF6600) drop-shadow(0 0 0 #EE00FF) !important;
+  }
+
+  /* Special handling for Sparkles and other icons with gradient effect */
+  .gradient-icon-orange-purple svg path {
+    fill: url(#orange-purple-gradient) !important;
+    stroke: url(#orange-purple-gradient) !important;
+  }
+
+  /* Hover states for gradient buttons */
+  .gradient-bg-orange-purple:hover {
+    background: linear-gradient(135deg, #FF7722 0%, #FF11FF 100%) !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 4px 12px rgba(255, 102, 0, 0.3) !important;
   }
 
   /* ===== ULTRA-SPECIFIC COMPACT PAGE NAVIGATION BUTTON FIXES ===== */
@@ -648,4 +696,13 @@
   color: black !important;
   border: 1px solid red;
   background-color: rgba(255, 255, 0, 0.2);
+}
+
+/* SVG Gradient Definition */
+svg defs linearGradient#orange-purple-gradient stop:first-child {
+  stop-color: #FF6600;
+}
+
+svg defs linearGradient#orange-purple-gradient stop:last-child {
+  stop-color: #EE00FF;
 }

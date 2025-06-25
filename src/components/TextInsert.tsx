@@ -402,8 +402,7 @@ const TextInsert = ({
                     onClick={handleGenerateFromPage} 
                     disabled={isGenerating} 
                     size="icon" 
-                    variant="default"
-                    className="h-12 w-12 rounded-full icon-button-center"
+                    className="h-12 w-12 rounded-full icon-button-center gradient-bg-orange-purple"
                   >
                     <Sparkles className={`h-6 w-6 ${isGenerating ? 'animate-spin' : ''}`} />
                     <span className="sr-only">{t('textinsert.generate_tooltip')}</span>
