@@ -260,11 +260,23 @@
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
 }
 
+/* Dark mode PDF container */
+.dark .pdf-container {
+  background-color: #0a0a0a;
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.1);
+}
+
 .pdf-page {
   position: relative;
   background-color: white;
   margin: 10px auto;
   box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
+}
+
+/* Dark mode PDF page */
+.dark .pdf-page {
+  background-color: #1a1a1a;
+  box-shadow: 0 0 5px rgba(255, 255, 255, 0.2);
 }
 
 .region-overlay {

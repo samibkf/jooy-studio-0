@@ -575,13 +575,18 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
   }
 
   return <div className="flex flex-col h-full w-full">
-      <div className="bg-white border-b border-gray-200 p-2 w-full sticky top-0 z-10">
+      <div className="bg-background border-b border-border p-2 w-full sticky top-0 z-10">
         <div className="flex items-center justify-between max-w-[1200px] mx-auto">
           <div className="flex items-center space-x-4">
             <div className="flex items-center space-x-2">
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Toggle pressed={currentSelectionType === 'area'} onPressedChange={() => onCurrentSelectionTypeChange(currentSelectionType === 'area' ? null : 'area')} aria-label="Toggle area selection tool" className={`${currentSelectionType === 'area' ? 'bg-blue-100 ring-2 ring-primary' : ''}`}>
+                  <Toggle 
+                    pressed={currentSelectionType === 'area'} 
+                    onPressedChange={() => onCurrentSelectionTypeChange(currentSelectionType === 'area' ? null : 'area')} 
+                    aria-label="Toggle area selection tool" 
+                    className={`icon-button-center gradient-border-orange-purple ${currentSelectionType === 'area' ? 'bg-blue-100 ring-2 ring-primary' : ''}`}
+                  >
                     <MousePointer className="h-4 w-4" />
                     <span className="sr-only">{t('pdf.area_selection')}</span>
                   </Toggle>
@@ -598,7 +603,7 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
                     size="icon" 
                     onClick={copyPageToClipboard} 
                     disabled={isCopyingPage || !canvasRef.current}
-                    className="h-9 w-9"
+                    className="h-9 w-9 icon-button-center gradient-border-orange-purple"
                   >
                     <Copy className="h-4 w-4" />
                     <span className="sr-only">{t('pdf.copy_page')}</span>
@@ -623,7 +628,13 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
             <div className="flex items-center space-x-2">
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button variant="outline" size="sm" onClick={handleZoomOut} disabled={scale <= 0.5}>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={handleZoomOut} 
+                    disabled={scale <= 0.5}
+                    className="gradient-border-orange-purple"
+                  >
                     -
                   </Button>
                 </TooltipTrigger>
@@ -636,7 +647,13 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
               </span>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button variant="outline" size="sm" onClick={handleZoomIn} disabled={scale >= 3}>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={handleZoomIn} 
+                    disabled={scale >= 3}
+                    className="gradient-border-orange-purple"
+                  >
                     +
                   </Button>
                 </TooltipTrigger>
@@ -655,7 +672,7 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
                     variant="outline"
                     size="icon"
                     onClick={onVisibilityChange}
-                    className="h-9 w-9"
+                    className="h-9 w-9 icon-button-center gradient-border-orange-purple"
                   >
                     {isPrivate ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </Button>
@@ -670,7 +687,7 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
                     variant="outline"
                     size="icon"
                     onClick={onDrmSettingsClick}
-                    className="h-9 w-9"
+                    className="h-9 w-9 icon-button-center gradient-border-orange-purple"
                   >
                     <Lock className="h-4 w-4" />
                   </Button>
@@ -684,7 +701,7 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
         </div>
       </div>
       
-      <ScrollArea className="flex-1 w-full h-[calc(100%-72px)]">
+      <ScrollArea className="flex-1 w-full h-[calc(100%-72px)] pdf-container">
         <div className="flex justify-center p-4">
           <div ref={containerRef} className={`pdf-page relative ${currentSelectionType === 'area' || isDoubleClickMode ? 'cursor-crosshair' : ''}`} onMouseDown={handleMouseDown} onMouseMove={handleMouseMove} onMouseUp={handleMouseUp} onDoubleClick={handleDoubleClick}>
             <canvas ref={canvasRef} style={{
