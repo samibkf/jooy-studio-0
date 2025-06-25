@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
@@ -29,7 +30,6 @@ import {
 } from '@/utils/pdfQrEmbedding';
 import { decryptData } from '@/utils/crypto';
 import { DocumentSettingsDialog } from '@/components/DocumentSettingsDialog';
-import { useLanguage } from '@/contexts/LanguageContext';
 
 const Index = () => {
   // ... keep existing code (state declarations and useDocumentState hook) the same
@@ -64,7 +64,6 @@ const Index = () => {
   const selectedDocument = documents.find(doc => doc.id === selectedDocumentId);
   
   const { authState, signOut } = useAuth();
-  const { isRTL } = useLanguage();
   const navigate = useNavigate();
 
   // Fix 1: Get PDF page count by fetching PDF via Edge Function
@@ -891,30 +890,6 @@ const Index = () => {
     setCurrentPage(page); // page is now consistently 1-based from PdfViewer
   };
   
-  // RTL-aware chevron logic for sidebar toggle
-  // In RTL: collapsed = show left chevron (expand), expanded = show right chevron (collapse)
-  // In LTR: collapsed = show right chevron (expand), expanded = show left chevron (collapse)
-  const getSidebarChevronIcon = () => {
-    if (isSidebarCollapsed) {
-      // Sidebar is collapsed, show expand icon (toward content)
-      return isRTL ? ChevronLeft : ChevronRight;
-    } else {
-      // Sidebar is expanded, show collapse icon (away from content)
-      return isRTL ? ChevronRight : ChevronLeft;
-    }
-  };
-
-  // RTL-aware positioning for sidebar toggle - Updated to match Documents chevron button level
-  const getSidebarTogglePosition = () => {
-    if (isRTL) {
-      return { left: isSidebarCollapsed ? '16px' : '390px' };
-    } else {
-      return { right: isSidebarCollapsed ? '16px' : '390px' };
-    }
-  };
-  
-  const ChevronIcon = getSidebarChevronIcon();
-  
   return (
     <ProtectedRoute>
       <div className="flex flex-col h-screen">
@@ -982,18 +957,18 @@ const Index = () => {
             <Button
               variant="ghost"
               size="icon"
-              className="fixed z-20 top-24 bg-background shadow-md border rounded-full transition-all duration-300"
-              style={getSidebarTogglePosition()}
+              className="fixed z-20 top-20 bg-background shadow-md border rounded-full"
+              style={{ right: isSidebarCollapsed ? '16px' : '390px' }}
               onClick={toggleSidebar}
             >
-              <ChevronIcon className="h-4 w-4" />
+              {isSidebarCollapsed ? <ChevronLeft /> : <ChevronRight />}
             </Button>
             
             <div className={`transition-all duration-300 ${isSidebarCollapsed ? 'w-0 opacity-0 overflow-hidden' : 'w-[400px]'}`}>
               <div className="h-full">
                 <Sidebar
                   selectedRegion={selectedDocument?.regions.find(r => r.id === selectedRegionId) || null}
-                  regions={selectedDocument?.regions || []} 
+                  regions={selectedDocument?.regions || []}
                   onRegionUpdate={handleRegionUpdate}
                   onRegionDelete={handleRegionDelete}
                   onRegionSelect={setSelectedRegionId}

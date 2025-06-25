@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 
 type Language = 'en' | 'ar';
@@ -11,8 +12,8 @@ interface LanguageContextType {
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
 
-// Translation keys and values - now exported
-export const translations = {
+// Translation keys and values
+const translations = {
   en: {
     // Header
     'header.jooy_studio': 'Jooy Studio',
@@ -406,25 +407,12 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   useEffect(() => {
     localStorage.setItem('language', language);
     
-    // Set both language and direction attributes
+    // Only set the language attribute for accessibility, not the direction
     document.documentElement.lang = language;
-    document.documentElement.dir = language === 'ar' ? 'rtl' : 'ltr';
-    
-    // Add RTL class to body for CSS targeting
-    if (language === 'ar') {
-      document.body.classList.add('rtl');
-    } else {
-      document.body.classList.remove('rtl');
-    }
   }, [language]);
 
   const t = (key: string): string => {
-    const translation = translations[language][key as keyof typeof translations['en']];
-    if (!translation) {
-      console.warn(`Missing translation for key: ${key} in language: ${language}`);
-      return key;
-    }
-    return translation;
+    return translations[language][key as keyof typeof translations['en']] || key;
   };
 
   const isRTL = language === 'ar';
