@@ -27,7 +27,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { ArrowDown, Eye } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthProvider';
-import { Pagination } from '@/components/ui/pagination';
+import CustomPagination from '@/components/CustomPagination';
 import { VirtualTutorRequest } from '@/types/virtualTutorRequest';
 import { VirtualTutorRequestService } from '@/services/VirtualTutorRequestService';
 import { format } from 'date-fns';
@@ -280,7 +280,7 @@ const TTSHistory = () => {
         ))}
       </div>
 
-      <Pagination
+      <CustomPagination
         currentPage={currentPage}
         itemsPerPage={itemsPerPage}
         totalItems={totalItems}
