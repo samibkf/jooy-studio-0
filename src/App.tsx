@@ -25,7 +25,7 @@ function App() {
                   <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
                   <Route path="/auth" element={<Auth />} />
                   <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
-                  <Route path="/tts-history" element={<ProtectedRoute><TTSHistory /></ProtectedRoutelement>} />
+                  <Route path="/tts-history" element={<ProtectedRoute><TTSHistory /></ProtectedRoute>} />
                   <Route path="*" element={<NotFound />} />
                 </Routes>
                 <Toaster richColors position="top-center" />
