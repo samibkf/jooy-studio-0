@@ -1,3 +1,4 @@
+
 import React, { useRef, useState, useEffect, useContext } from 'react';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
@@ -40,7 +41,7 @@ const Sidebar = ({
   if (!textAssignmentContext) {
     console.error('TextAssignmentContext is not available');
     return (
-      <div className="h-full w-full flex flex-col bg-background border-l" style={{ width: '400px' }}>
+      <div className="h-full w-full flex flex-col bg-card border-l border-border" style={{ width: '400px' }}>
         <div className="flex flex-col flex-1 p-4 h-full overflow-y-auto px-[24px] py-[8px] rounded-none">
           <div className="flex items-center justify-center h-full">
             <p className="text-muted-foreground" dir={isRTL ? 'rtl' : 'ltr'}>{t('sidebar.loading')}</p>
@@ -105,16 +106,16 @@ const Sidebar = ({
   }, []);
 
   return (
-    <div className="h-full w-full flex flex-col bg-background border-l" style={{
+    <div className="h-full w-full flex flex-col bg-card border-l border-border" style={{
       width: '400px'
     }}>
-      <div className={`flex items-center p-4 border-b ${isRTL ? 'rtl-justify-between' : 'ltr-justify-between'}`}>
-        <h2 className="text-lg font-semibold" dir={isRTL ? 'rtl' : 'ltr'}>{t('sidebar.content_tools')}</h2>
+      <div className={`flex items-center p-4 border-b border-border ${isRTL ? 'rtl-justify-between' : 'ltr-justify-between'}`}>
+        <h2 className="text-lg font-semibold text-foreground" dir={isRTL ? 'rtl' : 'ltr'}>{t('sidebar.content_tools')}</h2>
         <Button 
           variant="ghost" 
           size="icon" 
           onClick={() => setShowManualInsert(prev => !prev)}
-          className={isRTL ? 'rtl-button-flex' : 'ltr-button-flex'}
+          className={`icon-button-center ${isRTL ? 'rtl-button-flex' : 'ltr-button-flex'}`}
         >
           <RTLButtonIcon>
             <SquarePen className="h-5 w-5" />
@@ -139,14 +140,14 @@ const Sidebar = ({
             <Separator className="my-4" />
             
             <div className={`flex items-center ${isRTL ? 'rtl-justify-between' : 'ltr-justify-between'}`}>
-              <h3 className="text-lg font-medium" dir={isRTL ? 'rtl' : 'ltr'}>{selectedRegion.name || t('sidebar.unnamed_region')}</h3>
+              <h3 className="text-lg font-medium text-foreground" dir={isRTL ? 'rtl' : 'ltr'}>{selectedRegion.name || t('sidebar.unnamed_region')}</h3>
               <div className={`flex ${isRTL ? 'rtl-container-flex' : 'ltr-container-flex'}`}>
                 {documentId && isRegionAssigned(selectedRegion.id, documentId) && (
                   <Button 
                     variant="outline" 
                     size="sm" 
                     onClick={handleUndoRegionText} 
-                    className={`text-blue-600 hover:text-blue-800 ${isRTL ? 'rtl-button-flex' : 'ltr-button-flex'}`}
+                    className={`text-primary hover:text-primary/80 ${isRTL ? 'rtl-button-flex' : 'ltr-button-flex'}`}
                   >
                     <RTLButtonIcon>
                       <Undo2 className="h-4 w-4" />
@@ -166,7 +167,7 @@ const Sidebar = ({
               </div>
             </div>
             
-            <label className="text-sm font-medium mb-1 mt-4" dir={isRTL ? 'rtl' : 'ltr'}>{t('sidebar.text_label')}</label>
+            <label className="text-sm font-medium mb-1 mt-4 text-foreground" dir={isRTL ? 'rtl' : 'ltr'}>{t('sidebar.text_label')}</label>
             <Textarea 
               ref={textareaRef} 
               value={localDescription} 
@@ -182,7 +183,7 @@ const Sidebar = ({
       </div>
       
       {!selectedRegion && (
-        <div className="p-4 border-t text-center">
+        <div className="p-4 border-t border-border text-center">
           <p className="text-sm text-muted-foreground" dir={isRTL ? 'rtl' : 'ltr'}>{t('sidebar.select_region')}</p>
         </div>
       )}

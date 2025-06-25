@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   Upload,
-  Share,
+  Download,
   File,
   LogOut,
   QrCode,
@@ -15,12 +15,15 @@ import {
   FileJson,
   Settings,
   Languages,
+  Moon,
+  Sun,
 } from 'lucide-react';
 import type { Profile } from '@/types/auth';
 import { GeminiApiKeyDialog, getGeminiApiKeys } from './GeminiApiKeyDialog';
 import { Link } from 'react-router-dom';
 import CreditDisplay from './CreditDisplay';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useTheme } from '@/contexts/ThemeContext';
 import RTLButtonIcon from './RTLButtonIcon';
 import {
   DropdownMenu,
@@ -71,6 +74,7 @@ const Header = ({
   const [isGeminiDialogOpen, setGeminiDialogOpen] = useState(false);
   const [isGeminiKeySet, setGeminiKeySet] = useState(false);
   const { t, language, setLanguage, isRTL } = useLanguage();
+  const { theme, toggleTheme } = useTheme();
 
   useEffect(() => {
     setGeminiKeySet(getGeminiApiKeys().length > 0);
@@ -85,13 +89,13 @@ const Header = ({
   return (
     <>
       <TooltipProvider>
-        <header className="bg-white border-b border-gray-200 shadow-sm py-4">
+        <header className="bg-card border-b border-border shadow-sm py-4">
           <div className="container mx-auto px-4 flex justify-between items-center">
             {/* Left Group */}
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
                 <File className="h-6 w-6 text-primary" />
-                <h1 className="text-2xl font-bold text-gray-800">{t('header.jooy_studio')}</h1>
+                <h1 className="text-2xl font-bold text-foreground">{t('header.jooy_studio')}</h1>
               </div>
               {user && <CreditDisplay credits={user.credits_remaining || 0} />}
             </div>
@@ -136,7 +140,7 @@ const Header = ({
                         disabled={isExportDisabled}
                       >
                         <RTLButtonIcon>
-                          <Share className="h-4 w-4" />
+                          <Download className="h-4 w-4" />
                         </RTLButtonIcon>
                         <span dir={isRTL ? 'rtl' : 'ltr'}>{t('header.export')}</span>
                       </Button>
@@ -169,7 +173,7 @@ const Header = ({
                       <span dir={isRTL ? 'rtl' : 'ltr'}>{isPDFQRExporting ? t('header.processing') : t('header.download_pdf_qr')}</span>
                     </DropdownMenuItem>
                     <DropdownMenuSub>
-                      <DropdownMenuSubTrigger className="w-8 h-8 p-0 flex items-center justify-center">
+                      <DropdownMenuSubTrigger className="w-8 h-8 p-0 icon-button-center">
                          <Settings className="h-4 w-4" />
                       </DropdownMenuSubTrigger>
                        <DropdownMenuPortal>
@@ -209,11 +213,28 @@ const Header = ({
                 </DropdownMenuContent>
               </DropdownMenu>
 
+              {/* Theme Toggle Button */}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={toggleTheme}
+                    className="icon-button-center"
+                  >
+                    {theme === 'light' ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>{theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}</p>
+                </TooltipContent>
+              </Tooltip>
+
               <DropdownMenu>
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon" className="rounded-full">
+                      <Button variant="ghost" size="icon" className="rounded-full icon-button-center">
                         <CircleUserRound className="h-6 w-6" />
                       </Button>
                     </DropdownMenuTrigger>
