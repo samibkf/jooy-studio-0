@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -160,11 +161,17 @@
     flex-direction: row; /* Normal order */
   }
 
-  /* Icon button centering utilities */
+  /* Enhanced Icon button centering utilities */
   .icon-button-center {
     display: flex;
     align-items: center;
     justify-content: center;
+    flex-shrink: 0;
+  }
+
+  /* Ensure icons are perfectly centered in buttons */
+  .icon-button-center svg {
+    flex-shrink: 0;
   }
 }
 
