@@ -161,6 +161,100 @@
     flex-direction: row; /* Normal order */
   }
 
+  /* ===== ULTRA-SPECIFIC COMPACT PAGE NAVIGATION BUTTON FIXES ===== */
+  
+  /* Target CompactPageNavigation buttons specifically - MAXIMUM SPECIFICITY */
+  html body div.flex.items-center.gap-2 button.h-8.w-8[class*="outline"][class*="icon-button-center"][class*="light-button-forced"],
+  html body .CompactPageNavigation button.h-8.w-8[class*="outline"][class*="icon-button-center"][class*="light-button-forced"],
+  html body button[class*="h-8"][class*="w-8"][class*="outline"][class*="icon-button-center"][class*="light-button-forced"],
+  html body button.h-8.w-8.icon-button-center.light-button-forced[data-variant="outline"],
+  html body button.h-8.w-8.icon-button-center.light-button-forced[class*="outline"] {
+    /* Force centering */
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 0 !important;
+    
+    /* Force light appearance */
+    background-color: white !important;
+    border: 1px solid #d1d5db !important;
+    color: #374151 !important;
+    
+    /* Ensure size */
+    width: 2rem !important;
+    height: 2rem !important;
+    min-width: 2rem !important;
+    min-height: 2rem !important;
+    
+    /* Remove any conflicting styles */
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+
+  /* Dark mode overrides for CompactPageNavigation buttons */
+  html.dark body div.flex.items-center.gap-2 button.h-8.w-8[class*="outline"][class*="icon-button-center"][class*="light-button-forced"],
+  html.dark body .CompactPageNavigation button.h-8.w-8[class*="outline"][class*="icon-button-center"][class*="light-button-forced"],
+  html.dark body button[class*="h-8"][class*="w-8"][class*="outline"][class*="icon-button-center"][class*="light-button-forced"],
+  html.dark body button.h-8.w-8.icon-button-center.light-button-forced[data-variant="outline"],
+  html.dark body button.h-8.w-8.icon-button-center.light-button-forced[class*="outline"],
+  .dark div.flex.items-center.gap-2 button.h-8.w-8[class*="outline"][class*="icon-button-center"][class*="light-button-forced"],
+  .dark .CompactPageNavigation button.h-8.w-8[class*="outline"][class*="icon-button-center"][class*="light-button-forced"],
+  .dark button[class*="h-8"][class*="w-8"][class*="outline"][class*="icon-button-center"][class*="light-button-forced"],
+  .dark button.h-8.w-8.icon-button-center.light-button-forced[data-variant="outline"],
+  .dark button.h-8.w-8.icon-button-center.light-button-forced[class*="outline"] {
+    /* Keep light grey appearance in dark mode */
+    background-color: #f3f4f6 !important;
+    border-color: #d1d5db !important;
+    color: #374151 !important;
+    
+    /* Force centering */
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 0 !important;
+  }
+
+  /* Hover states for CompactPageNavigation buttons */
+  html body div.flex.items-center.gap-2 button.h-8.w-8[class*="outline"][class*="icon-button-center"][class*="light-button-forced"]:hover:not(:disabled),
+  html body .CompactPageNavigation button.h-8.w-8[class*="outline"][class*="icon-button-center"][class*="light-button-forced"]:hover:not(:disabled),
+  html body button[class*="h-8"][class*="w-8"][class*="outline"][class*="icon-button-center"][class*="light-button-forced"]:hover:not(:disabled),
+  html body button.h-8.w-8.icon-button-center.light-button-forced[data-variant="outline"]:hover:not(:disabled),
+  html body button.h-8.w-8.icon-button-center.light-button-forced[class*="outline"]:hover:not(:disabled) {
+    background-color: #f9fafb !important;
+    border-color: #d1d5db !important;
+    color: #374151 !important;
+  }
+
+  /* Dark mode hover states */
+  html.dark body div.flex.items-center.gap-2 button.h-8.w-8[class*="outline"][class*="icon-button-center"][class*="light-button-forced"]:hover:not(:disabled),
+  html.dark body .CompactPageNavigation button.h-8.w-8[class*="outline"][class*="icon-button-center"][class*="light-button-forced"]:hover:not(:disabled),
+  html.dark body button[class*="h-8"][class*="w-8"][class*="outline"][class*="icon-button-center"][class*="light-button-forced"]:hover:not(:disabled),
+  html.dark body button.h-8.w-8.icon-button-center.light-button-forced[data-variant="outline"]:hover:not(:disabled),
+  html.dark body button.h-8.w-8.icon-button-center.light-button-forced[class*="outline"]:hover:not(:disabled),
+  .dark div.flex.items-center.gap-2 button.h-8.w-8[class*="outline"][class*="icon-button-center"][class*="light-button-forced"]:hover:not(:disabled),
+  .dark .CompactPageNavigation button.h-8.w-8[class*="outline"][class*="icon-button-center"][class*="light-button-forced"]:hover:not(:disabled),
+  .dark button[class*="h-8"][class*="w-8"][class*="outline"][class*="icon-button-center"][class*="light-button-forced"]:hover:not(:disabled),
+  .dark button.h-8.w-8.icon-button-center.light-button-forced[data-variant="outline"]:hover:not(:disabled),
+  .dark button.h-8.w-8.icon-button-center.light-button-forced[class*="outline"]:hover:not(:disabled) {
+    background-color: #e5e7eb !important;
+    border-color: #d1d5db !important;
+    color: #374151 !important;
+  }
+
+  /* Icons inside CompactPageNavigation buttons */
+  html body div.flex.items-center.gap-2 button.h-8.w-8[class*="outline"][class*="icon-button-center"][class*="light-button-forced"] svg,
+  html body .CompactPageNavigation button.h-8.w-8[class*="outline"][class*="icon-button-center"][class*="light-button-forced"] svg,
+  html body button[class*="h-8"][class*="w-8"][class*="outline"][class*="icon-button-center"][class*="light-button-forced"] svg,
+  html body button.h-8.w-8.icon-button-center.light-button-forced[data-variant="outline"] svg,
+  html body button.h-8.w-8.icon-button-center.light-button-forced[class*="outline"] svg {
+    width: 1rem !important;
+    height: 1rem !important;
+    flex-shrink: 0 !important;
+    margin: 0 !important;
+  }
+
+  /* ===== GENERAL ICON BUTTON CENTERING RULES (FALLBACK) ===== */
+  
   /* MAXIMUM SPECIFICITY ICON BUTTON CENTERING - BULLETPROOF */
   html body .icon-button-center,
   html body button.icon-button-center,
@@ -277,36 +371,6 @@
     color: #9ca3af !important;
     border-color: #e5e7eb !important;
     opacity: 0.5 !important;
-  }
-
-  /* SPECIFIC COMPONENT OVERRIDES FOR COMPACT PAGE NAVIGATION */
-  html body [class*="CompactPageNavigation"] .icon-button-center,
-  html body [class*="CompactPageNavigation"] button.icon-button-center {
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    padding: 0 !important;
-  }
-
-  /* TAILWIND UTILITY OVERRIDES FOR CHEVRON BUTTONS */
-  html body button.h-8.w-8.icon-button-center.light-button-forced {
-    width: 2rem !important;
-    height: 2rem !important;
-    padding: 0 !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    background-color: white !important;
-    border: 1px solid #d1d5db !important;
-    color: #374151 !important;
-  }
-
-  /* DARK MODE TAILWIND UTILITY OVERRIDES */
-  html.dark body button.h-8.w-8.icon-button-center.light-button-forced,
-  .dark button.h-8.w-8.icon-button-center.light-button-forced {
-    background-color: #f3f4f6 !important;
-    border-color: #d1d5db !important;
-    color: #374151 !important;
   }
 
   /* ENSURE SPARKLES ICON IN AI GENERATION BUTTON IS PROPERLY CENTERED - MAXIMUM SPECIFICITY */
