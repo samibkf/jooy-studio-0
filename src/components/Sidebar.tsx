@@ -108,7 +108,7 @@ const Sidebar = ({
     <div className="h-full w-full flex flex-col bg-background border-l" style={{
       width: '400px'
     }}>
-      <div className="flex items-center justify-between p-4 border-b">
+      <div className={`flex items-center p-4 border-b ${isRTL ? 'rtl-justify-between' : 'ltr-justify-between'}`}>
         <h2 className="text-lg font-semibold" dir={isRTL ? 'rtl' : 'ltr'}>{t('sidebar.content_tools')}</h2>
         <Button 
           variant="ghost" 
@@ -138,9 +138,9 @@ const Sidebar = ({
           <>
             <Separator className="my-4" />
             
-            <div className="flex justify-between items-center">
+            <div className={`flex items-center ${isRTL ? 'rtl-justify-between' : 'ltr-justify-between'}`}>
               <h3 className="text-lg font-medium" dir={isRTL ? 'rtl' : 'ltr'}>{selectedRegion.name || t('sidebar.unnamed_region')}</h3>
-              <div className="flex space-x-2">
+              <div className={`flex ${isRTL ? 'rtl-container-flex' : 'ltr-container-flex'}`}>
                 {documentId && isRegionAssigned(selectedRegion.id, documentId) && (
                   <Button 
                     variant="outline" 

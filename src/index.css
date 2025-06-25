@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -123,8 +124,42 @@
     flex-direction: row; /* Normal left-to-right order */
   }
 
-  /* Remove the old conflicting icon positioning classes */
-  /* These are no longer needed since we're using flex-direction approach */
+  /* RTL Container Flex Support - For full container layouts */
+  .rtl-container-flex {
+    display: flex;
+    align-items: center;
+    flex-direction: row-reverse; /* Reverse the order of all children */
+    gap: 0.5rem; /* Maintain proper spacing */
+  }
+
+  .ltr-container-flex {
+    display: flex;
+    align-items: center;
+    flex-direction: row; /* Normal left-to-right order */
+    gap: 0.5rem; /* Maintain proper spacing */
+  }
+
+  /* RTL Spacing utilities */
+  .rtl-spacing-x {
+    margin-left: 0.5rem;
+  }
+
+  .ltr-spacing-x {
+    margin-right: 0.5rem;
+  }
+
+  /* RTL justify utilities */
+  .rtl-justify-between {
+    display: flex;
+    justify-content: space-between;
+    flex-direction: row-reverse; /* Reverse items */
+  }
+
+  .ltr-justify-between {
+    display: flex;
+    justify-content: space-between;
+    flex-direction: row; /* Normal order */
+  }
 }
 
 /* PDF Viewer Styles */

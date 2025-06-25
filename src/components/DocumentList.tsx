@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
@@ -56,7 +55,7 @@ const DocumentList: React.FC<DocumentListProps> = ({
   };
 
   const DocumentSkeleton = () => (
-    <div className="p-3 rounded-md flex items-center gap-2">
+    <div className={`p-3 rounded-md flex items-center gap-2 ${isRTL ? 'rtl-container-flex' : 'ltr-container-flex'}`}>
       <Skeleton className="h-4 w-4 rounded" />
       <Skeleton className="h-4 flex-1 rounded" />
     </div>
@@ -94,18 +93,18 @@ const DocumentList: React.FC<DocumentListProps> = ({
               documents.map((doc) => (
                 <div
                   key={doc.id}
-                  className={`p-3 rounded-md flex items-center justify-between group hover:bg-accent/50 cursor-pointer transition-colors ${
+                  className={`p-3 rounded-md flex items-center group hover:bg-accent/50 cursor-pointer transition-colors ${
                     selectedDocumentId === doc.id ? 'bg-accent' : ''
-                  }`}
+                  } ${isRTL ? 'rtl-justify-between' : 'ltr-justify-between'}`}
                   onClick={() => onDocumentSelect(doc.id)}
                 >
-                  <div className="flex items-center gap-2 flex-1 text-left min-w-0">
+                  <div className={`flex items-center gap-2 flex-1 text-left min-w-0 ${isRTL ? 'rtl-container-flex' : 'ltr-container-flex'}`}>
                     <FileText className="h-4 w-4 flex-shrink-0" />
                     <span className="truncate" dir={isRTL ? 'rtl' : 'ltr'}>{doc.name}</span>
                   </div>
 
                   {/* Action buttons that appear on hover */}
-                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200 ml-2">
+                  <div className={`flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200 ${isRTL ? 'rtl-container-flex mr-2' : 'ltr-container-flex ml-2'}`}>
                     <Button
                       variant="ghost"
                       size="icon"
@@ -162,7 +161,7 @@ const DocumentList: React.FC<DocumentListProps> = ({
                 }}
               />
             </div>
-            <DialogFooter>
+            <DialogFooter className={isRTL ? 'rtl-container-flex' : 'ltr-container-flex'}>
               <Button variant="outline" onClick={() => setIsRenaming(null)} dir={isRTL ? 'rtl' : 'ltr'}>{t('docs.cancel')}</Button>
               <Button onClick={() => isRenaming && handleRenameSubmit(isRenaming)} dir={isRTL ? 'rtl' : 'ltr'}>{t('docs.save')}</Button>
             </DialogFooter>
@@ -178,7 +177,7 @@ const DocumentList: React.FC<DocumentListProps> = ({
                 {t('docs.delete_warning')}
               </AlertDialogDescription>
             </AlertDialogHeader>
-            <AlertDialogFooter>
+            <AlertDialogFooter className={isRTL ? 'rtl-container-flex' : 'ltr-container-flex'}>
               <AlertDialogCancel dir={isRTL ? 'rtl' : 'ltr'}>{t('docs.cancel')}</AlertDialogCancel>
               <AlertDialogAction onClick={handleDeleteConfirm} dir={isRTL ? 'rtl' : 'ltr'}>{t('docs.delete')}</AlertDialogAction>
             </AlertDialogFooter>
