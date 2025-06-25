@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
@@ -9,7 +10,6 @@ import { Document } from '@/types/documents';
 import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { useLanguage } from '@/contexts/LanguageContext';
-import RTLButtonIcon from './RTLButtonIcon';
 
 interface DocumentListProps {
   documents: Document[];
@@ -54,8 +54,17 @@ const DocumentList: React.FC<DocumentListProps> = ({
     }
   };
 
+  // Fixed RTL-aware positioning calculation
+  const getTogglePosition = () => {
+    if (isRTL) {
+      return { right: isCollapsed ? '16px' : '250px' };
+    } else {
+      return { left: isCollapsed ? '16px' : '250px' };
+    }
+  };
+
   const DocumentSkeleton = () => (
-    <div className={`p-3 rounded-md flex items-center gap-2 ${isRTL ? 'rtl-container-flex' : 'ltr-container-flex'}`}>
+    <div className="p-3 rounded-md flex items-center gap-2">
       <Skeleton className="h-4 w-4 rounded" />
       <Skeleton className="h-4 flex-1 rounded" />
     </div>
@@ -63,23 +72,25 @@ const DocumentList: React.FC<DocumentListProps> = ({
 
   return (
     <div className="relative">
-      {/* Fixed toggle button that's always visible */}
+      {/* Fixed toggle button with proper RTL positioning */}
       <Button
         variant="ghost"
         size="icon"
-        className={`fixed z-20 top-20 bg-background shadow-md border rounded-full transition-all duration-300 ${isRTL ? 'rtl-button-flex' : 'ltr-button-flex'}`}
-        style={{ left: isCollapsed ? '16px' : '250px' }}
+        className="fixed z-30 top-24 bg-background shadow-md border rounded-full transition-all duration-300"
+        style={getTogglePosition()}
         onClick={() => onCollapsedChange(!isCollapsed)}
       >
-        <RTLButtonIcon>
-          {isCollapsed ? <ChevronRight /> : <ChevronLeft />}
-        </RTLButtonIcon>
+        {isCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
       </Button>
 
-      {/* Document list sidebar content */}
-      <div className={`w-[250px] h-full bg-background border-r transition-all duration-300 ease-in-out ${isCollapsed ? '-translate-x-full' : 'translate-x-0'} fixed top-16 left-0 z-10`}>
+      {/* Document list sidebar content - Fixed translation behavior */}
+      <div className={`w-[250px] h-full bg-background border-inline-end transition-all duration-300 ease-in-out ${
+        isCollapsed 
+          ? (isRTL ? 'translate-x-full' : '-translate-x-full') 
+          : 'translate-x-0'
+      } fixed top-16 z-10 ${isRTL ? 'right-0' : 'left-0'}`}>
         <div className="p-4 border-b">
-          <h2 className="font-semibold" dir={isRTL ? 'rtl' : 'ltr'}>{t('docs.documents')}</h2>
+          <h2 className="font-semibold text-start" dir={isRTL ? 'rtl' : 'ltr'}>{t('docs.documents')}</h2>
         </div>
 
         <ScrollArea className="h-[calc(100vh-10rem)]">
@@ -93,44 +104,40 @@ const DocumentList: React.FC<DocumentListProps> = ({
               documents.map((doc) => (
                 <div
                   key={doc.id}
-                  className={`p-3 rounded-md flex items-center group hover:bg-accent/50 cursor-pointer transition-colors ${
+                  className={`p-3 rounded-md flex items-center justify-between group hover:bg-accent/50 cursor-pointer transition-colors ${
                     selectedDocumentId === doc.id ? 'bg-accent' : ''
-                  } ${isRTL ? 'rtl-justify-between' : 'ltr-justify-between'}`}
+                  }`}
                   onClick={() => onDocumentSelect(doc.id)}
                 >
-                  <div className={`flex items-center gap-2 flex-1 text-left min-w-0 ${isRTL ? 'rtl-container-flex' : 'ltr-container-flex'}`}>
+                  <div className="flex items-center gap-2 flex-1 text-start min-w-0">
                     <FileText className="h-4 w-4 flex-shrink-0" />
                     <span className="truncate" dir={isRTL ? 'rtl' : 'ltr'}>{doc.name}</span>
                   </div>
 
                   {/* Action buttons that appear on hover */}
-                  <div className={`flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200 ${isRTL ? 'rtl-container-flex mr-2' : 'ltr-container-flex ml-2'}`}>
+                  <div className={`flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200 ${isRTL ? 'me-2' : 'ms-2'}`}>
                     <Button
                       variant="ghost"
                       size="icon"
-                      className={`h-7 w-7 hover:bg-accent ${isRTL ? 'rtl-button-flex' : 'ltr-button-flex'}`}
+                      className="h-7 w-7 hover:bg-accent"
                       onClick={(e) => {
                         e.stopPropagation();
                         setIsRenaming(doc.id);
                         setNewName(doc.name);
                       }}
                     >
-                      <RTLButtonIcon>
-                        <Pencil className="h-3 w-3" />
-                      </RTLButtonIcon>
+                      <Pencil className="h-3 w-3" />
                     </Button>
                     <Button
                       variant="ghost"
                       size="icon"
-                      className={`h-7 w-7 text-destructive hover:bg-destructive/10 ${isRTL ? 'rtl-button-flex' : 'ltr-button-flex'}`}
+                      className="h-7 w-7 text-destructive hover:bg-destructive/10"
                       onClick={(e) => {
                         e.stopPropagation();
                         setDocumentToDelete(doc.id);
                       }}
                     >
-                      <RTLButtonIcon>
-                        <Trash2 className="h-3 w-3" />
-                      </RTLButtonIcon>
+                      <Trash2 className="h-3 w-3" />
                     </Button>
                   </div>
                 </div>
@@ -161,9 +168,9 @@ const DocumentList: React.FC<DocumentListProps> = ({
                 }}
               />
             </div>
-            <DialogFooter className={isRTL ? 'rtl-container-flex' : 'ltr-container-flex'}>
-              <Button variant="outline" onClick={() => setIsRenaming(null)} dir={isRTL ? 'rtl' : 'ltr'}>{t('docs.cancel')}</Button>
-              <Button onClick={() => isRenaming && handleRenameSubmit(isRenaming)} dir={isRTL ? 'rtl' : 'ltr'}>{t('docs.save')}</Button>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsRenaming(null)}>{t('docs.cancel')}</Button>
+              <Button onClick={() => isRenaming && handleRenameSubmit(isRenaming)}>{t('docs.save')}</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
@@ -177,9 +184,9 @@ const DocumentList: React.FC<DocumentListProps> = ({
                 {t('docs.delete_warning')}
               </AlertDialogDescription>
             </AlertDialogHeader>
-            <AlertDialogFooter className={isRTL ? 'rtl-container-flex' : 'ltr-container-flex'}>
-              <AlertDialogCancel dir={isRTL ? 'rtl' : 'ltr'}>{t('docs.cancel')}</AlertDialogCancel>
-              <AlertDialogAction onClick={handleDeleteConfirm} dir={isRTL ? 'rtl' : 'ltr'}>{t('docs.delete')}</AlertDialogAction>
+            <AlertDialogFooter>
+              <AlertDialogCancel>{t('docs.cancel')}</AlertDialogCancel>
+              <AlertDialogAction onClick={handleDeleteConfirm}>{t('docs.delete')}</AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>

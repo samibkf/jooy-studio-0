@@ -1,3 +1,4 @@
+
 import React, { useState, useRef } from 'react';
 import { Textarea } from '@/components/ui/textarea';
 import { Button, buttonVariants } from '@/components/ui/button';
@@ -30,7 +31,6 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useLanguage } from '@/contexts/LanguageContext';
-import RTLButtonIcon from './RTLButtonIcon';
 
 interface TextInsertProps {
   regions: Region[];
@@ -390,11 +390,11 @@ const TextInsert = ({
     <div className="space-y-4">
       {/* AI Generation Section */}
       <div className="space-y-2">
-        <div className={`flex items-center ${isRTL ? 'rtl-justify-between' : 'ltr-justify-between'}`}>
-          <label className="text-sm font-medium" dir={isRTL ? 'rtl' : 'ltr'}>{t('textinsert.ai_generation')}</label>
+        <div className="flex items-center justify-between">
+          <label className="text-sm font-medium">{t('textinsert.ai_generation')}</label>
         </div>
         <div className="flex flex-col items-center gap-2 pt-1">
-          <div className={`flex items-center gap-2 ${isRTL ? 'rtl-container-flex' : 'ltr-container-flex'}`}>
+          <div className="flex items-center gap-2">
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -403,37 +403,29 @@ const TextInsert = ({
                     disabled={isGenerating} 
                     size="icon" 
                     variant="default"
-                    className={`h-12 w-12 rounded-full ${isRTL ? 'rtl-button-flex' : 'ltr-button-flex'}`}
+                    className="h-12 w-12 rounded-full"
                   >
-                    <RTLButtonIcon>
-                      <Sparkles className={`h-6 w-6 ${isGenerating ? 'animate-spin' : ''}`} />
-                    </RTLButtonIcon>
+                    <Sparkles className={`h-6 w-6 ${isGenerating ? 'animate-spin' : ''}`} />
                     <span className="sr-only">{t('textinsert.generate_tooltip')}</span>
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>
-                  <p dir={isRTL ? 'rtl' : 'ltr'}>{t('textinsert.generate_tooltip')}</p>
+                  <p>{t('textinsert.generate_tooltip')}</p>
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
             <Popover>
               <PopoverTrigger asChild>
-                <Button 
-                  variant="ghost" 
-                  size="icon"
-                  className={isRTL ? 'rtl-button-flex' : 'ltr-button-flex'}
-                >
-                  <RTLButtonIcon>
-                    <Settings2 className="h-5 w-5" />
-                  </RTLButtonIcon>
+                <Button variant="ghost" size="icon">
+                  <Settings2 className="h-5 w-5" />
                   <span className="sr-only">{t('textinsert.system_instructions')}</span>
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-80">
                 <div className="grid gap-4">
                   <div className="space-y-2">
-                    <h4 className="font-medium leading-none" dir={isRTL ? 'rtl' : 'ltr'}>{t('textinsert.system_instructions')}</h4>
-                    <p className="text-sm text-muted-foreground" dir={isRTL ? 'rtl' : 'ltr'}>
+                    <h4 className="font-medium leading-none">{t('textinsert.system_instructions')}</h4>
+                    <p className="text-sm text-muted-foreground">
                       {t('textinsert.system_instructions_desc')}
                     </p>
                   </div>
@@ -449,12 +441,11 @@ const TextInsert = ({
             </Popover>
           </div>
 
-          <div className={`flex items-center ${isRTL ? 'rtl-container-flex' : 'ltr-container-flex'}`}>
+          <div className="flex items-center space-x-2">
             <Checkbox id="auto-assign" checked={autoAssign} onCheckedChange={(checked) => setAutoAssign(Boolean(checked))} />
             <label
               htmlFor="auto-assign"
               className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-              dir={isRTL ? 'rtl' : 'ltr'}
             >
               {t('textinsert.auto_assign')}
             </label>
@@ -469,15 +460,15 @@ const TextInsert = ({
               <span className="w-full border-t" />
             </div>
             <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-background px-2 text-muted-foreground" dir={isRTL ? 'rtl' : 'ltr'}>{t('textinsert.or')}</span>
+              <span className="bg-background px-2 text-muted-foreground">{t('textinsert.or')}</span>
             </div>
           </div>
 
           <div className="space-y-3">
             <div className="space-y-2">
-              <div className={`flex items-center ${isRTL ? 'rtl-justify-between' : 'ltr-justify-between'}`}>
-                <label className="text-sm font-medium" dir={isRTL ? 'rtl' : 'ltr'}>{t('textinsert.insert_manually')}</label>
-                <span className="text-xs text-muted-foreground" dir={isRTL ? 'rtl' : 'ltr'}>{t('textinsert.page')} {currentPage}</span>
+              <div className="flex justify-between items-center">
+                <label className="text-sm font-medium">{t('textinsert.insert_manually')}</label>
+                <span className="text-xs text-muted-foreground">{t('textinsert.page')} {currentPage}</span>
               </div>
               <Textarea 
                 ref={textareaRef} 
@@ -487,24 +478,12 @@ const TextInsert = ({
                 className={`min-h-0 h-24 ${isRTL ? 'text-right' : ''}`}
                 dir={isRTL ? 'rtl' : 'ltr'}
               />
-              <div className={`flex ${isRTL ? 'rtl-container-flex' : 'ltr-container-flex'}`}>
-                <Button 
-                  onClick={handleInsertText} 
-                  className={`flex-1 ${isRTL ? 'rtl-button-flex' : 'ltr-button-flex'}`} 
-                  disabled={!inputText.trim()}
-                  dir={isRTL ? 'rtl' : 'ltr'}
-                >
+              <div className="flex space-x-2">
+                <Button onClick={handleInsertText} className="flex-1" disabled={!inputText.trim()}>
                   {t('textinsert.insert_to_page')} {currentPage}
                 </Button>
-                <Button 
-                  onClick={handleUndo} 
-                  variant="outline" 
-                  className={`flex-shrink-0 ${isRTL ? 'rtl-button-flex' : 'ltr-button-flex'}`} 
-                  disabled={assignedTexts.length === 0}
-                >
-                  <RTLButtonIcon>
-                    <Undo2 className="h-4 w-4" />
-                  </RTLButtonIcon>
+                <Button onClick={handleUndo} variant="outline" className="flex-shrink-0" disabled={assignedTexts.length === 0}>
+                  <Undo2 className="h-4 w-4" />
                 </Button>
               </div>
             </div>
@@ -516,7 +495,7 @@ const TextInsert = ({
         <div className="space-y-3 pt-4">
           {unassignedTexts.length > 0 && (
             <div className="space-y-2">
-              <p className="text-sm font-medium" dir={isRTL ? 'rtl' : 'ltr'}>{t('textinsert.unassigned_texts')} {currentPage}):</p>
+              <p className="text-sm font-medium">{t('textinsert.unassigned_texts')} {currentPage}):</p>
               <ScrollArea className="h-[150px] border rounded-md p-2">
                 <div className="space-y-2">
                   {unassignedTexts.map((text, index) => {
@@ -526,58 +505,52 @@ const TextInsert = ({
                         <Popover open={activeTextIndex === textIndex} onOpenChange={open => setActiveTextIndex(open ? textIndex : null)}>
                           <PopoverTrigger asChild>
                             <div className="p-2 border rounded-md cursor-pointer border-gray-300 bg-white hover:border-blue-300 hover:bg-blue-50 transition-colors pr-20">
-                              <p className="font-medium text-sm" dir={isRTL ? 'rtl' : 'ltr'}>{text.title}</p>
-                              <p className="text-xs line-clamp-2" dir={isRTL ? 'rtl' : 'ltr'}>{text.content.substring(0, 50)}...</p>
+                              <p className="font-medium text-sm">{text.title}</p>
+                              <p className="text-xs line-clamp-2">{text.content.substring(0, 50)}...</p>
                             </div>
                           </PopoverTrigger>
                           <PopoverContent className="w-72 p-0">
                             <div className="p-2 border-b">
-                              <p className="font-medium" dir={isRTL ? 'rtl' : 'ltr'}>{t('textinsert.assign_to_region')} {currentPage}):</p>
+                              <p className="font-medium">{t('textinsert.assign_to_region')} {currentPage}):</p>
                             </div>
                             <ScrollArea className="h-[200px]">
                               {unassignedRegionsByPage.length > 0 ? (
                                 <div className="p-1">
                                   {unassignedRegionsByPage.map(region => (
-                                    <div key={region.id} className={`p-2 hover:bg-muted rounded-md cursor-pointer flex items-center ${isRTL ? 'rtl-justify-between' : 'ltr-justify-between'}`} onClick={() => handleAssignToRegion(text, region.id)}>
+                                    <div key={region.id} className="p-2 hover:bg-muted rounded-md cursor-pointer flex items-center justify-between" onClick={() => handleAssignToRegion(text, region.id)}>
                                       <div>
-                                        <p className="font-medium" dir={isRTL ? 'rtl' : 'ltr'}>{region.name || t('sidebar.unnamed_region')}</p>
-                                        <p className="text-xs text-muted-foreground" dir={isRTL ? 'rtl' : 'ltr'}>{t('textinsert.page')}: {region.page}</p>
+                                        <p className="font-medium">{region.name || t('sidebar.unnamed_region')}</p>
+                                        <p className="text-xs text-muted-foreground">{t('textinsert.page')}: {region.page}</p>
                                       </div>
-                                      <RTLButtonIcon>
-                                        <ArrowRight className="h-4 w-4" />
-                                      </RTLButtonIcon>
+                                      <ArrowRight className="h-4 w-4" />
                                     </div>
                                   ))}
                                 </div>
                               ) : (
                                 <div className="p-4 text-center text-muted-foreground">
-                                  <p dir={isRTL ? 'rtl' : 'ltr'}>{t('textinsert.no_unassigned_regions')} {currentPage}</p>
+                                  {t('textinsert.no_unassigned_regions')} {currentPage}
                                 </div>
                               )}
                             </ScrollArea>
                           </PopoverContent>
                         </Popover>
-                        <div className={`absolute top-1/2 -translate-y-1/2 flex items-center opacity-0 group-hover:opacity-100 transition-opacity ${isRTL ? 'left-1 rtl-container-flex' : 'right-1 ltr-container-flex'}`}>
+                        <div className="absolute top-1/2 -translate-y-1/2 right-1 flex items-center opacity-0 group-hover:opacity-100 transition-opacity">
                            <Button
                             variant="ghost"
                             size="icon"
-                            className={`h-7 w-7 text-muted-foreground hover:text-foreground ${isRTL ? 'rtl-button-flex' : 'ltr-button-flex'}`}
+                            className="h-7 w-7 text-muted-foreground hover:text-foreground"
                             onClick={(e) => { e.stopPropagation(); setTextToPreview(text); }}
                           >
-                            <RTLButtonIcon>
-                              <Text className="h-4 w-4" />
-                            </RTLButtonIcon>
+                            <Text className="h-4 w-4" />
                             <span className="sr-only">{t('textinsert.preview_text')}</span>
                           </Button>
                           <Button
                             variant="ghost"
                             size="icon"
-                            className={`h-7 w-7 text-destructive ${isRTL ? 'rtl-button-flex' : 'ltr-button-flex'}`}
+                            className="h-7 w-7 text-destructive"
                             onClick={(e) => { e.stopPropagation(); setTextToDelete(text); }}
                           >
-                            <RTLButtonIcon>
-                              <Trash2 className="h-4 w-4" />
-                            </RTLButtonIcon>
+                            <Trash2 className="h-4 w-4" />
                             <span className="sr-only">{t('textinsert.delete_text')}</span>
                           </Button>
                         </div>
@@ -591,27 +564,25 @@ const TextInsert = ({
           
           {assignedTexts.length > 0 && (
             <div className="space-y-2">
-              <p className="text-sm font-medium" dir={isRTL ? 'rtl' : 'ltr'}>{t('textinsert.assigned_texts')} {currentPage}):</p>
+              <p className="text-sm font-medium">{t('textinsert.assigned_texts')} {currentPage}):</p>
               <ScrollArea className="h-[150px] border rounded-md p-2">
                 <div className="space-y-2">
                   {assignedTexts.map((text, index) => {
                     const assignedRegion = regions.find(r => r.id === text.assignedRegionId);
                     return (
                       <div key={`assigned-${text.id}`} className="p-2 border rounded-md border-green-500 bg-green-50 cursor-pointer hover:bg-green-100 transition-colors" onClick={() => text.assignedRegionId && handleRegionSelect(text.assignedRegionId)}>
-                        <div className={`flex items-center ${isRTL ? 'rtl-justify-between' : 'ltr-justify-between'}`}>
-                          <p className="font-medium text-sm" dir={isRTL ? 'rtl' : 'ltr'}>{text.title}</p>
+                        <div className="flex justify-between items-center">
+                          <p className="font-medium text-sm">{text.title}</p>
                           <Button onClick={e => {
                             e.stopPropagation();
                             text.assignedRegionId && handleUndoSpecificText(text.assignedRegionId);
-                          }} size="sm" variant="ghost" className={`h-6 px-1.5 text-xs text-blue-500 hover:text-blue-700 ${isRTL ? 'rtl-button-flex' : 'ltr-button-flex'}`}>
-                            <RTLButtonIcon>
-                              <Undo2 className="h-3.5 w-3.5" />
-                            </RTLButtonIcon>
+                          }} size="sm" variant="ghost" className="h-6 px-1.5 text-xs text-blue-500 hover:text-blue-700">
+                            <Undo2 className="h-3.5 w-3.5" />
                           </Button>
                         </div>
-                        <p className="text-xs" dir={isRTL ? 'rtl' : 'ltr'}>{text.content.substring(0, 50)}...</p>
+                        <p className="text-xs">{text.content.substring(0, 50)}...</p>
                         {assignedRegion && (
-                          <p className="text-xs mt-1 text-green-700" dir={isRTL ? 'rtl' : 'ltr'}>{t('textinsert.assigned_to')}: {assignedRegion.name || t('sidebar.unnamed_region')}</p>
+                          <p className="text-xs mt-1 text-green-700">{t('textinsert.assigned_to')}: {assignedRegion.name || t('sidebar.unnamed_region')}</p>
                         )}
                       </div>
                     );
@@ -626,14 +597,14 @@ const TextInsert = ({
       <AlertDialog open={!!textToDelete} onOpenChange={() => setTextToDelete(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle dir={isRTL ? 'rtl' : 'ltr'}>{t('textinsert.delete_confirm')}</AlertDialogTitle>
-            <AlertDialogDescription dir={isRTL ? 'rtl' : 'ltr'}>
+            <AlertDialogTitle>{t('textinsert.delete_confirm')}</AlertDialogTitle>
+            <AlertDialogDescription>
               {t('textinsert.delete_warning')} "{textToDelete?.title}". {t('textinsert.delete_warning_end')}
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter className={isRTL ? 'rtl-container-flex' : 'ltr-container-flex'}>
-            <AlertDialogCancel dir={isRTL ? 'rtl' : 'ltr'}>{t('common.cancel')}</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDeleteText} className={buttonVariants({ variant: "destructive" })} dir={isRTL ? 'rtl' : 'ltr'}>{t('common.delete')}</AlertDialogAction>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteText} className={buttonVariants({ variant: "destructive" })}>{t('common.delete')}</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
@@ -641,15 +612,15 @@ const TextInsert = ({
       <AlertDialog open={!!textToPreview} onOpenChange={() => setTextToPreview(null)}>
         <AlertDialogContent className="max-w-2xl">
           <AlertDialogHeader>
-            <AlertDialogTitle dir={isRTL ? 'rtl' : 'ltr'}>{textToPreview?.title}</AlertDialogTitle>
+            <AlertDialogTitle>{textToPreview?.title}</AlertDialogTitle>
             <AlertDialogDescription asChild>
               <ScrollArea className="max-h-[60vh] mt-4 pr-4">
                 <p className={`text-sm text-foreground whitespace-pre-wrap ${isRTL ? 'text-right' : ''}`} dir={isRTL ? 'rtl' : 'ltr'}>{textToPreview?.content}</p>
               </ScrollArea>
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter className={isRTL ? 'rtl-container-flex' : 'ltr-container-flex'}>
-            <AlertDialogAction onClick={() => setTextToPreview(null)} dir={isRTL ? 'rtl' : 'ltr'}>{t('textinsert.close')}</AlertDialogAction>
+          <AlertDialogFooter>
+            <AlertDialogAction onClick={() => setTextToPreview(null)}>{t('textinsert.close')}</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
