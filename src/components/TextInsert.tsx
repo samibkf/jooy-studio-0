@@ -403,11 +403,9 @@ const TextInsert = ({
                     disabled={isGenerating} 
                     size="icon" 
                     variant="default"
-                    className={`h-12 w-12 rounded-full ${isRTL ? 'rtl-button-flex' : 'ltr-button-flex'}`}
+                    className="h-12 w-12 rounded-full flex items-center justify-center"
                   >
-                    <RTLButtonIcon>
-                      <Sparkles className={`h-6 w-6 ${isGenerating ? 'animate-spin' : ''}`} />
-                    </RTLButtonIcon>
+                    <Sparkles className={`h-6 w-6 ${isGenerating ? 'animate-spin' : ''}`} />
                     <span className="sr-only">{t('textinsert.generate_tooltip')}</span>
                   </Button>
                 </TooltipTrigger>
@@ -421,7 +419,7 @@ const TextInsert = ({
                 <Button 
                   variant="ghost" 
                   size="icon"
-                  className={isRTL ? 'rtl-button-flex' : 'ltr-button-flex'}
+                  className="flex items-center justify-center"
                 >
                   <RTLButtonIcon>
                     <Settings2 className="h-5 w-5" />
