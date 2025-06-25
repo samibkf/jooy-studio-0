@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -160,109 +161,192 @@
     flex-direction: row; /* Normal order */
   }
 
-  /* Enhanced Icon button centering utilities - Strengthened with higher specificity */
-  .icon-button-center,
-  button.icon-button-center,
-  [data-radix-popover-trigger].icon-button-center {
+  /* MAXIMUM SPECIFICITY ICON BUTTON CENTERING - BULLETPROOF */
+  html body .icon-button-center,
+  html body button.icon-button-center,
+  html body [data-radix-popover-trigger].icon-button-center,
+  html body [class*="Button"].icon-button-center,
+  html body button[class*="h-8"][class*="w-8"].icon-button-center,
+  html body button[class*="h-12"][class*="w-12"].icon-button-center {
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
     flex-shrink: 0 !important;
+    padding: 0 !important;
   }
 
-  /* Ensure icons are perfectly centered in buttons with higher specificity */
-  .icon-button-center > svg,
-  button.icon-button-center > svg,
-  .icon-button-center > * > svg {
+  /* MAXIMUM SPECIFICITY ICON CENTERING WITHIN BUTTONS */
+  html body .icon-button-center > svg,
+  html body button.icon-button-center > svg,
+  html body .icon-button-center > * > svg,
+  html body button.icon-button-center > * > svg {
     flex-shrink: 0 !important;
     margin: 0 !important;
     display: block !important;
+    position: static !important;
   }
 
-  /* Force centering for specific button types with component overrides */
-  .icon-button-center.h-8.w-8,
-  button.icon-button-center[class*="h-8"][class*="w-8"] {
+  /* SPECIFIC SIZE ENFORCEMENT FOR ICON BUTTONS */
+  html body .icon-button-center.h-8.w-8,
+  html body button.icon-button-center[class*="h-8"][class*="w-8"],
+  html body button[class*="Button"].icon-button-center[class*="h-8"] {
     min-width: 2rem !important;
     min-height: 2rem !important;
-    padding: 0 !important;
     width: 2rem !important;
     height: 2rem !important;
+    padding: 0 !important;
   }
 
-  .icon-button-center.h-12.w-12,
-  button.icon-button-center[class*="h-12"][class*="w-12"] {
+  html body .icon-button-center.h-12.w-12,
+  html body button.icon-button-center[class*="h-12"][class*="w-12"],
+  html body button[class*="Button"].icon-button-center[class*="h-12"] {
     min-width: 3rem !important;
     min-height: 3rem !important;
-    padding: 0 !important;
     width: 3rem !important;
     height: 3rem !important;
+    padding: 0 !important;
   }
 
-  /* Light button forced - stays light in dark mode with enhanced specificity */
-  .light-button-forced,
-  button.light-button-forced,
-  [data-radix-popover-trigger].light-button-forced {
+  /* MAXIMUM SPECIFICITY LIGHT BUTTON FORCING - BULLETPROOF */
+  html body .light-button-forced,
+  html body button.light-button-forced,
+  html body [data-radix-popover-trigger].light-button-forced,
+  html body [class*="Button"].light-button-forced,
+  html body button[class*="outline"].light-button-forced,
+  html body button[class*="border"].light-button-forced {
     background-color: white !important;
     border-color: #d1d5db !important;
     color: #374151 !important;
+    border-width: 1px !important;
+    border-style: solid !important;
   }
 
-  .light-button-forced:hover,
-  button.light-button-forced:hover,
-  .light-button-forced:hover:not(:disabled) {
+  /* LIGHT BUTTON HOVER STATES - MAXIMUM SPECIFICITY */
+  html body .light-button-forced:hover,
+  html body button.light-button-forced:hover,
+  html body .light-button-forced:hover:not(:disabled),
+  html body button.light-button-forced:hover:not(:disabled) {
     background-color: #f9fafb !important;
     border-color: #d1d5db !important;
     color: #374151 !important;
   }
 
-  .light-button-forced:disabled,
-  button.light-button-forced:disabled {
+  /* LIGHT BUTTON DISABLED STATES - MAXIMUM SPECIFICITY */
+  html body .light-button-forced:disabled,
+  html body button.light-button-forced:disabled,
+  html body .light-button-forced[disabled],
+  html body button.light-button-forced[disabled] {
     background-color: #f3f4f6 !important;
     color: #9ca3af !important;
     border-color: #e5e7eb !important;
+    opacity: 0.5 !important;
   }
 
-  /* Dark mode overrides for light buttons with enhanced specificity */
+  /* DARK MODE OVERRIDES FOR LIGHT BUTTONS - MAXIMUM SPECIFICITY */
+  html.dark body .light-button-forced,
+  html.dark body button.light-button-forced,
+  html.dark body [data-radix-popover-trigger].light-button-forced,
+  html.dark body [class*="Button"].light-button-forced,
   .dark .light-button-forced,
-  .dark button.light-button-forced,
-  html.dark .light-button-forced,
-  html.dark button.light-button-forced {
-    background-color: white !important;
+  .dark button.light-button-forced {
+    background-color: #f3f4f6 !important;
+    border-color: #d1d5db !important;
+    color: #374151 !important;
+    border-width: 1px !important;
+    border-style: solid !important;
+  }
+
+  /* DARK MODE HOVER STATES FOR LIGHT BUTTONS */
+  html.dark body .light-button-forced:hover,
+  html.dark body button.light-button-forced:hover,
+  html.dark body .light-button-forced:hover:not(:disabled),
+  html.dark body button.light-button-forced:hover:not(:disabled),
+  .dark .light-button-forced:hover:not(:disabled),
+  .dark button.light-button-forced:hover:not(:disabled) {
+    background-color: #e5e7eb !important;
     border-color: #d1d5db !important;
     color: #374151 !important;
   }
 
-  .dark .light-button-forced:hover,
-  .dark button.light-button-forced:hover,
-  html.dark .light-button-forced:hover:not(:disabled),
-  html.dark button.light-button-forced:hover:not(:disabled) {
-    background-color: #f9fafb !important;
-    border-color: #d1d5db !important;
-    color: #374151 !important;
-  }
-
+  /* DARK MODE DISABLED STATES FOR LIGHT BUTTONS */
+  html.dark body .light-button-forced:disabled,
+  html.dark body button.light-button-forced:disabled,
   .dark .light-button-forced:disabled,
-  .dark button.light-button-forced:disabled,
-  html.dark .light-button-forced:disabled,
-  html.dark button.light-button-forced:disabled {
+  .dark button.light-button-forced:disabled {
     background-color: #f3f4f6 !important;
     color: #9ca3af !important;
     border-color: #e5e7eb !important;
+    opacity: 0.5 !important;
   }
 
-  /* Component-specific overrides for Radix UI Button variants */
-  button[data-radix-collection-item].icon-button-center,
-  button[class*="Button"].icon-button-center {
+  /* SPECIFIC COMPONENT OVERRIDES FOR COMPACT PAGE NAVIGATION */
+  html body [class*="CompactPageNavigation"] .icon-button-center,
+  html body [class*="CompactPageNavigation"] button.icon-button-center {
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
+    padding: 0 !important;
   }
 
-  /* Ensure Sparkles icon in AI generation button is properly centered */
-  .icon-button-center .lucide-sparkles,
-  button.icon-button-center .lucide-sparkles {
+  /* TAILWIND UTILITY OVERRIDES FOR CHEVRON BUTTONS */
+  html body button.h-8.w-8.icon-button-center.light-button-forced {
+    width: 2rem !important;
+    height: 2rem !important;
+    padding: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    background-color: white !important;
+    border: 1px solid #d1d5db !important;
+    color: #374151 !important;
+  }
+
+  /* DARK MODE TAILWIND UTILITY OVERRIDES */
+  html.dark body button.h-8.w-8.icon-button-center.light-button-forced,
+  .dark button.h-8.w-8.icon-button-center.light-button-forced {
+    background-color: #f3f4f6 !important;
+    border-color: #d1d5db !important;
+    color: #374151 !important;
+  }
+
+  /* ENSURE SPARKLES ICON IN AI GENERATION BUTTON IS PROPERLY CENTERED - MAXIMUM SPECIFICITY */
+  html body .icon-button-center .lucide-sparkles,
+  html body button.icon-button-center .lucide-sparkles,
+  html body .icon-button-center svg[class*="lucide-sparkles"],
+  html body button.icon-button-center svg[class*="lucide-sparkles"] {
     width: 1.5rem !important;
     height: 1.5rem !important;
+    margin: 0 !important;
+    flex-shrink: 0 !important;
+  }
+
+  /* CHEVRON ICON SPECIFIC CENTERING */
+  html body .icon-button-center .lucide-chevron-left,
+  html body .icon-button-center .lucide-chevron-right,
+  html body button.icon-button-center .lucide-chevron-left,
+  html body button.icon-button-center .lucide-chevron-right {
+    width: 1rem !important;
+    height: 1rem !important;
+    margin: 0 !important;
+    flex-shrink: 0 !important;
+  }
+
+  /* NUCLEAR OPTION - ATTRIBUTE BASED SELECTORS FOR MAXIMUM SPECIFICITY */
+  html body button[class~="icon-button-center"][class~="light-button-forced"] {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    background-color: white !important;
+    border: 1px solid #d1d5db !important;
+    color: #374151 !important;
+    padding: 0 !important;
+  }
+
+  html.dark body button[class~="icon-button-center"][class~="light-button-forced"],
+  .dark button[class~="icon-button-center"][class~="light-button-forced"] {
+    background-color: #f3f4f6 !important;
+    border-color: #d1d5db !important;
+    color: #374151 !important;
   }
 }
 
