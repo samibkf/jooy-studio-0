@@ -191,9 +191,10 @@
     background: linear-gradient(hsl(var(--background)), hsl(var(--background))) padding-box, var(--gradient-orange-purple) border-box !important;
   }
 
-  /* Gradient Icon Filter */
+  /* Enhanced Gradient Icon Filter for better visibility */
   .gradient-icon-orange-purple svg {
-    filter: drop-shadow(0 0 0 #FF6600) drop-shadow(0 0 0 #EE00FF) !important;
+    fill: url(#orange-purple-gradient) !important;
+    stroke: url(#orange-purple-gradient) !important;
   }
 
   /* Special handling for Sparkles and other icons with gradient effect */
@@ -207,6 +208,17 @@
     background: linear-gradient(135deg, #FF7722 0%, #FF11FF 100%) !important;
     transform: translateY(-1px) !important;
     box-shadow: 0 4px 12px rgba(255, 102, 0, 0.3) !important;
+  }
+
+  /* Enhanced gradient border hover states */
+  .gradient-border-orange-purple:hover {
+    background: linear-gradient(white, white) padding-box, linear-gradient(135deg, #FF7722 0%, #FF11FF 100%) border-box !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 2px 8px rgba(255, 102, 0, 0.2) !important;
+  }
+
+  .dark .gradient-border-orange-purple:hover {
+    background: linear-gradient(hsl(var(--background)), hsl(var(--background))) padding-box, linear-gradient(135deg, #FF7722 0%, #FF11FF 100%) border-box !important;
   }
 
   /* ===== ULTRA-SPECIFIC COMPACT PAGE NAVIGATION BUTTON FIXES ===== */
@@ -223,9 +235,8 @@
     justify-content: center !important;
     padding: 0 !important;
     
-    /* Force light appearance */
+    /* Force light appearance with gradient border support */
     background-color: white !important;
-    border: 1px solid #d1d5db !important;
     color: #374151 !important;
     
     /* Ensure size */
@@ -237,6 +248,12 @@
     /* Remove any conflicting styles */
     box-shadow: none !important;
     text-shadow: none !important;
+  }
+
+  /* Enhanced gradient border support for navigation buttons */
+  html body button.h-8.w-8.icon-button-center.light-button-forced.gradient-border-orange-purple {
+    border: 2px solid transparent !important;
+    background: linear-gradient(white, white) padding-box, var(--gradient-orange-purple) border-box !important;
   }
 
   /* Dark mode overrides for CompactPageNavigation buttons */
@@ -252,7 +269,6 @@
   .dark button.h-8.w-8.icon-button-center.light-button-forced[class*="outline"] {
     /* Keep light grey appearance in dark mode */
     background-color: #f3f4f6 !important;
-    border-color: #d1d5db !important;
     color: #374151 !important;
     
     /* Force centering */
@@ -262,6 +278,12 @@
     padding: 0 !important;
   }
 
+  /* Dark mode gradient border support */
+  html.dark body button.h-8.w-8.icon-button-center.light-button-forced.gradient-border-orange-purple,
+  .dark button.h-8.w-8.icon-button-center.light-button-forced.gradient-border-orange-purple {
+    background: linear-gradient(#f3f4f6, #f3f4f6) padding-box, var(--gradient-orange-purple) border-box !important;
+  }
+
   /* Hover states for CompactPageNavigation buttons */
   html body div.flex.items-center.gap-2 button.h-8.w-8[class*="outline"][class*="icon-button-center"][class*="light-button-forced"]:hover:not(:disabled),
   html body .CompactPageNavigation button.h-8.w-8[class*="outline"][class*="icon-button-center"][class*="light-button-forced"]:hover:not(:disabled),
@@ -269,8 +291,14 @@
   html body button.h-8.w-8.icon-button-center.light-button-forced[data-variant="outline"]:hover:not(:disabled),
   html body button.h-8.w-8.icon-button-center.light-button-forced[class*="outline"]:hover:not(:disabled) {
     background-color: #f9fafb !important;
-    border-color: #d1d5db !important;
     color: #374151 !important;
+  }
+
+  /* Enhanced hover states for gradient borders */
+  html body button.h-8.w-8.icon-button-center.light-button-forced.gradient-border-orange-purple:hover:not(:disabled) {
+    background: linear-gradient(#f9fafb, #f9fafb) padding-box, linear-gradient(135deg, #FF7722 0%, #FF11FF 100%) border-box !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 2px 8px rgba(255, 102, 0, 0.2) !important;
   }
 
   /* Dark mode hover states */
@@ -285,8 +313,13 @@
   .dark button.h-8.w-8.icon-button-center.light-button-forced[data-variant="outline"]:hover:not(:disabled),
   .dark button.h-8.w-8.icon-button-center.light-button-forced[class*="outline"]:hover:not(:disabled) {
     background-color: #e5e7eb !important;
-    border-color: #d1d5db !important;
     color: #374151 !important;
+  }
+
+  /* Dark mode gradient border hover */
+  html.dark body button.h-8.w-8.icon-button-center.light-button-forced.gradient-border-orange-purple:hover:not(:disabled),
+  .dark button.h-8.w-8.icon-button-center.light-button-forced.gradient-border-orange-purple:hover:not(:disabled) {
+    background: linear-gradient(#e5e7eb, #e5e7eb) padding-box, linear-gradient(135deg, #FF7722 0%, #FF11FF 100%) border-box !important;
   }
 
   /* Icons inside CompactPageNavigation buttons */
