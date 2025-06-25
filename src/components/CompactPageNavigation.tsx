@@ -60,7 +60,7 @@ const CompactPageNavigation: React.FC<CompactPageNavigationProps> = ({
       <Button
         variant="outline"
         size="icon"
-        className="h-8 w-8 icon-button-center light-button-forced gradient-border-orange-purple"
+        className="h-8 w-8 icon-button-center gradient-border-orange-purple"
         onClick={handlePrevious}
         disabled={currentPage <= 1}
       >
@@ -96,7 +96,7 @@ const CompactPageNavigation: React.FC<CompactPageNavigationProps> = ({
       <Button
         variant="outline"
         size="icon"
-        className="h-8 w-8 icon-button-center light-button-forced gradient-border-orange-purple"
+        className="h-8 w-8 icon-button-center gradient-border-orange-purple"
         onClick={handleNext}
         disabled={currentPage >= totalPages}
       >

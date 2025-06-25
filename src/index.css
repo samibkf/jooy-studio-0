@@ -209,355 +209,46 @@
     box-shadow: 0 4px 12px rgba(255, 102, 0, 0.3) !important;
   }
 
-  /* ===== ULTRA-SPECIFIC COMPACT PAGE NAVIGATION BUTTON FIXES ===== */
-  
-  /* Target CompactPageNavigation buttons WITHOUT gradient border class - MAXIMUM SPECIFICITY */
-  html body div.flex.items-center.gap-2 button.h-8.w-8[class*="outline"][class*="icon-button-center"][class*="light-button-forced"]:not([class*="gradient-border-orange-purple"]),
-  html body .CompactPageNavigation button.h-8.w-8[class*="outline"][class*="icon-button-center"][class*="light-button-forced"]:not([class*="gradient-border-orange-purple"]),
-  html body button[class*="h-8"][class*="w-8"][class*="outline"][class*="icon-button-center"][class*="light-button-forced"]:not([class*="gradient-border-orange-purple"]),
-  html body button.h-8.w-8.icon-button-center.light-button-forced[data-variant="outline"]:not([class*="gradient-border-orange-purple"]),
-  html body button.h-8.w-8.icon-button-center.light-button-forced[class*="outline"]:not([class*="gradient-border-orange-purple"]) {
-    /* Force centering */
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    padding: 0 !important;
-    
-    /* Force light appearance */
-    background-color: white !important;
-    border: 1px solid #d1d5db !important;
-    color: #374151 !important;
-    
-    /* Ensure size */
-    width: 2rem !important;
-    height: 2rem !important;
-    min-width: 2rem !important;
-    min-height: 2rem !important;
-    
-    /* Remove any conflicting styles */
-    box-shadow: none !important;
-    text-shadow: none !important;
-  }
-
-  /* Target CompactPageNavigation buttons WITH gradient border class - MAXIMUM SPECIFICITY */
-  html body div.flex.items-center.gap-2 button.h-8.w-8[class*="outline"][class*="icon-button-center"][class*="light-button-forced"][class*="gradient-border-orange-purple"],
-  html body .CompactPageNavigation button.h-8.w-8[class*="outline"][class*="icon-button-center"][class*="light-button-forced"][class*="gradient-border-orange-purple"],
-  html body button[class*="h-8"][class*="w-8"][class*="outline"][class*="icon-button-center"][class*="light-button-forced"][class*="gradient-border-orange-purple"],
-  html body button.h-8.w-8.icon-button-center.light-button-forced[data-variant="outline"][class*="gradient-border-orange-purple"],
-  html body button.h-8.w-8.icon-button-center.light-button-forced[class*="outline"][class*="gradient-border-orange-purple"] {
-    /* Force centering */
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    padding: 0 !important;
-    
-    /* Force light background but allow gradient border */
-    background: linear-gradient(white, white) padding-box, var(--gradient-orange-purple) border-box !important;
-    border: 2px solid transparent !important;
-    color: #374151 !important;
-    
-    /* Ensure size */
-    width: 2rem !important;
-    height: 2rem !important;
-    min-width: 2rem !important;
-    min-height: 2rem !important;
-    
-    /* Remove any conflicting styles */
-    box-shadow: none !important;
-    text-shadow: none !important;
-  }
-
-  /* Dark mode overrides for CompactPageNavigation buttons WITHOUT gradient */
-  html.dark body div.flex.items-center.gap-2 button.h-8.w-8[class*="outline"][class*="icon-button-center"][class*="light-button-forced"]:not([class*="gradient-border-orange-purple"]),
-  html.dark body .CompactPageNavigation button.h-8.w-8[class*="outline"][class*="icon-button-center"][class*="light-button-forced"]:not([class*="gradient-border-orange-purple"]),
-  html.dark body button[class*="h-8"][class*="w-8"][class*="outline"][class*="icon-button-center"][class*="light-button-forced"]:not([class*="gradient-border-orange-purple"]),
-  html.dark body button.h-8.w-8.icon-button-center.light-button-forced[data-variant="outline"]:not([class*="gradient-border-orange-purple"]),
-  html.dark body button.h-8.w-8.icon-button-center.light-button-forced[class*="outline"]:not([class*="gradient-border-orange-purple"]),
-  .dark div.flex.items-center.gap-2 button.h-8.w-8[class*="outline"][class*="icon-button-center"][class*="light-button-forced"]:not([class*="gradient-border-orange-purple"]),
-  .dark .CompactPageNavigation button.h-8.w-8[class*="outline"][class*="icon-button-center"][class*="light-button-forced"]:not([class*="gradient-border-orange-purple"]),
-  .dark button[class*="h-8"][class*="w-8"][class*="outline"][class*="icon-button-center"][class*="light-button-forced"]:not([class*="gradient-border-orange-purple"]),
-  .dark button.h-8.w-8.icon-button-center.light-button-forced[data-variant="outline"]:not([class*="gradient-border-orange-purple"]),
-  .dark button.h-8.w-8.icon-button-center.light-button-forced[class*="outline"]:not([class*="gradient-border-orange-purple"]) {
-    /* Keep light grey appearance in dark mode */
-    background-color: #f3f4f6 !important;
-    border-color: #d1d5db !important;
-    color: #374151 !important;
-    
-    /* Force centering */
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    padding: 0 !important;
-  }
-
-  /* Dark mode overrides for CompactPageNavigation buttons WITH gradient */
-  html.dark body div.flex.items-center.gap-2 button.h-8.w-8[class*="outline"][class*="icon-button-center"][class*="light-button-forced"][class*="gradient-border-orange-purple"],
-  html.dark body .CompactPageNavigation button.h-8.w-8[class*="outline"][class*="icon-button-center"][class*="light-button-forced"][class*="gradient-border-orange-purple"],
-  html.dark body button[class*="h-8"][class*="w-8"][class*="outline"][class*="icon-button-center"][class*="light-button-forced"][class*="gradient-border-orange-purple"],
-  html.dark body button.h-8.w-8.icon-button-center.light-button-forced[data-variant="outline"][class*="gradient-border-orange-purple"],
-  html.dark body button.h-8.w-8.icon-button-center.light-button-forced[class*="outline"][class*="gradient-border-orange-purple"],
-  .dark div.flex.items-center.gap-2 button.h-8.w-8[class*="outline"][class*="icon-button-center"][class*="light-button-forced"][class*="gradient-border-orange-purple"],
-  .dark .CompactPageNavigation button.h-8.w-8[class*="outline"][class*="icon-button-center"][class*="light-button-forced"][class*="gradient-border-orange-purple"],
-  .dark button[class*="h-8"][class*="w-8"][class*="outline"][class*="icon-button-center"][class*="light-button-forced"][class*="gradient-border-orange-purple"],
-  .dark button.h-8.w-8.icon-button-center.light-button-forced[data-variant="outline"][class*="gradient-border-orange-purple"],
-  .dark button.h-8.w-8.icon-button-center.light-button-forced[class*="outline"][class*="gradient-border-orange-purple"] {
-    /* Keep light background with gradient border in dark mode */
-    background: linear-gradient(#f3f4f6, #f3f4f6) padding-box, var(--gradient-orange-purple) border-box !important;
-    border: 2px solid transparent !important;
-    color: #374151 !important;
-    
-    /* Force centering */
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    padding: 0 !important;
-  }
-
-  /* Hover states for CompactPageNavigation buttons WITHOUT gradient */
-  html body div.flex.items-center.gap-2 button.h-8.w-8[class*="outline"][class*="icon-button-center"][class*="light-button-forced"]:not([class*="gradient-border-orange-purple"]):hover:not(:disabled),
-  html body .CompactPageNavigation button.h-8.w-8[class*="outline"][class*="icon-button-center"][class*="light-button-forced"]:not([class*="gradient-border-orange-purple"]):hover:not(:disabled),
-  html body button[class*="h-8"][class*="w-8"][class*="outline"][class*="icon-button-center"][class*="light-button-forced"]:not([class*="gradient-border-orange-purple"]):hover:not(:disabled),
-  html body button.h-8.w-8.icon-button-center.light-button-forced[data-variant="outline"]:not([class*="gradient-border-orange-purple"]):hover:not(:disabled),
-  html body button.h-8.w-8.icon-button-center.light-button-forced[class*="outline"]:not([class*="gradient-border-orange-purple"]):hover:not(:disabled) {
-    background-color: #f9fafb !important;
-    border-color: #d1d5db !important;
-    color: #374151 !important;
-  }
-
-  /* Hover states for CompactPageNavigation buttons WITH gradient */
-  html body div.flex.items-center.gap-2 button.h-8.w-8[class*="outline"][class*="icon-button-center"][class*="light-button-forced"][class*="gradient-border-orange-purple"]:hover:not(:disabled),
-  html body .CompactPageNavigation button.h-8.w-8[class*="outline"][class*="icon-button-center"][class*="light-button-forced"][class*="gradient-border-orange-purple"]:hover:not(:disabled),
-  html body button[class*="h-8"][class*="w-8"][class*="outline"][class*="icon-button-center"][class*="light-button-forced"][class*="gradient-border-orange-purple"]:hover:not(:disabled),
-  html body button.h-8.w-8.icon-button-center.light-button-forced[data-variant="outline"][class*="gradient-border-orange-purple"]:hover:not(:disabled),
-  html body button.h-8.w-8.icon-button-center.light-button-forced[class*="outline"][class*="gradient-border-orange-purple"]:hover:not(:disabled) {
-    background: linear-gradient(#f9fafb, #f9fafb) padding-box, linear-gradient(135deg, #FF7722 0%, #FF11FF 100%) border-box !important;
-    border: 2px solid transparent !important;
-    color: #374151 !important;
+  /* Hover states for gradient border buttons */
+  .gradient-border-orange-purple:hover {
+    background: linear-gradient(white, white) padding-box, linear-gradient(135deg, #FF7722 0%, #FF11FF 100%) border-box !important;
     transform: translateY(-1px) !important;
     box-shadow: 0 2px 8px rgba(255, 102, 0, 0.2) !important;
   }
 
-  /* Dark mode hover states for buttons WITHOUT gradient */
-  html.dark body div.flex.items-center.gap-2 button.h-8.w-8[class*="outline"][class*="icon-button-center"][class*="light-button-forced"]:not([class*="gradient-border-orange-purple"]):hover:not(:disabled),
-  html.dark body .CompactPageNavigation button.h-8.w-8[class*="outline"][class*="icon-button-center"][class*="light-button-forced"]:not([class*="gradient-border-orange-purple"]):hover:not(:disabled),
-  html.dark body button[class*="h-8"][class*="w-8"][class*="outline"][class*="icon-button-center"][class*="light-button-forced"]:not([class*="gradient-border-orange-purple"]):hover:not(:disabled),
-  html.dark body button.h-8.w-8.icon-button-center.light-button-forced[data-variant="outline"]:not([class*="gradient-border-orange-purple"]):hover:not(:disabled),
-  html.dark body button.h-8.w-8.icon-button-center.light-button-forced[class*="outline"]:not([class*="gradient-border-orange-purple"]):hover:not(:disabled),
-  .dark div.flex.items-center.gap-2 button.h-8.w-8[class*="outline"][class*="icon-button-center"][class*="light-button-forced"]:not([class*="gradient-border-orange-purple"]):hover:not(:disabled),
-  .dark .CompactPageNavigation button.h-8.w-8[class*="outline"][class*="icon-button-center"][class*="light-button-forced"]:not([class*="gradient-border-orange-purple"]):hover:not(:disabled),
-  .dark button[class*="h-8"][class*="w-8"][class*="outline"][class*="icon-button-center"][class*="light-button-forced"]:not([class*="gradient-border-orange-purple"]):hover:not(:disabled),
-  .dark button.h-8.w-8.icon-button-center.light-button-forced[data-variant="outline"]:not([class*="gradient-border-orange-purple"]):hover:not(:disabled),
-  .dark button.h-8.w-8.icon-button-center.light-button-forced[class*="outline"]:not([class*="gradient-border-orange-purple"]):hover:not(:disabled) {
-    background-color: #e5e7eb !important;
-    border-color: #d1d5db !important;
-    color: #374151 !important;
+  .dark .gradient-border-orange-purple:hover {
+    background: linear-gradient(hsl(var(--background)), hsl(var(--background))) padding-box, linear-gradient(135deg, #FF7722 0%, #FF11FF 100%) border-box !important;
   }
 
-  /* Dark mode hover states for buttons WITH gradient */
-  html.dark body div.flex.items-center.gap-2 button.h-8.w-8[class*="outline"][class*="icon-button-center"][class*="light-button-forced"][class*="gradient-border-orange-purple"]:hover:not(:disabled),
-  html.dark body .CompactPageNavigation button.h-8.w-8[class*="outline"][class*="icon-button-center"][class*="light-button-forced"][class*="gradient-border-orange-purple"]:hover:not(:disabled),
-  html.dark body button[class*="h-8"][class*="w-8"][class*="outline"][class*="icon-button-center"][class*="light-button-forced"][class*="gradient-border-orange-purple"]:hover:not(:disabled),
-  html.dark body button.h-8.w-8.icon-button-center.light-button-forced[data-variant="outline"][class*="gradient-border-orange-purple"]:hover:not(:disabled),
-  html.dark body button.h-8.w-8.icon-button-center.light-button-forced[class*="outline"][class*="gradient-border-orange-purple"]:hover:not(:disabled),
-  .dark div.flex.items-center.gap-2 button.h-8.w-8[class*="outline"][class*="icon-button-center"][class*="light-button-forced"][class*="gradient-border-orange-purple"]:hover:not(:disabled),
-  .dark .CompactPageNavigation button.h-8.w-8[class*="outline"][class*="icon-button-center"][class*="light-button-forced"][class*="gradient-border-orange-purple"]:hover:not(:disabled),
-  .dark button[class*="h-8"][class*="w-8"][class*="outline"][class*="icon-button-center"][class*="light-button-forced"][class*="gradient-border-orange-purple"]:hover:not(:disabled),
-  .dark button.h-8.w-8.icon-button-center.light-button-forced[data-variant="outline"][class*="gradient-border-orange-purple"]:hover:not(:disabled),
-  .dark button.h-8.w-8.icon-button-center.light-button-forced[class*="outline"][class*="gradient-border-orange-purple"]:hover:not(:disabled) {
-    background: linear-gradient(#e5e7eb, #e5e7eb) padding-box, linear-gradient(135deg, #FF7722 0%, #FF11FF 100%) border-box !important;
-    border: 2px solid transparent !important;
-    color: #374151 !important;
-    transform: translateY(-1px) !important;
-    box-shadow: 0 2px 8px rgba(255, 102, 0, 0.2) !important;
-  }
-
-  /* Icons inside CompactPageNavigation buttons */
-  html body div.flex.items-center.gap-2 button.h-8.w-8[class*="outline"][class*="icon-button-center"][class*="light-button-forced"] svg,
-  html body .CompactPageNavigation button.h-8.w-8[class*="outline"][class*="icon-button-center"][class*="light-button-forced"] svg,
-  html body button[class*="h-8"][class*="w-8"][class*="outline"][class*="icon-button-center"][class*="light-button-forced"] svg,
-  html body button.h-8.w-8.icon-button-center.light-button-forced[data-variant="outline"] svg,
-  html body button.h-8.w-8.icon-button-center.light-button-forced[class*="outline"] svg {
-    width: 1rem !important;
-    height: 1rem !important;
-    flex-shrink: 0 !important;
-    margin: 0 !important;
-  }
-
-  /* ===== GENERAL ICON BUTTON CENTERING RULES (FALLBACK) ===== */
+  /* ===== GENERAL ICON BUTTON CENTERING RULES ===== */
   
-  /* MAXIMUM SPECIFICITY ICON BUTTON CENTERING - BULLETPROOF */
-  html body .icon-button-center,
-  html body button.icon-button-center,
-  html body [data-radix-popover-trigger].icon-button-center,
-  html body [class*="Button"].icon-button-center,
-  html body button[class*="h-8"][class*="w-8"].icon-button-center,
-  html body button[class*="h-12"][class*="w-12"].icon-button-center {
+  /* Icon button centering - Simple and effective */
+  .icon-button-center {
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
-    flex-shrink: 0 !important;
     padding: 0 !important;
   }
 
-  /* MAXIMUM SPECIFICITY ICON CENTERING WITHIN BUTTONS */
-  html body .icon-button-center > svg,
-  html body button.icon-button-center > svg,
-  html body .icon-button-center > * > svg,
-  html body button.icon-button-center > * > svg {
+  /* Icon centering within buttons */
+  .icon-button-center > svg {
     flex-shrink: 0 !important;
     margin: 0 !important;
-    display: block !important;
-    position: static !important;
   }
 
-  /* SPECIFIC SIZE ENFORCEMENT FOR ICON BUTTONS */
-  html body .icon-button-center.h-8.w-8,
-  html body button.icon-button-center[class*="h-8"][class*="w-8"],
-  html body button[class*="Button"].icon-button-center[class*="h-8"] {
+  /* Size enforcement for icon buttons */
+  .icon-button-center.h-8.w-8 {
     min-width: 2rem !important;
     min-height: 2rem !important;
     width: 2rem !important;
     height: 2rem !important;
-    padding: 0 !important;
   }
 
-  html body .icon-button-center.h-12.w-12,
-  html body button.icon-button-center[class*="h-12"][class*="w-12"],
-  html body button[class*="Button"].icon-button-center[class*="h-12"] {
+  .icon-button-center.h-12.w-12 {
     min-width: 3rem !important;
     min-height: 3rem !important;
     width: 3rem !important;
     height: 3rem !important;
-    padding: 0 !important;
-  }
-
-  /* MAXIMUM SPECIFICITY LIGHT BUTTON FORCING - BULLETPROOF */
-  html body .light-button-forced:not([class*="gradient-border-orange-purple"]),
-  html body button.light-button-forced:not([class*="gradient-border-orange-purple"]),
-  html body [data-radix-popover-trigger].light-button-forced:not([class*="gradient-border-orange-purple"]),
-  html body [class*="Button"].light-button-forced:not([class*="gradient-border-orange-purple"]),
-  html body button[class*="outline"].light-button-forced:not([class*="gradient-border-orange-purple"]),
-  html body button[class*="border"].light-button-forced:not([class*="gradient-border-orange-purple"]) {
-    background-color: white !important;
-    border-color: #d1d5db !important;
-    color: #374151 !important;
-    border-width: 1px !important;
-    border-style: solid !important;
-  }
-
-  /* LIGHT BUTTON HOVER STATES - MAXIMUM SPECIFICITY */
-  html body .light-button-forced:not([class*="gradient-border-orange-purple"]):hover,
-  html body button.light-button-forced:not([class*="gradient-border-orange-purple"]):hover,
-  html body .light-button-forced:not([class*="gradient-border-orange-purple"]):hover:not(:disabled),
-  html body button.light-button-forced:not([class*="gradient-border-orange-purple"]):hover:not(:disabled) {
-    background-color: #f9fafb !important;
-    border-color: #d1d5db !important;
-    color: #374151 !important;
-  }
-
-  /* LIGHT BUTTON DISABLED STATES - MAXIMUM SPECIFICITY */
-  html body .light-button-forced:disabled,
-  html body button.light-button-forced:disabled,
-  html body .light-button-forced[disabled],
-  html body button.light-button-forced[disabled] {
-    background-color: #f3f4f6 !important;
-    color: #9ca3af !important;
-    border-color: #e5e7eb !important;
-    opacity: 0.5 !important;
-  }
-
-  /* DARK MODE OVERRIDES FOR LIGHT BUTTONS - MAXIMUM SPECIFICITY */
-  html.dark body .light-button-forced:not([class*="gradient-border-orange-purple"]),
-  html.dark body button.light-button-forced:not([class*="gradient-border-orange-purple"]),
-  html.dark body [data-radix-popover-trigger].light-button-forced:not([class*="gradient-border-orange-purple"]),
-  html.dark body [class*="Button"].light-button-forced:not([class*="gradient-border-orange-purple"]),
-  .dark .light-button-forced:not([class*="gradient-border-orange-purple"]),
-  .dark button.light-button-forced:not([class*="gradient-border-orange-purple"]) {
-    background-color: #f3f4f6 !important;
-    border-color: #d1d5db !important;
-    color: #374151 !important;
-    border-width: 1px !important;
-    border-style: solid !important;
-  }
-
-  /* DARK MODE HOVER STATES FOR LIGHT BUTTONS */
-  html.dark body .light-button-forced:not([class*="gradient-border-orange-purple"]):hover,
-  html.dark body button.light-button-forced:not([class*="gradient-border-orange-purple"]):hover,
-  html.dark body .light-button-forced:not([class*="gradient-border-orange-purple"]):hover:not(:disabled),
-  html.dark body button.light-button-forced:not([class*="gradient-border-orange-purple"]):hover:not(:disabled),
-  .dark .light-button-forced:not([class*="gradient-border-orange-purple"]):hover:not(:disabled),
-  .dark button.light-button-forced:not([class*="gradient-border-orange-purple"]):hover:not(:disabled) {
-    background-color: #e5e7eb !important;
-    border-color: #d1d5db !important;
-    color: #374151 !important;
-  }
-
-  /* DARK MODE DISABLED STATES FOR LIGHT BUTTONS */
-  html.dark body .light-button-forced:disabled,
-  html.dark body button.light-button-forced:disabled,
-  .dark .light-button-forced:disabled,
-  .dark button.light-button-forced:disabled {
-    background-color: #f3f4f6 !important;
-    color: #9ca3af !important;
-    border-color: #e5e7eb !important;
-    opacity: 0.5 !important;
-  }
-
-  /* ENSURE SPARKLES ICON IN AI GENERATION BUTTON IS PROPERLY CENTERED - MAXIMUM SPECIFICITY */
-  html body .icon-button-center .lucide-sparkles,
-  html body button.icon-button-center .lucide-sparkles,
-  html body .icon-button-center svg[class*="lucide-sparkles"],
-  html body button.icon-button-center svg[class*="lucide-sparkles"] {
-    width: 1.5rem !important;
-    height: 1.5rem !important;
-    margin: 0 !important;
-    flex-shrink: 0 !important;
-  }
-
-  /* CHEVRON ICON SPECIFIC CENTERING */
-  html body .icon-button-center .lucide-chevron-left,
-  html body .icon-button-center .lucide-chevron-right,
-  html body button.icon-button-center .lucide-chevron-left,
-  html body button.icon-button-center .lucide-chevron-right {
-    width: 1rem !important;
-    height: 1rem !important;
-    margin: 0 !important;
-    flex-shrink: 0 !important;
-  }
-
-  /* NUCLEAR OPTION - ATTRIBUTE BASED SELECTORS FOR MAXIMUM SPECIFICITY */
-  html body button[class~="icon-button-center"][class~="light-button-forced"]:not([class*="gradient-border-orange-purple"]) {
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    background-color: white !important;
-    border: 1px solid #d1d5db !important;
-    color: #374151 !important;
-    padding: 0 !important;
-  }
-
-  html.dark body button[class~="icon-button-center"][class~="light-button-forced"]:not([class*="gradient-border-orange-purple"]),
-  .dark button[class~="icon-button-center"][class~="light-button-forced"]:not([class*="gradient-border-orange-purple"]) {
-    background-color: #f3f4f6 !important;
-    border-color: #d1d5db !important;
-    color: #374151 !important;
-  }
-
-  html body button[class~="icon-button-center"][class~="light-button-forced"][class*="gradient-border-orange-purple"] {
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    background: linear-gradient(white, white) padding-box, var(--gradient-orange-purple) border-box !important;
-    border: 2px solid transparent !important;
-    color: #374151 !important;
-    padding: 0 !important;
-  }
-
-  html.dark body button[class~="icon-button-center"][class~="light-button-forced"][class*="gradient-border-orange-purple"],
-  .dark button[class~="icon-button-center"][class~="light-button-forced"][class*="gradient-border-orange-purple"] {
-    background: linear-gradient(#f3f4f6, #f3f4f6) padding-box, var(--gradient-orange-purple) border-box !important;
-    border: 2px solid transparent !important;
-    color: #374151 !important;
   }
 }
 
