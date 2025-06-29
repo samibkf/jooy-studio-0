@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import * as pdfjsLib from 'pdfjs-dist';
 import { useAuth } from '@/contexts/AuthProvider';
+import { decryptData } from '@/utils/crypto';
 import { pdfCacheService } from '@/services/pdfCacheService';
 
 interface UsePdfPageCountProps {
@@ -32,8 +33,7 @@ export const usePdfPageCount = ({ documentId }: UsePdfPageCountProps) => {
         if (cachedPdf) {
           pdfData = cachedPdf;
         } else {
-          // Updated to use new edge function endpoint with 'id' parameter
-          const url = `https://bohxienpthilrfwktokd.supabase.co/functions/v1/stream-pdf?id=${documentId}`;
+          const url = `https://bohxienpthilrfwktokd.supabase.co/functions/v1/stream-pdf?document_id=${documentId}&user_id=${authState.user.id}`;
           const resp = await fetch(url, {
             headers: { 
               'Cache-Control': 'no-store',
@@ -43,9 +43,17 @@ export const usePdfPageCount = ({ documentId }: UsePdfPageCountProps) => {
           });
           if (!resp.ok) throw new Error('Failed to fetch PDF');
           
-          // No more encryption - directly use response data
-          pdfData = await resp.arrayBuffer();
-          await pdfCacheService.cachePDF(documentId, pdfData);
+          const encryptedData = await resp.arrayBuffer();
+          const keyB64 = resp.headers.get('X-Encryption-Key');
+          const ivB64 = resp.headers.get('X-Encryption-IV');
+
+          if (!keyB64 || !ivB64) {
+            throw new Error('Encryption key or IV not found in response headers.');
+          }
+
+          const decryptedData = await decryptData(encryptedData, keyB64, ivB64);
+          await pdfCacheService.cachePDF(documentId, decryptedData);
+          pdfData = decryptedData;
         }
 
         const pdf = await pdfjsLib.getDocument({ data: pdfData }).promise;
