@@ -1,8 +1,10 @@
+
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.4'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, range',
+  'Accept-Ranges': 'bytes',
 }
 
 interface WorksheetResponse {
@@ -53,24 +55,9 @@ Deno.serve(async (req) => {
   try {
     console.log(`[${new Date().toISOString()}] Processing request: ${req.method}`);
 
-    // Extract worksheetId from request body or query params
-    let worksheetId: string;
-    
-    if (req.method === 'POST') {
-      const body = await req.json();
-      worksheetId = body.worksheetId;
-    } else if (req.method === 'GET') {
-      const url = new URL(req.url);
-      worksheetId = url.searchParams.get('worksheetId') || '';
-    } else {
-      return new Response(
-        JSON.stringify({ error: 'Method not allowed' }),
-        { 
-          status: 405, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        }
-      );
-    }
+    const url = new URL(req.url);
+    const worksheetId = url.searchParams.get('worksheetId') || '';
+    const streamPdf = url.searchParams.get('stream') === 'pdf';
 
     // Validate worksheetId
     if (!worksheetId || typeof worksheetId !== 'string' || worksheetId.trim() === '') {
@@ -83,8 +70,6 @@ Deno.serve(async (req) => {
         }
       );
     }
-
-    console.log(`[${new Date().toISOString()}] Looking for worksheet: ${worksheetId}`);
 
     // Create Supabase admin client using SERVICE_ROLE_KEY to bypass RLS
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
@@ -103,8 +88,132 @@ Deno.serve(async (req) => {
 
     const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey);
 
+    // Handle PDF streaming request
+    if (streamPdf) {
+      console.log(`[${new Date().toISOString()}] Streaming PDF for worksheet: ${worksheetId}`);
+
+      // Try both path patterns for backward compatibility
+      const pdfPaths = [
+        `${worksheetId}.pdf`, // Flat path for backward compatibility
+        // We'll also check for user-specific paths if needed
+      ];
+
+      let fileData = null;
+      let fileSize = 0;
+      let successfulPath = '';
+
+      // First, get file metadata to determine size
+      for (const pdfPath of pdfPaths) {
+        try {
+          console.log(`[${new Date().toISOString()}] Checking file metadata for: ${pdfPath}`);
+          
+          const { data: files, error: listError } = await supabaseAdmin.storage
+            .from('pdfs')
+            .list('', { 
+              limit: 1000,
+              search: pdfPath
+            });
+
+          if (!listError && files && files.length > 0) {
+            const file = files.find(f => f.name === pdfPath || f.name.endsWith(pdfPath));
+            if (file && file.metadata?.size) {
+              fileSize = file.metadata.size;
+              successfulPath = pdfPath;
+              console.log(`[${new Date().toISOString()}] Found file: ${pdfPath}, size: ${fileSize} bytes`);
+              break;
+            }
+          }
+        } catch (error) {
+          console.log(`[${new Date().toISOString()}] Error checking metadata for ${pdfPath}:`, error);
+        }
+      }
+
+      if (!fileSize || !successfulPath) {
+        console.error(`[${new Date().toISOString()}] PDF file not found for worksheet: ${worksheetId}`);
+        return new Response(
+          JSON.stringify({ error: 'PDF file not found' }),
+          { 
+            status: 404, 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          }
+        );
+      }
+
+      // Parse Range header
+      const rangeHeader = req.headers.get('range');
+      let start = 0;
+      let end = fileSize - 1;
+
+      if (rangeHeader) {
+        const rangeMatch = rangeHeader.match(/bytes=(\d*)-(\d*)/);
+        if (rangeMatch) {
+          if (rangeMatch[1]) start = parseInt(rangeMatch[1]);
+          if (rangeMatch[2]) end = parseInt(rangeMatch[2]);
+        }
+      }
+
+      const chunkSize = end - start + 1;
+
+      console.log(`[${new Date().toISOString()}] Streaming bytes ${start}-${end}/${fileSize} (${chunkSize} bytes)`);
+
+      // Download the requested chunk
+      try {
+        const { data: chunkData, error: downloadError } = await supabaseAdmin.storage
+          .from('pdfs')
+          .download(successfulPath, {
+            transform: {
+              width: undefined,
+              height: undefined,
+            }
+          });
+
+        if (downloadError || !chunkData) {
+          console.error(`[${new Date().toISOString()}] Error downloading chunk:`, downloadError);
+          return new Response(
+            JSON.stringify({ error: 'Error downloading PDF chunk' }),
+            { 
+              status: 500, 
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            }
+          );
+        }
+
+        // Convert blob to array buffer and slice the requested range
+        const fullBuffer = await chunkData.arrayBuffer();
+        const requestedChunk = fullBuffer.slice(start, end + 1);
+
+        const responseHeaders = {
+          ...corsHeaders,
+          'Content-Type': 'application/pdf',
+          'Content-Length': chunkSize.toString(),
+          'Content-Range': `bytes ${start}-${end}/${fileSize}`,
+        };
+
+        const status = rangeHeader ? 206 : 200;
+
+        console.log(`[${new Date().toISOString()}] Successfully streaming PDF chunk, status: ${status}`);
+
+        return new Response(requestedChunk, {
+          status,
+          headers: responseHeaders,
+        });
+
+      } catch (error) {
+        console.error(`[${new Date().toISOString()}] Error processing PDF chunk:`, error);
+        return new Response(
+          JSON.stringify({ error: 'Error processing PDF chunk' }),
+          { 
+            status: 500, 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          }
+        );
+      }
+    }
+
+    // Handle metadata request (existing functionality)
+    console.log(`[${new Date().toISOString()}] Fetching metadata for worksheet: ${worksheetId}`);
+
     // Query the documents table to find the worksheet
-    console.log(`[${new Date().toISOString()}] Querying documents table for worksheet: ${worksheetId}`);
     const { data: document, error: docError } = await supabaseAdmin
       .from('documents')
       .select('*')
@@ -146,7 +255,6 @@ Deno.serve(async (req) => {
     console.log(`[${new Date().toISOString()}] Found document: ${document.name}`);
 
     // Fetch related document regions
-    console.log(`[${new Date().toISOString()}] Fetching document regions for worksheet: ${worksheetId}`);
     const { data: regions, error: regionsError } = await supabaseAdmin
       .from('document_regions')
       .select('*')
@@ -165,7 +273,6 @@ Deno.serve(async (req) => {
     }
 
     // Fetch related document texts
-    console.log(`[${new Date().toISOString()}] Fetching document texts for worksheet: ${worksheetId}`);
     const { data: texts, error: textsError } = await supabaseAdmin
       .from('document_texts')
       .select('*')
@@ -183,42 +290,8 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Generate signed URL for the PDF file from private bucket
-    console.log(`[${new Date().toISOString()}] Generating signed URL for PDF: ${worksheetId}.pdf`);
-    
-    // Try both path patterns for backward compatibility
-    const pdfPaths = [
-      document.user_id ? `${document.user_id}/${worksheetId}.pdf` : null, // User-specific path
-      `${worksheetId}.pdf` // Flat path for backward compatibility
-    ].filter(Boolean);
-
-    let signedUrl = null;
-    
-    for (const pdfPath of pdfPaths) {
-      console.log(`[${new Date().toISOString()}] Trying path: ${pdfPath}`);
-      const { data: signedUrlData, error: urlError } = await supabaseAdmin.storage
-        .from('pdfs')
-        .createSignedUrl(pdfPath, 300); // 5 minutes expiration
-
-      if (!urlError && signedUrlData?.signedUrl) {
-        signedUrl = signedUrlData.signedUrl;
-        console.log(`[${new Date().toISOString()}] Successfully generated signed URL for path: ${pdfPath}`);
-        break;
-      } else {
-        console.log(`[${new Date().toISOString()}] Failed to generate signed URL for path: ${pdfPath}`, urlError);
-      }
-    }
-
-    if (!signedUrl) {
-      console.error(`[${new Date().toISOString()}] No signed URL generated for any PDF path`);
-      return new Response(
-        JSON.stringify({ error: 'PDF file not accessible' }),
-        { 
-          status: 500, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        }
-      );
-    }
+    // For metadata requests, return the streaming URL pointing to this same function
+    const streamingUrl = `${supabaseUrl}/functions/v1/get-worksheet-data?worksheetId=${worksheetId}&stream=pdf`;
 
     // Construct the response payload
     const responsePayload: WorksheetResponse = {
@@ -234,10 +307,10 @@ Deno.serve(async (req) => {
         regions: regions || [],
         texts: texts || []
       },
-      pdfUrl: signedUrl
+      pdfUrl: streamingUrl
     };
 
-    console.log(`[${new Date().toISOString()}] Successfully processed worksheet: ${worksheetId}, regions: ${regions?.length || 0}, texts: ${texts?.length || 0}`);
+    console.log(`[${new Date().toISOString()}] Successfully processed worksheet metadata: ${worksheetId}, regions: ${regions?.length || 0}, texts: ${texts?.length || 0}`);
 
     return new Response(
       JSON.stringify(responsePayload),
