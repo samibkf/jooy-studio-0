@@ -576,7 +576,7 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
 
   return <div className="flex flex-col h-full w-full">
       <div className="bg-background border-b border-border p-2 w-full sticky top-0 z-10">
-        <div className="flex items-center justify-between max-w-[1200px] mx-auto">
+        <div className="flex items-center justify-center max-w-[1200px] mx-auto">
           <div className="flex items-center space-x-4">
             <div className="flex items-center space-x-2">
               <Tooltip>
