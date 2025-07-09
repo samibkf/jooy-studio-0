@@ -105,7 +105,7 @@ const Header = ({
             {/* Left Group */}
             <div className="flex items-center gap-10">
               <div className="flex items-center gap-2">
-                <Logo className="h-6 w-6" />
+                <Logo className="h-8 w-8" />
                 <h1 className="text-2xl font-bold gradient-text-orange-purple">{t('header.jooy_studio')}</h1>
               </div>
               {user && <CreditDisplay credits={user.credits_remaining || 0} />}
