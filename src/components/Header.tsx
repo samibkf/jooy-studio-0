@@ -103,7 +103,7 @@ const Header = ({
         <header className="bg-card border-b border-border shadow-sm py-4">
           <div className="container mx-auto px-4 flex justify-between items-center">
             {/* Left Group */}
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-6">
               <div className="flex items-center gap-2">
                 <File className="h-6 w-6 text-primary gradient-icon-orange-purple" />
                 <h1 className="text-2xl font-bold gradient-text-orange-purple">{t('header.jooy_studio')}</h1>
