@@ -30,7 +30,7 @@ interface ApiKey {
 }
 
 export const GeminiApiKeyDialog: React.FC<GeminiApiKeyDialogProps> = ({ isOpen, onOpenChange, onKeySave }) => {
-  const { t } = useLanguage();
+  const { t, isRTL } = useLanguage();
   const [apiKeys, setApiKeys] = useState<ApiKey[]>([]);
   const [newApiKey, setNewApiKey] = useState('');
 
@@ -88,8 +88,8 @@ export const GeminiApiKeyDialog: React.FC<GeminiApiKeyDialogProps> = ({ isOpen, 
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[550px]">
         <DialogHeader>
-          <DialogTitle>{t('api.set_gemini_keys')}</DialogTitle>
-          <DialogDescription>
+          <DialogTitle dir={isRTL ? 'rtl' : 'ltr'}>{t('api.set_gemini_keys')}</DialogTitle>
+          <DialogDescription dir={isRTL ? 'rtl' : 'ltr'}>
             {t('api.description')}{' '}
             <a
               href="https://aistudio.google.com/app/apikey"
@@ -104,17 +104,18 @@ export const GeminiApiKeyDialog: React.FC<GeminiApiKeyDialogProps> = ({ isOpen, 
         </DialogHeader>
         <div className="grid gap-4 py-4">
           <div className="space-y-4">
-            <Label>{t('api.your_keys')}</Label>
+            <Label dir={isRTL ? 'rtl' : 'ltr'}>{t('api.your_keys')}</Label>
             {apiKeys.length > 0 && (
               <div className="space-y-2 rounded-md border p-2 max-h-48 overflow-y-auto">
                 {apiKeys.map((apiKey, index) => (
-                  <div key={apiKey.id} className="flex items-center gap-2">
-                    <Label className="flex-shrink-0 w-16 text-muted-foreground">{t('api.key_number')} {index + 1}</Label>
+                  <div key={apiKey.id} className={`flex items-center gap-2 ${isRTL ? 'rtl-container-flex' : 'ltr-container-flex'}`}>
+                    <Label className="flex-shrink-0 w-16 text-muted-foreground" dir={isRTL ? 'rtl' : 'ltr'}>{t('api.key_number')} {index + 1}</Label>
                     <Input
                       type="password"
                       value={apiKey.key}
                       readOnly
                       className="flex-grow font-mono text-xs"
+                      dir="ltr"
                     />
                     <Button variant="ghost" size="icon" onClick={() => handleRemoveKey(apiKey.id)} title={t('api.remove_key')}>
                       <Trash2 className="h-4 w-4 text-destructive" />
@@ -123,7 +124,7 @@ export const GeminiApiKeyDialog: React.FC<GeminiApiKeyDialogProps> = ({ isOpen, 
                 ))}
               </div>
             )}
-             <div className="flex items-center gap-2">
+             <div className={`flex items-center gap-2 ${isRTL ? 'rtl-button-flex' : 'ltr-button-flex'}`}>
                 <Input
                   id="gemini-api-key"
                   type="password"
@@ -131,6 +132,7 @@ export const GeminiApiKeyDialog: React.FC<GeminiApiKeyDialogProps> = ({ isOpen, 
                   onChange={(e) => setNewApiKey(e.target.value)}
                   placeholder={t('api.enter_new_key')}
                   className="flex-grow"
+                  dir="ltr"
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') {
                       e.preventDefault();
@@ -138,12 +140,16 @@ export const GeminiApiKeyDialog: React.FC<GeminiApiKeyDialogProps> = ({ isOpen, 
                     }
                   }}
                 />
-                <Button onClick={handleAddKey} variant="outline">{t('api.add_key')}</Button>
+                <Button onClick={handleAddKey} variant="outline">
+                  <span dir={isRTL ? 'rtl' : 'ltr'}>{t('api.add_key')}</span>
+                </Button>
             </div>
           </div>
         </div>
-        <DialogFooter>
-          <Button onClick={handleSave}>{t('api.save_keys')}</Button>
+        <DialogFooter className={isRTL ? 'rtl-button-flex' : 'ltr-button-flex'}>
+          <Button onClick={handleSave}>
+            <span dir={isRTL ? 'rtl' : 'ltr'}>{t('api.save_keys')}</span>
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

@@ -35,7 +35,7 @@ export const DocumentSettingsDialog: React.FC<DocumentSettingsDialogProps> = ({
   pageCount,
   onUpdate,
 }) => {
-  const { t } = useLanguage();
+  const { t, isRTL } = useLanguage();
   const isSubscriber = !!user?.plan_id;
   const [drmPages, setDrmPages] = useState<boolean | number[]>([]);
   const [loading, setLoading] = useState(false);
@@ -94,16 +94,16 @@ export const DocumentSettingsDialog: React.FC<DocumentSettingsDialogProps> = ({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>{t('drm.protection')}</DialogTitle>
-          <DialogDescription>
+          <DialogTitle dir={isRTL ? 'rtl' : 'ltr'}>{t('drm.protection')}</DialogTitle>
+          <DialogDescription dir={isRTL ? 'rtl' : 'ltr'}>
             {t('drm.manage_settings_for')} <span className="font-semibold">{document.name}</span>.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-6 py-4">
           <div className="space-y-2">
-            <h4 className="font-medium">{t('drm.protection')}</h4>
-            <div className="flex items-center justify-between">
-              <Label htmlFor="drm-toggle-all">{t('drm.protect_entire_document')}</Label>
+            <h4 className="font-medium" dir={isRTL ? 'rtl' : 'ltr'}>{t('drm.protection')}</h4>
+            <div className={`flex items-center justify-between ${isRTL ? 'rtl-container-flex' : 'ltr-container-flex'}`}>
+              <Label htmlFor="drm-toggle-all" dir={isRTL ? 'rtl' : 'ltr'}>{t('drm.protect_entire_document')}</Label>
               <Switch
                 id="drm-toggle-all"
                 checked={drmPages === true}
@@ -112,34 +112,34 @@ export const DocumentSettingsDialog: React.FC<DocumentSettingsDialogProps> = ({
               />
             </div>
             {drmPages !== true && (
-              <div className="space-y-2 mt-2 pl-2">
-                <Label>{t('drm.select_pages_to_protect')}</Label>
+              <div className={`space-y-2 mt-2 ${isRTL ? 'pr-2' : 'pl-2'}`}>
+                <Label dir={isRTL ? 'rtl' : 'ltr'}>{t('drm.select_pages_to_protect')}</Label>
                 <ScrollArea className="h-40 w-full rounded-md border p-2">
                   <div className="space-y-2">
                     {Array.from({ length: pageCount }, (_, i) => i + 1).map(page => (
-                      <div key={page} className="flex items-center space-x-2">
+                      <div key={page} className={`flex items-center ${isRTL ? 'space-x-reverse space-x-2' : 'space-x-2'} ${isRTL ? 'rtl-container-flex' : 'ltr-container-flex'}`}>
                         <Checkbox
                           id={`page-${page}`}
                           checked={Array.isArray(drmPages) && drmPages.includes(page)}
                           onCheckedChange={(checked) => handlePageDrmChange(page, !!checked)}
                           disabled={!isSubscriber}
                         />
-                        <Label htmlFor={`page-${page}`} className="font-normal">{t('drm.page_number')} {page}</Label>
+                        <Label htmlFor={`page-${page}`} className="font-normal" dir={isRTL ? 'rtl' : 'ltr'}>{t('drm.page_number')} {page}</Label>
                       </div>
                     ))}
                   </div>
                 </ScrollArea>
               </div>
             )}
-            {!isSubscriber && <p className="text-xs text-muted-foreground mt-2">{t('drm.upgrade_subscription')}</p>}
+            {!isSubscriber && <p className="text-xs text-muted-foreground mt-2" dir={isRTL ? 'rtl' : 'ltr'}>{t('drm.upgrade_subscription')}</p>}
           </div>
         </div>
-        <DialogFooter>
+        <DialogFooter className={isRTL ? 'rtl-button-flex' : 'ltr-button-flex'}>
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={loading}>
-            {t('common.cancel')}
+            <span dir={isRTL ? 'rtl' : 'ltr'}>{t('common.cancel')}</span>
           </Button>
           <Button onClick={handleSave} disabled={loading}>
-            {loading ? t('drm.saving') : t('drm.save_changes')}
+            <span dir={isRTL ? 'rtl' : 'ltr'}>{loading ? t('drm.saving') : t('drm.save_changes')}</span>
           </Button>
         </DialogFooter>
       </DialogContent>
