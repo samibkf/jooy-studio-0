@@ -3,7 +3,6 @@ import { Button } from '@/components/ui/button';
 import {
   Upload,
   Download,
-  File,
   LogOut,
   QrCode,
   KeyRound,
@@ -26,6 +25,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import RTLButtonIcon from './RTLButtonIcon';
 import GradientSvgDefs from './GradientSvgDefs';
+import Logo from './Logo';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -105,7 +105,7 @@ const Header = ({
             {/* Left Group */}
             <div className="flex items-center gap-10">
               <div className="flex items-center gap-2">
-                <File className="h-6 w-6 text-primary gradient-icon-orange-purple" />
+                <Logo className="h-6 w-6" />
                 <h1 className="text-2xl font-bold gradient-text-orange-purple">{t('header.jooy_studio')}</h1>
               </div>
               {user && <CreditDisplay credits={user.credits_remaining || 0} />}
