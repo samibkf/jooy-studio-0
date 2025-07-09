@@ -585,7 +585,7 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
                     pressed={currentSelectionType === 'area'} 
                     onPressedChange={() => onCurrentSelectionTypeChange(currentSelectionType === 'area' ? null : 'area')} 
                     aria-label="Toggle area selection tool" 
-                    className={`icon-button-center gradient-border-orange-purple ${currentSelectionType === 'area' ? 'bg-blue-100 ring-2 ring-primary' : ''}`}
+                    className={`h-9 w-9 icon-button-center gradient-border-orange-purple ${currentSelectionType === 'area' ? 'bg-blue-100 ring-2 ring-primary' : ''}`}
                   >
                     <MousePointer className="h-4 w-4" />
                     <span className="sr-only">{t('pdf.area_selection')}</span>

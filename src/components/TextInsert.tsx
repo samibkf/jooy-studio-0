@@ -40,6 +40,7 @@ interface TextInsertProps {
   documentId: string | null;
   currentPage: number;
   showManualInsert: boolean;
+  onOpenApiDialog?: React.MutableRefObject<(() => void) | null>;
 }
 
 const SYSTEM_INSTRUCTIONS_TEMPLATE = `الغرض والأهداف:
@@ -100,6 +101,7 @@ const TextInsert = ({
   documentId,
   currentPage,
   showManualInsert,
+  onOpenApiDialog,
 }: TextInsertProps) => {
   const { t, isRTL } = useLanguage();
   const [inputText, setInputText] = useState<string>('');
@@ -156,7 +158,13 @@ const TextInsert = ({
     }
     const apiKeys = getGeminiApiKeys();
     if (apiKeys.length === 0) {
-      toast.error(t('textinsert.api_key_not_set'));
+      // Auto-open API dialog instead of just showing error
+      if (onOpenApiDialog?.current) {
+        onOpenApiDialog.current();
+        toast.info(t('textinsert.api_dialog_opened'));
+      } else {
+        toast.error(t('textinsert.api_key_not_set'));
+      }
       return;
     }
     if (!systemInstructions.trim()) {

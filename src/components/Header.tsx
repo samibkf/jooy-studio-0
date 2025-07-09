@@ -56,6 +56,7 @@ interface HeaderProps {
   onQRCornerChange: (corner: 'top-left' | 'top-right') => void;
   user: Profile | null;
   onSignOut: () => Promise<void>;
+  onOpenApiDialog?: React.MutableRefObject<(() => void) | null>;
 }
 
 const Header = ({
@@ -70,6 +71,7 @@ const Header = ({
   onQRCornerChange,
   user,
   onSignOut,
+  onOpenApiDialog,
 }: HeaderProps) => {
   const [isGeminiDialogOpen, setGeminiDialogOpen] = useState(false);
   const [isGeminiKeySet, setGeminiKeySet] = useState(false);
@@ -79,6 +81,13 @@ const Header = ({
   useEffect(() => {
     setGeminiKeySet(getGeminiApiKeys().length > 0);
   }, []);
+
+  // Expose dialog opener function to parent
+  useEffect(() => {
+    if (onOpenApiDialog) {
+      onOpenApiDialog.current = () => setGeminiDialogOpen(true);
+    }
+  }, [onOpenApiDialog]);
 
   const handleKeySave = () => {
     setGeminiKeySet(getGeminiApiKeys().length > 0);

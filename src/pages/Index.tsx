@@ -39,6 +39,7 @@ const Index = () => {
   const [retryCount, setRetryCount] = useState<Record<string, number>>({});
   const [storageInitialized, setStorageInitialized] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const openApiDialogRef = useRef<(() => void) | null>(null);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
   const [documentsLoaded, setDocumentsLoaded] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
@@ -902,6 +903,7 @@ const Index = () => {
           onQRCornerChange={setQrCorner}
           user={authState.profile}
           onSignOut={signOut}
+          onOpenApiDialog={openApiDialogRef}
         />
         
         <div className="flex flex-1 overflow-hidden">
@@ -963,6 +965,7 @@ const Index = () => {
                   onRegionSelect={setSelectedRegionId}
                   documentId={selectedDocumentId}
                   currentPage={currentPage}
+                  onOpenApiDialog={openApiDialogRef}
                 />
               </div>
             </div>

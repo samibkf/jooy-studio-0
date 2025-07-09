@@ -19,6 +19,7 @@ interface SidebarProps {
   onRegionSelect: (regionId: string) => void;
   documentId: string | null;
   currentPage: number;
+  onOpenApiDialog?: React.MutableRefObject<(() => void) | null>;
 }
 
 const Sidebar = ({
@@ -28,7 +29,8 @@ const Sidebar = ({
   onRegionDelete,
   onRegionSelect,
   documentId,
-  currentPage
+  currentPage,
+  onOpenApiDialog
 }: SidebarProps) => {
   const { t, isRTL } = useLanguage();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -133,6 +135,7 @@ const Sidebar = ({
           documentId={documentId}
           currentPage={currentPage}
           showManualInsert={showManualInsert}
+          onOpenApiDialog={onOpenApiDialog}
         />
         
         {selectedRegion && (
