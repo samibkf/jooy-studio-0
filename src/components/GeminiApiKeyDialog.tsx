@@ -14,6 +14,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import { Trash2 } from 'lucide-react';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface GeminiApiKeyDialogProps {
   isOpen: boolean;
@@ -29,6 +30,7 @@ interface ApiKey {
 }
 
 export const GeminiApiKeyDialog: React.FC<GeminiApiKeyDialogProps> = ({ isOpen, onOpenChange, onKeySave }) => {
+  const { t } = useLanguage();
   const [apiKeys, setApiKeys] = useState<ApiKey[]>([]);
   const [newApiKey, setNewApiKey] = useState('');
 
@@ -54,16 +56,16 @@ export const GeminiApiKeyDialog: React.FC<GeminiApiKeyDialogProps> = ({ isOpen, 
 
   const handleAddKey = () => {
     if (!newApiKey.trim()) {
-      toast.error('API Key cannot be empty.');
+      toast.error(t('api.key_empty_error'));
       return;
     }
     if (apiKeys.some(k => k.key === newApiKey.trim())) {
-      toast.error('This API key has already been added.');
+      toast.error(t('api.key_exists_error'));
       return;
     }
     setApiKeys([...apiKeys, { id: uuidv4(), key: newApiKey.trim() }]);
     setNewApiKey('');
-    toast.info('API key added. Click "Save Keys" to persist changes.');
+    toast.info(t('api.key_added_info'));
   };
 
   const handleRemoveKey = (id: string) => {
@@ -77,7 +79,7 @@ export const GeminiApiKeyDialog: React.FC<GeminiApiKeyDialogProps> = ({ isOpen, 
     }
     
     localStorage.setItem(API_KEYS_STORAGE_KEY, JSON.stringify(finalKeys));
-    toast.success('Gemini API Keys saved successfully.');
+    toast.success(t('api.keys_saved_success'));
     onKeySave();
     onOpenChange(false);
   };
@@ -86,35 +88,35 @@ export const GeminiApiKeyDialog: React.FC<GeminiApiKeyDialogProps> = ({ isOpen, 
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[550px]">
         <DialogHeader>
-          <DialogTitle>Set Gemini API Keys</DialogTitle>
+          <DialogTitle>{t('api.set_gemini_keys')}</DialogTitle>
           <DialogDescription>
-            Add one or more API keys. The system will automatically switch to another key if one reaches its limit. Your keys are stored only in your browser. Get keys from{' '}
+            {t('api.description')}{' '}
             <a
               href="https://aistudio.google.com/app/apikey"
               target="_blank"
               rel="noopener noreferrer"
               className="font-medium text-primary hover:underline"
             >
-              Google AI Studio
+              {t('api.google_ai_studio')}
             </a>
             .
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
           <div className="space-y-4">
-            <Label>Your API Keys</Label>
+            <Label>{t('api.your_keys')}</Label>
             {apiKeys.length > 0 && (
               <div className="space-y-2 rounded-md border p-2 max-h-48 overflow-y-auto">
                 {apiKeys.map((apiKey, index) => (
                   <div key={apiKey.id} className="flex items-center gap-2">
-                    <Label className="flex-shrink-0 w-16 text-muted-foreground">Key {index + 1}</Label>
+                    <Label className="flex-shrink-0 w-16 text-muted-foreground">{t('api.key_number')} {index + 1}</Label>
                     <Input
                       type="password"
                       value={apiKey.key}
                       readOnly
                       className="flex-grow font-mono text-xs"
                     />
-                    <Button variant="ghost" size="icon" onClick={() => handleRemoveKey(apiKey.id)} title="Remove Key">
+                    <Button variant="ghost" size="icon" onClick={() => handleRemoveKey(apiKey.id)} title={t('api.remove_key')}>
                       <Trash2 className="h-4 w-4 text-destructive" />
                     </Button>
                   </div>
@@ -127,7 +129,7 @@ export const GeminiApiKeyDialog: React.FC<GeminiApiKeyDialogProps> = ({ isOpen, 
                   type="password"
                   value={newApiKey}
                   onChange={(e) => setNewApiKey(e.target.value)}
-                  placeholder="Enter a new Gemini API key"
+                  placeholder={t('api.enter_new_key')}
                   className="flex-grow"
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') {
@@ -136,12 +138,12 @@ export const GeminiApiKeyDialog: React.FC<GeminiApiKeyDialogProps> = ({ isOpen, 
                     }
                   }}
                 />
-                <Button onClick={handleAddKey} variant="outline">Add Key</Button>
+                <Button onClick={handleAddKey} variant="outline">{t('api.add_key')}</Button>
             </div>
           </div>
         </div>
         <DialogFooter>
-          <Button onClick={handleSave}>Save Keys</Button>
+          <Button onClick={handleSave}>{t('api.save_keys')}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

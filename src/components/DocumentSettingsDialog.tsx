@@ -16,6 +16,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { DocumentData } from '@/types/documents';
 import { Profile } from '@/types/auth';
 import { toast } from 'sonner';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface DocumentSettingsDialogProps {
   open: boolean;
@@ -34,6 +35,7 @@ export const DocumentSettingsDialog: React.FC<DocumentSettingsDialogProps> = ({
   pageCount,
   onUpdate,
 }) => {
+  const { t } = useLanguage();
   const isSubscriber = !!user?.plan_id;
   const [drmPages, setDrmPages] = useState<boolean | number[]>([]);
   const [loading, setLoading] = useState(false);
@@ -57,7 +59,7 @@ export const DocumentSettingsDialog: React.FC<DocumentSettingsDialogProps> = ({
   
   const handleAllPagesDrmChange = (checked: boolean) => {
     if (!isSubscriber) {
-      toast.error('You must be a subscriber to use DRM protection.');
+      toast.error(t('drm.subscriber_required'));
       return;
     }
     if (checked) {
@@ -69,7 +71,7 @@ export const DocumentSettingsDialog: React.FC<DocumentSettingsDialogProps> = ({
 
   const handlePageDrmChange = (page: number, checked: boolean) => {
     if (!isSubscriber) {
-      toast.error('You must be a subscriber to use DRM protection.');
+      toast.error(t('drm.subscriber_required'));
       return;
     }
     let currentPages: number[] = [];
@@ -92,16 +94,16 @@ export const DocumentSettingsDialog: React.FC<DocumentSettingsDialogProps> = ({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>DRM Protection</DialogTitle>
+          <DialogTitle>{t('drm.protection')}</DialogTitle>
           <DialogDescription>
-            Manage DRM settings for <span className="font-semibold">{document.name}</span>.
+            {t('drm.manage_settings_for')} <span className="font-semibold">{document.name}</span>.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-6 py-4">
           <div className="space-y-2">
-            <h4 className="font-medium">DRM Protection</h4>
+            <h4 className="font-medium">{t('drm.protection')}</h4>
             <div className="flex items-center justify-between">
-              <Label htmlFor="drm-toggle-all">Protect entire document</Label>
+              <Label htmlFor="drm-toggle-all">{t('drm.protect_entire_document')}</Label>
               <Switch
                 id="drm-toggle-all"
                 checked={drmPages === true}
@@ -111,7 +113,7 @@ export const DocumentSettingsDialog: React.FC<DocumentSettingsDialogProps> = ({
             </div>
             {drmPages !== true && (
               <div className="space-y-2 mt-2 pl-2">
-                <Label>Select pages to protect:</Label>
+                <Label>{t('drm.select_pages_to_protect')}</Label>
                 <ScrollArea className="h-40 w-full rounded-md border p-2">
                   <div className="space-y-2">
                     {Array.from({ length: pageCount }, (_, i) => i + 1).map(page => (
@@ -122,22 +124,22 @@ export const DocumentSettingsDialog: React.FC<DocumentSettingsDialogProps> = ({
                           onCheckedChange={(checked) => handlePageDrmChange(page, !!checked)}
                           disabled={!isSubscriber}
                         />
-                        <Label htmlFor={`page-${page}`} className="font-normal">Page {page}</Label>
+                        <Label htmlFor={`page-${page}`} className="font-normal">{t('drm.page_number')} {page}</Label>
                       </div>
                     ))}
                   </div>
                 </ScrollArea>
               </div>
             )}
-            {!isSubscriber && <p className="text-xs text-muted-foreground mt-2">Upgrade to a subscription to enable DRM protection.</p>}
+            {!isSubscriber && <p className="text-xs text-muted-foreground mt-2">{t('drm.upgrade_subscription')}</p>}
           </div>
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={loading}>
-            Cancel
+            {t('common.cancel')}
           </Button>
           <Button onClick={handleSave} disabled={loading}>
-            {loading ? 'Saving...' : 'Save Changes'}
+            {loading ? t('drm.saving') : t('drm.save_changes')}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -198,6 +198,32 @@ const translations = {
     'textinsert.assigned_to_region': 'Assigned',
     'textinsert.to_region': 'to region',
     
+    // DRM Settings
+    'drm.protection': 'DRM Protection',
+    'drm.manage_settings_for': 'Manage DRM settings for',
+    'drm.protect_entire_document': 'Protect entire document',
+    'drm.select_pages_to_protect': 'Select pages to protect:',
+    'drm.page_number': 'Page',
+    'drm.upgrade_subscription': 'Upgrade to a subscription to enable DRM protection.',
+    'drm.subscriber_required': 'You must be a subscriber to use DRM protection.',
+    'drm.saving': 'Saving...',
+    'drm.save_changes': 'Save Changes',
+    
+    // API Keys
+    'api.set_gemini_keys': 'Set Gemini API Keys',
+    'api.description': 'Add one or more API keys. The system will automatically switch to another key if one reaches its limit. Your keys are stored only in your browser. Get keys from',
+    'api.google_ai_studio': 'Google AI Studio',
+    'api.your_keys': 'Your API Keys',
+    'api.key_number': 'Key',
+    'api.remove_key': 'Remove Key',
+    'api.enter_new_key': 'Enter a new Gemini API key',
+    'api.add_key': 'Add Key',
+    'api.save_keys': 'Save Keys',
+    'api.key_empty_error': 'API Key cannot be empty.',
+    'api.key_exists_error': 'This API key has already been added.',
+    'api.key_added_info': 'API key added. Click "Save Keys" to persist changes.',
+    'api.keys_saved_success': 'Gemini API Keys saved successfully.',
+    
     // Common
     'common.loading': 'Loading...',
     'common.close': 'Close',
@@ -388,6 +414,32 @@ const translations = {
     'textinsert.cannot_assign_different_page': 'لا يمكن تعيين النص لمنطقة في صفحة مختلفة',
     'textinsert.assigned_to_region': 'تم تعيين',
     'textinsert.to_region': 'إلى المنطقة',
+    
+    // DRM Settings
+    'drm.protection': 'إدارة الحقوق الرقمية (DRM)',
+    'drm.manage_settings_for': 'إعدادات إدارة الحقوق الرقمية لـ',
+    'drm.protect_entire_document': 'حماية المستند بأكمله',
+    'drm.select_pages_to_protect': 'اختر الصفحات المراد حمايتها:',
+    'drm.page_number': 'صفحة',
+    'drm.upgrade_subscription': 'قم بالترقية إلى اشتراك لتمكين إدارة الحقوق الرقمية.',
+    'drm.subscriber_required': 'يجب أن تكون مشتركًا لإدارة الحقوق الرقمية.',
+    'drm.saving': 'جارٍ الحفظ...',
+    'drm.save_changes': 'حفظ التغييرات',
+    
+    // API Keys
+    'api.set_gemini_keys': 'تعيين مفاتيح API Gemini',
+    'api.description': 'أضف مفتاح API واحدًا أو أكثر. سيتحول النظام تلقائيًا إلى مفتاح آخر إذا وصل أحدها إلى حده الأقصى. يتم تخزين مفاتيحك في متصفحك فقط. احصل على المفاتيح من',
+    'api.google_ai_studio': 'Google AI Studio',
+    'api.your_keys': 'مفاتيح API الخاصة بك',
+    'api.key_number': 'مفتاح',
+    'api.remove_key': 'إزالة المفتاح',
+    'api.enter_new_key': 'أدخل مفتاح Gemini API جديدًا',
+    'api.add_key': 'إضافة مفتاح',
+    'api.save_keys': 'حفظ المفاتيح',
+    'api.key_empty_error': 'لا يمكن أن يكون مفتاح API فارغًا.',
+    'api.key_exists_error': 'لقد تمت إضافة مفتاح API هذا بالفعل.',
+    'api.key_added_info': 'تمت إضافة مفتاح API. انقر على "حفظ المفاتيح" لتثبيت التغييرات.',
+    'api.keys_saved_success': 'تم حفظ مفاتيح Gemini API بنجاح.',
     
     // Common
     'common.loading': 'جارٍ التحميل...',
