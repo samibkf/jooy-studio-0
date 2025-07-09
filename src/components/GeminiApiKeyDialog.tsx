@@ -104,7 +104,7 @@ export const GeminiApiKeyDialog: React.FC<GeminiApiKeyDialogProps> = ({ isOpen, 
         </DialogHeader>
         <div className="grid gap-4 py-4">
           <div className="space-y-4">
-            <Label dir={isRTL ? 'rtl' : 'ltr'} className={isRTL ? 'text-right' : 'text-left'}>{t('api.your_keys')}</Label>
+            <Label dir={isRTL ? 'rtl' : 'ltr'} className={isRTL ? 'block text-right w-full' : 'block text-left w-full'} style={isRTL ? { textAlign: 'right' } : { textAlign: 'left' }}>{t('api.your_keys')}</Label>
             {apiKeys.length > 0 && (
               <div className="space-y-2 rounded-md border p-2 max-h-48 overflow-y-auto">
                 {apiKeys.map((apiKey, index) => (
