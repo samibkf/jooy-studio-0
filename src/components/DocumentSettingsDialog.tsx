@@ -112,8 +112,8 @@ export const DocumentSettingsDialog: React.FC<DocumentSettingsDialogProps> = ({
               />
             </div>
             {drmPages !== true && (
-              <div className={`space-y-2 mt-2 ${isRTL ? 'pr-2' : 'pl-2'}`}>
-                <Label dir={isRTL ? 'rtl' : 'ltr'}>{t('drm.select_pages_to_protect')}</Label>
+             <div className={`space-y-2 mt-2 ${isRTL ? 'pr-2' : 'pl-2'}`}>
+                <Label dir={isRTL ? 'rtl' : 'ltr'} className={isRTL ? 'text-right' : 'text-left'}>{t('drm.select_pages_to_protect')}</Label>
                 <ScrollArea className="h-40 w-full rounded-md border p-2">
                   <div className="space-y-2">
                     {Array.from({ length: pageCount }, (_, i) => i + 1).map(page => (

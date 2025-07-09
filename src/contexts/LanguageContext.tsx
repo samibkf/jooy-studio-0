@@ -345,7 +345,7 @@ const translations = {
     'pdf.zoom_in': 'تكبير',
     'pdf.make_private': 'جعل المستند خاص',
     'pdf.make_public': 'جعل المستند عام',
-    'pdf.drm_settings': 'تكوين إعدادات حماية DRM',
+    'pdf.drm_settings': 'إعدادات إدارة الحقوق الرقمية',
     'pdf.canvas_not_available': 'اللوحة القماشية غير متاحة',
     'pdf.failed_create_blob': 'فشل في إنشاء صورة blob',
     'pdf.page_number_error': 'يرجى إدخال رقم صفحة بين 1 و',
