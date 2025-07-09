@@ -147,6 +147,7 @@ const RegionOverlay: React.FC<RegionOverlayProps> = ({
     <div
       ref={containerRef}
       className={`absolute cursor-move ${isSelected ? 'z-20' : 'z-10'}`}
+      data-selected-region={isSelected ? 'true' : undefined}
       style={{
         left: `${position.x * scale}px`,
         top: `${position.y * scale}px`,
@@ -156,9 +157,7 @@ const RegionOverlay: React.FC<RegionOverlayProps> = ({
         backgroundColor: bgColor,
         boxSizing: 'border-box',
         touchAction: 'none',
-        transformOrigin: 'top left',
-        // Add a data attribute for easy identification when scrolling
-        ...(isSelected && { 'data-selected-region': 'true' })
+        transformOrigin: 'top left'
       }}
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}
