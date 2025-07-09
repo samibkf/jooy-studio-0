@@ -16,6 +16,7 @@ import {
   Languages,
   Moon,
   Sun,
+  LayoutGrid,
 } from 'lucide-react';
 import type { Profile } from '@/types/auth';
 import { GeminiApiKeyDialog, getGeminiApiKeys } from './GeminiApiKeyDialog';
@@ -108,6 +109,33 @@ const Header = ({
                 <h1 className="text-2xl font-bold gradient-text-orange-purple">{t('header.jooy_studio')}</h1>
               </div>
               {user && <CreditDisplay credits={user.credits_remaining || 0} />}
+              {user && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      asChild
+                      variant="outline"
+                      size="sm"
+                      className={`px-3 gradient-border-orange-purple ${isRTL ? 'rtl-button-flex' : 'ltr-button-flex'}`}
+                    >
+                      <a
+                        href="https://app.jooy.site/"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        title={t('header.jooy_app_tooltip')}
+                      >
+                        <RTLButtonIcon>
+                          <LayoutGrid className="h-4 w-4 gradient-icon-orange-purple" />
+                        </RTLButtonIcon>
+                        <span dir={isRTL ? 'rtl' : 'ltr'}>{t('header.jooy_app')}</span>
+                      </a>
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>{t('header.jooy_app_tooltip')}</p>
+                  </TooltipContent>
+                </Tooltip>
+              )}
             </div>
 
             {/* Center Group */}
