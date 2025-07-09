@@ -295,8 +295,8 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
   const handleMouseDown = (e: React.MouseEvent) => {
     if (!isSelectionMode && !isDoubleClickMode || !containerRef.current || isTemporarilyBlocked) return;
     const rect = containerRef.current.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
+    const x = (e.clientX - rect.left) / scale;
+    const y = (e.clientY - rect.top) / scale;
     if (selectionPoint) {
       const currentRect = {
         x: selectionRect.x,
@@ -347,8 +347,8 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
       return;
     }
     const rect = containerRef.current.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
+    const x = (e.clientX - rect.left) / scale;
+    const y = (e.clientY - rect.top) / scale;
     setIsDoubleClickMode(true);
     setSelectionPoint({
       x,
@@ -367,8 +367,8 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
   const handleMouseMove = (e: React.MouseEvent) => {
     if (!isSelecting || !containerRef.current || !selectionPoint) return;
     const rect = containerRef.current.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
+    const x = (e.clientX - rect.left) / scale;
+    const y = (e.clientY - rect.top) / scale;
     setSelectionRect({
       x: Math.min(x, selectionPoint.x),
       y: Math.min(y, selectionPoint.y),
@@ -721,10 +721,10 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
             )}
             
             {isSelecting && <div className="region-selection" style={{
-            left: selectionRect.x,
-            top: selectionRect.y,
-            width: selectionRect.width,
-            height: selectionRect.height,
+            left: selectionRect.x * scale,
+            top: selectionRect.y * scale,
+            width: selectionRect.width * scale,
+            height: selectionRect.height * scale,
             position: 'absolute',
             border: '2px solid #2563eb',
             backgroundColor: 'rgba(37, 99, 235, 0.1)',
