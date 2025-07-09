@@ -122,7 +122,6 @@ const Header = ({
                         href="https://app.jooy.site/"
                         target="_blank"
                         rel="noopener noreferrer"
-                        title={t('header.jooy_app_tooltip')}
                       >
                         <RTLButtonIcon>
                           <LayoutGrid className="h-4 w-4 gradient-icon-orange-purple" />
