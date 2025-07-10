@@ -521,8 +521,8 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
 
   if (!documentId) {
     return <div className="flex flex-col items-center justify-center h-[calc(100vh-72px)] bg-muted">
-        <div className="text-center p-10">
-          <h2 className="font-bold mb-2 text-3xl gradient-text-orange-purple">{t('pdf.welcome_title')}</h2>
+        <div className="text-center p-10 w-full min-h-fit overflow-visible">
+          <h2 className="font-bold mb-2 text-3xl md:text-4xl gradient-text-orange-purple leading-tight break-words">{t('pdf.welcome_title')}</h2>
         </div>
       </div>;
   }

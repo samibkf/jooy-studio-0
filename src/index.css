@@ -179,6 +179,10 @@
     background-clip: text !important;
     -webkit-text-fill-color: transparent !important;
     background-size: 100% !important;
+    display: inline-block !important;
+    line-height: 1.2 !important;
+    padding: 0.1em 0 !important;
+    will-change: auto !important;
   }
 
   /* Gradient Border */
