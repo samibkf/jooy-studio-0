@@ -114,8 +114,7 @@ const translations = {
     'error.return_home': 'Return to Home',
     
     // PDF Viewer
-    'pdf.welcome_title': 'Welcome to Jooy Studio',
-    'pdf.welcome_subtitle': 'Interactive Books Start Here',
+      'pdf.welcome_title': 'Welcome to Jooy Studio',
     'pdf.login_required': 'Please log in to view PDFs',
     'pdf.loading_pdf': 'Loading PDF...',
     'pdf.debug_info': 'Debug Info',
@@ -355,8 +354,7 @@ const translations = {
     'error.return_home': 'العودة إلى الصفحة الرئيسية',
     
     // PDF Viewer
-    'pdf.welcome_title': 'مرحبًا بك في استوديو جوي',
-    'pdf.welcome_subtitle': 'الكتب التفاعلية تبدأ من هنا',
+      'pdf.welcome_title': 'مرحبًا بك في استوديو جوي',
     'pdf.login_required': 'يرجى تسجيل الدخول لعرض ملفات PDF',
     'pdf.loading_pdf': 'جارٍ تحميل PDF...',
     'pdf.debug_info': 'معلومات التشخيص',
