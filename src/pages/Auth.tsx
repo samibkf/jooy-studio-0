@@ -186,7 +186,7 @@ const Auth = () => {
             </div>
           )}
 
-          <Button type="submit" className="w-full" disabled={loading || googleLoading}>
+          <Button type="submit" className="w-full gradient-bg-orange-purple" disabled={loading || googleLoading}>
             {loading ? t('auth.loading') : isSignUp ? t('auth.create_account_btn') : t('auth.sign_in_btn')}
           </Button>
         </form>
