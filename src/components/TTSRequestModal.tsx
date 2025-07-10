@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/contexts/AuthProvider';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { usePdfPageCount } from '@/hooks/usePdfPageCount';
@@ -57,6 +58,7 @@ function parsePageRanges(input: string, maxPage: number): number[] {
 
 const TTSRequestModal = ({ isOpen, onOpenChange, documentId, documentName, onSuccess }: TTSRequestModalProps) => {
   const { authState, refreshProfile } = useAuth();
+  const { t, isRTL } = useLanguage();
   const [selectedPages, setSelectedPages] = useState('');
   const [voiceType, setVoiceType] = useState<'male' | 'female'>('female');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -82,17 +84,17 @@ const TTSRequestModal = ({ isOpen, onOpenChange, documentId, documentName, onSuc
 
   const handleSubmit = async () => {
     if (!documentId || !authState.profile) {
-      toast.error('You must be logged in and have a document selected.');
+      toast.error(t('tts.login_document_required') || 'You must be logged in and have a document selected.');
       return;
     }
 
     if (parsedPages.length === 0) {
-      toast.error('Please select valid pages to proceed.');
+      toast.error(t('tts.select_valid_pages') || 'Please select valid pages to proceed.');
       return;
     }
 
     if (!hasEnoughCredits) {
-      toast.error('You do not have enough credits to make this request.');
+      toast.error(t('tts.not_enough_credits') || 'You do not have enough credits to make this request.');
       return;
     }
 
@@ -115,12 +117,12 @@ const TTSRequestModal = ({ isOpen, onOpenChange, documentId, documentName, onSuc
 
     if (requestError) {
       console.error('Error inserting Virtual Tutor request:', requestError);
-      toast.error(`Failed to submit Virtual Tutor request: ${requestError.message}`);
+      toast.error(`${t('tts.request_failed') || 'Failed to submit Virtual Tutor request'}: ${requestError.message}`);
       setIsSubmitting(false);
       return;
     }
 
-    toast.success('Virtual Tutor request submitted successfully!');
+    toast.success(t('tts.request_submitted') || 'Virtual Tutor request submitted successfully!');
     let hadSubsequentErrors = false;
 
     // Step 2: Update user credits
@@ -132,7 +134,7 @@ const TTSRequestModal = ({ isOpen, onOpenChange, documentId, documentName, onSuc
 
     if (profileError) {
       console.error('Failed to update user credits:', profileError);
-      toast.warning('Request submitted, but failed to update credits. Please contact support.');
+      toast.warning(t('tts.credits_update_failed') || 'Request submitted, but failed to update credits. Please contact support.');
       hadSubsequentErrors = true;
     }
 
@@ -145,7 +147,7 @@ const TTSRequestModal = ({ isOpen, onOpenChange, documentId, documentName, onSuc
 
       if (taskError) {
         console.error('Failed to create admin task:', taskError);
-        toast.error('Request submitted, but failed to create admin task. Please contact support.');
+        toast.error(t('tts.admin_task_failed') || 'Request submitted, but failed to create admin task. Please contact support.');
         hadSubsequentErrors = true;
       }
     }
@@ -156,7 +158,7 @@ const TTSRequestModal = ({ isOpen, onOpenChange, documentId, documentName, onSuc
       onSuccess();
     } catch (e) {
       console.error("Error refreshing data after submission", e);
-      toast.warning("Could not refresh data automatically.");
+      toast.warning(t('tts.refresh_failed') || "Could not refresh data automatically.");
     }
     
     // Only close the modal if everything was successful
@@ -169,16 +171,22 @@ const TTSRequestModal = ({ isOpen, onOpenChange, documentId, documentName, onSuc
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent className={isRTL ? 'rtl' : 'ltr'} dir={isRTL ? 'rtl' : 'ltr'}>
         <DialogHeader>
-          <DialogTitle>Request Virtual Tutor for "{documentName}"</DialogTitle>
-          <DialogDescription>
+          <DialogTitle className={isRTL ? 'text-right' : 'text-left'}>
+            <span dir={isRTL ? 'rtl' : 'ltr'}>
+              {t('tts.request_tutor_for')} "<span dir="ltr">{documentName}</span>"
+            </span>
+          </DialogTitle>
+          <DialogDescription className={isRTL ? 'text-right' : 'text-left'}>
             {isLoadingPageCount ? (
-              'Loading document details...'
+              t('tts.loading_document')
             ) : pageCountError ? (
-              <span className="text-destructive">Could not load PDF details. Please try again.</span>
+              <span className="text-destructive">{t('tts.load_pdf_error')}</span>
             ) : (
-              `Select the pages for which you want to generate a virtual tutor session. The document has ${pageCount} pages.`
+              <span dir={isRTL ? 'rtl' : 'ltr'}>
+                {t('tts.select_pages_description')} {pageCount} {t('tts.document_pages')}
+              </span>
             )}
           </DialogDescription>
         </DialogHeader>
@@ -188,78 +196,79 @@ const TTSRequestModal = ({ isOpen, onOpenChange, documentId, documentName, onSuc
             <Skeleton className="h-24 w-full" />
           </div>
         ) : pageCountError ? (
-          <div className="py-4 text-center text-destructive">
-            <p>Failed to load document information. Please close this and try again.</p>
+          <div className={`py-4 text-center text-destructive ${isRTL ? 'rtl' : 'ltr'}`}>
+            <p>{t('tts.failed_load_document')}</p>
           </div>
         ) : (
           <>
-            <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="pages" className="text-right">
-                  Pages
+            <div className={`grid gap-4 py-4 ${isRTL ? 'rtl' : 'ltr'}`}>
+              <div className={`grid grid-cols-4 items-center gap-4 ${isRTL ? 'rtl' : 'ltr'}`}>
+                <Label htmlFor="pages" className={isRTL ? 'text-left' : 'text-right'}>
+                  {t('tts.pages_label')}
                 </Label>
                 <Input
                   id="pages"
                   value={selectedPages}
                   onChange={(e) => setSelectedPages(e.target.value)}
                   className="col-span-3"
-                  placeholder="e.g., 1, 3-5, 8"
+                  placeholder={t('tts.pages_placeholder')}
+                  dir={isRTL ? 'rtl' : 'ltr'}
                 />
               </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="voice" className="text-right">
-                  Voice
+              <div className={`grid grid-cols-4 items-center gap-4 ${isRTL ? 'rtl' : 'ltr'}`}>
+                <Label htmlFor="voice" className={isRTL ? 'text-left' : 'text-right'}>
+                  {t('tts.voice_label')}
                 </Label>
                 <RadioGroup
                   defaultValue="female"
                   onValueChange={(value: 'male' | 'female') => setVoiceType(value)}
                   value={voiceType}
-                  className="col-span-3 flex items-center space-x-4"
+                  className={`col-span-3 flex items-center space-x-4 ${isRTL ? 'rtl:space-x-reverse' : ''}`}
                 >
-                  <div className="flex items-center space-x-2">
+                  <div className={`flex items-center space-x-2 ${isRTL ? 'rtl:space-x-reverse' : ''}`}>
                     <RadioGroupItem value="female" id="r-female" />
-                    <Label htmlFor="r-female">Female</Label>
+                    <Label htmlFor="r-female">{t('tts.voice_female')}</Label>
                   </div>
-                  <div className="flex items-center space-x-2">
+                  <div className={`flex items-center space-x-2 ${isRTL ? 'rtl:space-x-reverse' : ''}`}>
                     <RadioGroupItem value="male" id="r-male" />
-                    <Label htmlFor="r-male">Male</Label>
+                    <Label htmlFor="r-male">{t('tts.voice_male')}</Label>
                   </div>
                 </RadioGroup>
               </div>
-              <div className="flex justify-end -mt-2">
+              <div className={`flex ${isRTL ? 'justify-start' : 'justify-end'} -mt-2`}>
                 <Button variant="link" size="sm" onClick={handleSelectAll} className="p-0 h-auto text-xs">
-                  Select all pages
+                  {t('tts.select_all_pages')}
                 </Button>
               </div>
-              <div className="space-y-2 text-sm p-4 bg-slate-50 rounded-md">
+              <div className={`space-y-2 text-sm p-4 bg-slate-50 rounded-md ${isRTL ? 'rtl' : 'ltr'}`}>
                 <div className="flex justify-between">
-                  <span>Total pages selected:</span>
-                  <span className="font-medium">{costInCredits}</span>
+                  <span>{t('tts.total_pages_selected')}</span>
+                  <span className="font-medium" dir="ltr">{costInCredits}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span>Your credits:</span>
-                  <span className="font-medium">{creditsRemaining}</span>
+                  <span>{t('tts.your_credits')}</span>
+                  <span className="font-medium" dir="ltr">{creditsRemaining}</span>
                 </div>
                  <div className="flex justify-between">
-                    <span>Credits that will be used:</span>
-                    <span className="font-medium">{costInCredits}</span>
+                    <span>{t('tts.credits_used')}</span>
+                    <span className="font-medium" dir="ltr">{costInCredits}</span>
                 </div>
                 {!hasEnoughCredits && parsedPages.length > 0 && (
                   <div className="flex justify-between font-semibold text-destructive pt-2 border-t">
-                    <span>Credits needed:</span>
-                    <span>{costInCredits - creditsRemaining}</span>
+                    <span>{t('tts.credits_needed')}</span>
+                    <span dir="ltr">{costInCredits - creditsRemaining}</span>
                   </div>
                 )}
                 </div>
             </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+            <DialogFooter className={isRTL ? 'flex-row-reverse' : ''}>
+              <Button variant="outline" onClick={() => onOpenChange(false)}>{t('common.cancel')}</Button>
               <Button onClick={handleSubmit} disabled={isSubmitting || parsedPages.length === 0 || !!pageCountError || !hasEnoughCredits}>
                 {isSubmitting
-                  ? 'Submitting...'
+                  ? t('tts.submitting')
                   : !hasEnoughCredits && parsedPages.length > 0
-                  ? 'Insufficient Credits'
-                  : `Submit for ${costInCredits} credits`}
+                  ? t('tts.insufficient_credits')
+                  : t('tts.submit_for_credits').replace('{count}', costInCredits.toString())}
               </Button>
             </DialogFooter>
           </>
