@@ -52,7 +52,7 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
   onDrmSettingsClick,
 }) => {
   const { authState } = useAuth();
-  const { t, isRTL } = useLanguage();
+  const { t, isRTL, language } = useLanguage();
   
   const [pdf, setPdf] = useState<PDFDocumentProxy | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
@@ -522,7 +522,13 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
   if (!documentId) {
     return <div className="flex flex-col items-center justify-center h-[calc(100vh-72px)] bg-muted">
         <div className="text-center p-10 w-full min-h-fit overflow-visible">
-          <h2 className="font-bold mb-2 text-3xl md:text-4xl gradient-text-orange-purple leading-tight break-words" dir={isRTL ? 'rtl' : 'ltr'}>{t('pdf.welcome_title')}</h2>
+          <h2 
+            key={`welcome-${language}`}
+            className={`font-bold mb-2 text-3xl md:text-4xl ${isRTL ? 'gradient-text-orange-purple-rtl' : 'gradient-text-orange-purple-ltr'} leading-tight break-words`} 
+            dir={isRTL ? 'rtl' : 'ltr'}
+          >
+            {t('pdf.welcome_title')}
+          </h2>
         </div>
       </div>;
   }

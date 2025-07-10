@@ -37,7 +37,7 @@
 
     /* Orange to Purple Gradient */
     --gradient-orange-purple: linear-gradient(135deg, #FF6600 0%, #EE00FF 100%);
-    --gradient-orange-purple-rtl: linear-gradient(225deg, #FF6600 0%, #EE00FF 100%);
+    --gradient-orange-purple-rtl: linear-gradient(315deg, #EE00FF 0%, #FF6600 100%);
   }
 
   .dark {
@@ -189,6 +189,34 @@
   /* RTL Gradient Text - Orange to Purple for right-to-left text */
   [dir="rtl"] .gradient-text-orange-purple {
     background: var(--gradient-orange-purple-rtl) !important;
+    -webkit-background-clip: text !important;
+    background-clip: text !important;
+    -webkit-text-fill-color: transparent !important;
+  }
+
+  /* Alternative approach with separate classes */
+  .gradient-text-orange-purple-ltr {
+    background: var(--gradient-orange-purple) !important;
+    -webkit-background-clip: text !important;
+    background-clip: text !important;
+    -webkit-text-fill-color: transparent !important;
+    background-size: 100% !important;
+    display: inline-block !important;
+    line-height: 1.2 !important;
+    padding: 0.1em 0 !important;
+    will-change: auto !important;
+  }
+
+  .gradient-text-orange-purple-rtl {
+    background: var(--gradient-orange-purple-rtl) !important;
+    -webkit-background-clip: text !important;
+    background-clip: text !important;
+    -webkit-text-fill-color: transparent !important;
+    background-size: 100% !important;
+    display: inline-block !important;
+    line-height: 1.2 !important;
+    padding: 0.1em 0 !important;
+    will-change: auto !important;
   }
 
   /* Gradient Border */
