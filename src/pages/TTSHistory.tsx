@@ -103,7 +103,11 @@ const TTSHistory = () => {
                                 {documents.map(doc => (
                                     <li key={doc.id} className="flex justify-between items-center p-2 border rounded-md">
                                         <span className="truncate pr-2" dir={isRTL ? 'rtl' : 'ltr'}>{doc.name}</span>
-                                        <Button onClick={() => handleRequestVirtualTutor(doc)} size="sm">
+                                        <Button 
+                                            onClick={() => handleRequestVirtualTutor(doc)} 
+                                            size="sm"
+                                            className="bg-gradient-to-r from-orange-500 to-purple-600 hover:from-orange-600 hover:to-purple-700 text-white border-0"
+                                        >
                                             <UserRound className="mr-2 h-4 w-4" /> 
                                             <span dir={isRTL ? 'rtl' : 'ltr'}>{t('tts.request_virtual_tutor')}</span>
                                         </Button>
