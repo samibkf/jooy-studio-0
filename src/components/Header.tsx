@@ -16,6 +16,7 @@ import {
   Moon,
   Sun,
   LayoutGrid,
+  HelpCircle,
 } from 'lucide-react';
 import type { Profile } from '@/types/auth';
 import { GeminiApiKeyDialog, getGeminiApiKeys } from './GeminiApiKeyDialog';
@@ -26,6 +27,7 @@ import { useTheme } from '@/contexts/ThemeContext';
 import RTLButtonIcon from './RTLButtonIcon';
 import GradientSvgDefs from './GradientSvgDefs';
 import Logo from './Logo';
+import { OnboardingModal } from './OnboardingModal';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -76,6 +78,7 @@ const Header = ({
 }: HeaderProps) => {
   const [isGeminiDialogOpen, setGeminiDialogOpen] = useState(false);
   const [isGeminiKeySet, setGeminiKeySet] = useState(false);
+  const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
   const { t, language, setLanguage, isRTL } = useLanguage();
   const { theme, toggleTheme } = useTheme();
 
@@ -315,6 +318,14 @@ const Header = ({
                     </RTLButtonIcon>
                     <span dir={isRTL ? 'rtl' : 'ltr'}>{t('header.api_keys')}</span>
                   </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setIsOnboardingOpen(true)} className={isRTL ? 'rtl-button-flex' : 'ltr-button-flex'}>
+                    <RTLButtonIcon>
+                      <HelpCircle className="h-4 w-4" />
+                    </RTLButtonIcon>
+                    <span dir={isRTL ? 'rtl' : 'ltr'}>
+                      {isRTL ? 'كيف أستخدم المنصة ؟' : 'Show Me How?'}
+                    </span>
+                  </DropdownMenuItem>
                   <DropdownMenuItem onClick={onSignOut} className={isRTL ? 'rtl-button-flex' : 'ltr-button-flex'}>
                     <RTLButtonIcon>
                       <LogOut className="h-4 w-4" />
@@ -331,6 +342,10 @@ const Header = ({
         isOpen={isGeminiDialogOpen}
         onOpenChange={setGeminiDialogOpen}
         onKeySave={handleKeySave}
+      />
+      <OnboardingModal
+        open={isOnboardingOpen}
+        onComplete={() => setIsOnboardingOpen(false)}
       />
     </>
   );

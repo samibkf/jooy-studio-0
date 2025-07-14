@@ -92,11 +92,11 @@ export const OnboardingModal = ({ open, onComplete }: OnboardingModalProps) => {
               <Button
                 onClick={handleComplete}
                 disabled={isCompleting}
-                className="min-w-24"
+                className="min-w-24 bg-green-600 hover:bg-green-700 text-white"
               >
                 {isCompleting 
-                  ? (isRTL ? 'جاري الإكمال...' : 'Completing...') 
-                  : (isRTL ? 'إكمال' : 'Complete')
+                  ? (isRTL ? 'جاري الحفظ...' : 'Saving...') 
+                  : (isRTL ? 'تم بنجاح' : 'Complete')
                 }
               </Button>
             </div>
