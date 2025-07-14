@@ -29,8 +29,11 @@ import {
 } from '@/utils/pdfQrEmbedding';
 import { decryptData } from '@/utils/crypto';
 import { DocumentSettingsDialog } from '@/components/DocumentSettingsDialog';
+import { OnboardingModal } from '@/components/OnboardingModal';
+import { useOnboarding } from '@/hooks/useOnboarding';
 
 const Index = () => {
+  const { showOnboarding, completeOnboarding } = useOnboarding();
   const [documents, setDocuments] = useState<DocumentData[]>([]);
   const [selectedDocumentId, setSelectedDocumentId] = useState<string | null>(null);
   const [isDocumentListCollapsed, setIsDocumentListCollapsed] = useState(true);
@@ -978,6 +981,11 @@ const Index = () => {
           user={authState.profile}
           pageCount={pageCount}
           onUpdate={handleDocumentSettingsUpdate}
+        />
+        
+        <OnboardingModal 
+          open={showOnboarding} 
+          onComplete={completeOnboarding} 
         />
       </div>
     </ProtectedRoute>
